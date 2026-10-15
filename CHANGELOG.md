@@ -1,5 +1,31 @@
 # Changelog
 
+## v2.7 — native relative symbolic links (package/plugin 3.7.0)
+
+- Fresh setup now creates actual relative file/folder symlinks and enables repository-local Git `core.symlinks=true`. Existing legacy layouts remain explicit until migrated; `--portable-pointers` is an opt-out, never a hidden fallback.
+- CLAUDE/GEMINI/Copilot entrypoints share AGENTS.md. Compatible Claude agent/rule/skill and Cursor skill folders share canonical directories; Cursor's native .mdc views live once centrally and are directory-linked.
+- `ctx symlinks --check|--migrate` verifies native link types/targets/Git settings, preserves custom content, stages installation before replacing generated wrappers, and rolls back failures. No junction substitution or OS permission changes.
+- Windows setup instructions and actionable failures explain Developer Mode, the Settings opener, and that existing links/normal edits still work after it is disabled; future link recreation can need it again.
+- Native regressions use real file/directory symlinks and Git mode 120000; permission-off behavior is fault-injected separately. Unsupported positive tests are reported as skipped, not successful simulation.
+
+## v2.6 — single-source ownership and shared agent resources (package/plugin 3.6.0)
+
+- Essential markdown categories get an explicit ownership contract; root/tool instructions, session cursor, task ledger, decision rationale, architecture and specialized contracts no longer request the same details in multiple files.
+- `.agents/agents`, `.agents/rules`, `.agents/skills` own reusable bodies. Native Claude/Cursor adapters contain links and derived discovery metadata, never copied procedures. Native settings are deliberately separate, not directory aliases.
+- `ctx new agent|rule|skill` supports project-internal authoring from the copied zero-dependency CLI; `ctx adapters --check` audits links/metadata, refresh preserves hand edits, and explicit migration refuses competing owners.
+- Lint/doctor check missing owners and adapter drift; exact long live-prose duplicates raise review warnings. Dated snapshots and generated routing metadata are not competing authorities; semantic paraphrases still need review.
+- Existing important files and user customizations are preserved. New skills start empty rather than installing speculative deploy/security workflows.
+
+## v2.5 — reliable routing and safe updates (package/plugin 3.5.0)
+
+- `brief --json` adds reasons, TL;DRs, estimated read costs, trust warnings, blind spots and skipped candidates. Hard budgets include mandatory orientation; retired pages require `--history`; Windows task paths normalize; invalid numeric flags emit actionable errors.
+- Setup targets cwd (or explicit `--root`), refuses escaping/dangling links and malformed config before scaffold writes, and preserves partially filled maps. Only a pristine shipped map template can be replaced by a census draft.
+- Git filenames use NUL-delimited records; Unicode, spaces, rename source/destination and nested-project paths stay intact. Invalid `impact --since` refs fail instead of reporting success.
+- Stop checks current working-tree changes, including uncovered source, not the previous session's commit. Null/nonobject input is normalized; only literal boolean `stop_hook_active: true` bypasses the repeated check. Doctor diagnoses missing/malformed config without crashing.
+- Read-only requests override all recording writes; subagents return memory suggestions. New module pages start draft/inferred; verified claims require source/check evidence. Imported material retains provenance and cannot issue instructions or silently approve scope.
+- Planning and verification scale to task/project risk; no mandatory interview, irrelevant app checks, forced third-party installation, or discarding correct code solely for test ordering. Hook limits are explicit rather than advertised as guarantees.
+- Runtime remains zero-dependency. No new model service, graph pipeline, web UI, publish or release tag.
+
 ## v2.4.1 — prompt craft: ASD-STE100 inside the system
 
 - **`references/prompt-craft.md`**: the aerospace Simplified Technical English standard (ASD-STE100) adapted for LLM readers — one action per sentence, one word one meaning, named actors, exact numbers, results not negations, logical order = execution order. Applied to the prompts the system emits: feature specs, subagent briefs, clarify questions, Lessons, TL;DRs.

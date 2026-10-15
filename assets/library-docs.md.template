@@ -2,7 +2,7 @@
 title: Library Docs
 type: guide
 status: active
-summary: Project-specific usage, versions, config paths and installed skills/MCPs per third-party library
+summary: Version-specific library usage, config pointers and documentation; installed versions come from manifests/lockfiles
 tags: [libraries,dependencies,docs]
 updated: {{TODAY}}
 ---
@@ -13,7 +13,7 @@ updated: {{TODAY}}
 
 {{3–5 lines an agent can stop at: the facts that change what it does next.}}
 
-Rule: before using ANY library, check this file for its skill/MCP/docs entry, read that entry, and only then act. Framework versions outrun training data — verify against current docs, never from memory.
+Use manifest/lockfile values as the installed-version source. This page records how the project uses each library and evidence/documentation pointers, not another editable version inventory.
 
 ## Installed agent skills / MCP servers
 
@@ -26,18 +26,14 @@ Rule: before using ANY library, check this file for its skill/MCP/docs entry, re
 ## Per-library usage notes (project-specific)
 
 ### {{Library name}}
-- Version: {{x.y.z}} — installed: {{date}}
+- Version source: {{manifest/lockfile path + dependency name; do not duplicate its current value}}
 - Config location: {{e.g. prisma/ (not any other path)}}; DB URL read from {{.env var name}}
 - Project-specific pattern: {{how we use it, what we never do with it}}
 - Known version gotchas: {{e.g. Next.js 16: middleware.ts replaced by proxy.ts}}
 
-## Known operational gotchas
+## Related owners
 
-{{The things that break silently — one line each, added when hit:
-- Long AI calls time out in serverless API routes (~60s cap) → run as background jobs
-- Local background worker must run alongside dev server or queued tasks never execute
-- Stale lockfile breaks the deploy install → delete, reinstall, commit
-- Vendor keys: dev → prod swap is a deploy step, never an agent decision}}
+{{Link architecture for component roles, integrations for service failure policy, env-vars for variable purpose, and runbook for operations when applicable. Keep only library-specific usage/gotchas here.}}
 
 ## Docs sources
 

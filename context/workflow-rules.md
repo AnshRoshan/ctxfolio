@@ -2,97 +2,68 @@
 title: Workflow Rules
 type: standards
 status: active
-summary: How the agent behaves: one unit at a time, stop-and-ask rules, error protocol, recording duties
+summary: Planning, implementation, verification and recording procedures; global agent policy is owned by AGENTS.md
 tags: [workflow,discipline,process]
-updated: 2026-10-06
-verified_at: 080a7adb7826
+updated: 2026-10-14
 ---
 
-# AI Workflow Rules
+# Working Procedures
 
 ## TL;DR
 
-- One unit at a time, inside the spec. Hard calls go to the human, recorded in decisions.md.
-- Record while working (tracker, decisions, issues, wiki pages) — never batch to the end.
-- Orient from the wiki (`index.md` → `memory.md` → `brief`), don't re-explore the repo. Touching a file? `ctx rules <file>` lists the path-gated rules and pages that apply.
-- Done = verified in the real app + lint/typecheck/build + `ctx impact` clean + memory.md updated.
+- Follow [shared policy](../AGENTS.md); this page owns execution steps, not another policy inventory.
+- Use the requested task's scope and risk to choose a short fix plan or a feature spec.
+- Record durable findings at their [owner](ownership.md); handoff carries pointers and a resume step.
 
-The discipline layer. These rules govern how the agent behaves, not what it builds. Copy verbatim into every project.
+## Before implementation
 
-## Scope discipline
+1. For a question, answer from routed evidence; do not create implementation work.
+2. For a narrow authorized fix, write a short plan and focused regression check. For new/risky behavior, use the existing feature spec or create a numbered spec.
+3. Ask only blocking clarification questions, at most five. Put answers and value sources in the spec rather than chat-only assumptions.
+4. Cross-check request/spec, roadmap position and task ledger for contradictions. Resolve artifacts before changing behavior.
+5. Read the applicable library entry and code standards. System invariants come from architecture/module/contract owners, not this page.
 
-- Work on ONE feature unit or subsystem at a time. Never combine unrelated system boundaries in a single implementation step. This single rule prevents most agent-caused failures. Stay in your lane.
-- Implement the spec exactly as written, **without going beyond scope**. Exclusion lines in the spec ("do NOT add X yet") are hard boundaries, not suggestions.
-- If work reveals a needed change outside the spec: stop, record it as a new feature in build-plan.md, and continue only with the human's approval. The same append-only rule applies to ideas discovered via analytics or review: new build-plan features, never silent implementations.
-- Before planning a spec, run the clarify gate: ask up to 5 targeted questions about underspecified areas, ONE at a time, confirming shared terminology as you go; write the answers back into the spec file, not into chat.
-- Before implementing, cross-check spec ↔ plan ↔ tasks read-only (a task with no matching requirement, a plan contradicting the spec). Fix the artifacts, not the code.
-- Before building, run the **value-source gate**: list every value the feature shows or computes (totals, dates, statuses) and where each one comes from. Any value with no source in the plan is a decision nobody made — stop and ask. Do not invent it.
-- If the human overrides the gate and says build anyway, write the assumption into decisions.md as a FLAGGED entry attached to that feature, visible until properly decided.
+## Task lifecycle
 
-## Decision discipline
+- Start a unit with `node context/ctx.mjs task start NN`; the ledger enforces one active unit.
+- Block with `ctx task block NN "why + what unblocks it"` when progress genuinely depends on something missing.
+- Finish after verification with `ctx task done NN -m "verified outcome; evidence: owner-page#section"`. Link current configuration and decision records; do not copy their contents into completion notes.
 
-- Never decide something important silently. Hard/ambiguous decisions go to the human with: options, recommendation, honest reason the alternative lost.
-- Every hard decision gets a decision record in context/decisions.md the moment it is made. Never buried in code, never left in chat.
-- Correctness/staleness choices (what is allowed to be slightly wrong) are presented per field, never picked by the agent.
-- Architecture defaults: monolith first, relational DB by default, paginate every list, rate-limit every public endpoint, no secrets in code. Escalate in order: bigger server → free checks (indexes!) → read replicas/cache → queue → only then new infra → sharding strictly last.
+## Decisions and assumptions
 
-## Recording obligations (while working, not at the end)
+Present important options with a recommendation and concrete cost. Record the approved choice in decisions.md using its record format. Put undecided assumptions in its F-NN section and reference them from the affected spec. This page does not preselect a database, deployment shape or correctness policy for the project.
 
-- Starting a unit → `ctx task start NN` (the ledger in progress-tracker.md; one unit In progress at a time).
-- Finishing + verifying → `ctx task done NN -m "concrete details"` (versions, paths, env var names). Blocked → `ctx task block NN "why + what unblocks it"`. States stay mutually exclusive.
-- User-facing behavior of a finished unit → documented in `docs/` (humans read docs/, agents read context/ — link, never duplicate).
-- New UI component → check ui-registry.md for a similar one; match its exact classes, or build to ui-rules/ui-tokens and append it to the registry.
-- After UI work → sweep the codebase for UI inconsistencies against ui-rules/ui-tokens/registry and produce a fix list; do not fix silently.
-- Bug appears → current-issues.md: symptom + suspected file + fix direction + definition of success.
-- The human corrects you → one line in AGENTS.md "Lessons" (When X, do Y) in the same session. A correction not written down is a correction you will receive again.
-- Gap found in any context file → edit that file during the build.
-- End of EVERY session → update memory.md: current state, exact next step, open questions.
-- Feature/phase complete → changelog + PR description generated from the actual diff, not from memory of the work.
-- AGENTS.md grows only when the project makes a real decision worth remembering in every session.
+## Update-on-change
 
-## Context maintenance (the wiki is part of the deliverable)
+1. Run `node context/ctx.mjs impact` for the changed files.
+2. Review each covering page against source. Update changed claims at their owner, or record why they remain true.
+3. For uncovered code, extend a relevant module page before creating another page. Capture contracts/gotchas, not code bodies.
+4. Record source path + symbol/section, revision/date and the actual check before marking confidence verified. `ctx stamp` is a checkpoint, not semantic proof.
+5. Regenerate derived catalogs and native adapters through the CLI. Do not maintain a second editable rule/resource body in a tool folder.
 
-- **Context-diff rule:** a change to code is not finished until the pages that `cover` it are updated in the same change. Run `node context/ctx.mjs impact`; each ✗ page is edited, or explicitly confirmed unchanged and re-stamped (`ctx stamp <page>`).
-- **Learned something by reading code?** Write it down (`ctx new module <name> --covers "<globs>"`) before the session ends. Knowledge left only in chat is lost knowledge.
-- **Delegate the machinery:** for code maps, symbol lists and dependency graphs, check `ctx tools` first (graphify, ctags, aider, dependency-cruiser). The tool produces, the wiki keeps — distill, never paste raw dumps.
-- **Read cheap, then deep:** index one-liner → `## TL;DR` → full page → source file. Stop at the first level that answers the question.
-- **Trust but verify:** pages with `confidence: inferred|unverified` or listed by `ctx stale` are hypotheses. Check the code, then fix the page.
-- **Conflicts:** page vs code, page vs page, source vs page → flag to the human with both claims; mark the loser `superseded` (+ `superseded_by`) only after the human decides. Never silently overwrite.
-- **Raw is immutable:** never edit `context/raw/`. Ingest it (source summary → affected pages → log).
-- **Keep it small:** a page over ~160 lines gets split; a page nobody needs gets archived (`context/archive/`), not deleted.
-- **No secrets, ever** — env var names only, never values.
-- **Before ending a session:** `ctx impact` → `ctx index` → `ctx lint` → `ctx log` → update memory.md.
+## Bug investigation
 
-## Error protocol
+1. Check the active issue record and reproduce the symptom on command.
+2. Test one root-cause hypothesis. Preserve unrelated user changes while discarding only your own failed experiment.
+3. Add a regression check; prefer observing its failure before applying the fix.
+4. Fix the shared cause and inspect sibling callers for the same defect.
+5. Link reproduction and verification evidence from the issue/task record. A wrong product decision returns to the spec/decision owner instead of being hidden by a patch.
 
-1. Read current-issues.md; deeply analyze before touching anything.
-2. Return analysis + planned fix, and **wait for the green light before executing**.
-3. Reproduce reliably first. A bug you cannot reproduce on command is a bug you cannot prove you fixed.
-4. Form ONE theory of root cause; test that one thing. Wrong? Throw the change away — no dead edits.
-5. Fix the cause, not the symptom. Never clamp a null — find out why it was null.
-6. Write a test that fails without the fix and passes with it.
-7. Hunt for the same mistake elsewhere in the codebase.
-8. Fix issues one at a time; batched fixes silently drop items.
-9. If the bug is a bad decision, say so and send it back to the plan instead of patching over it.
+## Verification and review
 
-## Verification before "done"
+- Use the applicable commands in testing.md and operational steps in runbook.md; report missing/unavailable checks instead of inventing them.
+- Drive actual changed behavior against acceptance criteria: CLI, library test, document review or browser flow as appropriate.
+- If implementation already exists, prove the check detects the regression; process ordering alone is not a reason to redo correct work.
+- Review separately from implementation when risk warrants it. Triage findings; record deferred issues at their owner.
+- User-facing documentation links normative contracts and decisions instead of reproducing them.
 
-- Run lint + typecheck + build; report results. Green tests only prove the code you thought to test.
-- Logic-bearing code ships its failing test FIRST (RED-GREEN-REFACTOR): write the test, watch it fail, then write the code. Code written before its test gets deleted and redone.
-- Verify by driving the real app against the spec's checklist — watching it work beats "tests pass". Then converge: re-check spec ↔ implementation until nothing is missing; the converge pass may only append tasks.
-- Completion is four separate jobs: verify → test → review (fresh eyes/different model) → document. Scale effort to risk: prototype self-checks; payment system runs all four.
-- Review findings: triage real/relevant/now. Deferred ones get written down. Never silently ignore a finding.
+## Close and resume
 
-## Session hygiene
+1. Update owner pages and the task state with evidence pointers.
+2. Run impact, regenerate the catalog, and run context lint. Log only the dated event and affected paths.
+3. Update memory.md with the exact resume instruction, working-set links and unresolved context debt. Do not repeat architecture, configuration or the completed ledger.
+4. Check that a fresh agent can navigate from the resume cursor to the actual owners.
 
-- New chat/session per feature unit; clear context when starting anything unrelated. Degradation begins near 50k tokens regardless of advertised window.
-- Load context tiered (AGENTS.md reading order): always-read set first, the rest just-in-time. Never preload the whole folder.
-- When compacting, always preserve: the current unit, the full list of modified files, test/build commands, and open questions.
-- Keep prompts short — the context files carry stack, folders, and rules.
-- Research that the main thread doesn't need to carry: delegate to read-only subagents ("return current behavior, relevant files, constraints, recommended approach — do not implement").
-- Secrets never enter chat. Env values are human-managed; reference only variable names.
-- Before using any third-party library: check library-docs.md for its skill/MCP docs, read them, only then act.
+## Delegation
 
-## Handoff promise
-
-After every session, a fresh agent — same tool or different — must be able to read AGENTS.md + context/ + memory.md and continue with zero re-explaining. If something would need re-explaining, it belongs in a file.
+Use read-only investigators for independent source reading. They return behavior, relevant paths/symbols, constraints and evidence-backed wiki/memory suggestions. The main writer persists authorized updates. Role definitions live in `.agents/agents/`; this page does not duplicate their complete instructions.

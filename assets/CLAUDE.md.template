@@ -1,11 +1,7 @@
 @AGENTS.md
 
-# CLAUDE.md
+# Claude-specific context
 
-The line `@AGENTS.md` above is an import — Claude Code loads AGENTS.md into context at launch; nothing is one lazy Read away.
+<!-- Add only Claude loader/tool notes here. Shared policy is imported above; project facts belong at the owners named in context/ownership.md. -->
 
-AGENTS.md at the project root is the master instruction file for every agent, including you. Keep all project knowledge in AGENTS.md and context/; this file stays a thin wrapper. Do not duplicate rules here — duplicated rules drift.
-
-Personal, uncommitted overrides go in CLAUDE.local.md (gitignored, loaded after this file).
-
-{{Optional: keep tool-generated preamble here, e.g. "this project uses a recent framework version whose training data may be outdated — read the install docs before writing code"}}
+Personal Claude overrides belong in `CLAUDE.local.md`; native permissions, hooks and MCP configuration belong in `.claude/settings.json`.

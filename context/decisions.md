@@ -4,7 +4,7 @@ type: decision-log
 status: active
 summary: Every hard technical decision with options, lost alternative, cost and reversibility; plus flagged assumptions
 tags: [decisions,adr,tradeoffs]
-updated: 2026-10-07
+updated: 2026-10-14
 verified_at: 47d649bcfa8c
 ---
 
@@ -12,12 +12,12 @@ verified_at: 47d649bcfa8c
 
 ## TL;DR
 
-- Five live decisions: D-01 zero-dep CLI, D-02 delegate code-intel but keep the wiki authoritative, D-03 everything project-relative, D-04 three-boundary no-leak model, D-05 ASD-STE100 for emitted prompts.
+- D-01–D-05 retain the baseline policies. D-06 records the user's single-source ownership requirement and the portable adapter tradeoff.
 - Reversibility: D-01/D-03/D-04 are painful-to-easy policy anchors — changing one needs a new D entry that supersedes it, not an edit.
 
 One entry per hard technical decision, written the moment it is made. Not buried in code, not lost in chat — written down where the human can see it and overrule it.
 
-Defaults already assumed (no entry needed): monolith first, relational DB by default, paginate every list, rate-limit every public endpoint, no secrets in code.
+Current working policy lives in AGENTS.md; system structure lives in architecture.md. Entries below record rationale and dated decisions, not a parallel settings/architecture file.
 
 ## Decision record format
 
@@ -94,3 +94,23 @@ Lost alternative: lint-enforcing sentence length/imperative mood — honest reas
 Cost paid: one more reference to read when writing specs; writers spend a few more seconds per sentence.
 Reversibility: easy — it is a reference + two template lines.
 Correctness policy: existing pages may keep legacy prose; new specs and briefs must follow the rules; a stylistic miss is not a defect.
+
+## D-06: Canonical resource bodies and portable host adapters — 2026-10-14
+
+Trigger: the human asked for shared internal agent resources and unambiguous file separation to avoid independently edited copies drifting.
+Options considered: copied native instruction trees / whole-directory symbolic links / canonical .agents resources with thin native adapters.
+Chosen: one editable body per resource in .agents; host-native adapters link to it and contain only derived discovery metadata. A project ownership contract routes memory, decisions, architecture, policy and specialized facts to separate homes.
+Lost alternative: whole-directory links — native settings and rule formats differ; aliasing entire .claude/.cursor trees mixes incompatible formats and can overwrite host configuration. Independent copies violate the user's requirement.
+Cost paid: native metadata is a generated cache that must be refreshed and checked; legacy/user-edited adapters require an explicit preservation-first migration or manual merge.
+Reversibility: easy — canonical bodies are plain markdown; adapters can be regenerated without changing their instructions.
+Correctness policy: canonical instruction content is never silently copied or merged; broken/stale adapters fail checks. Exact prose duplication checks are heuristic, not proof of semantic uniqueness. Host loader behavior requires verification in that host.
+
+## D-07: Real relative resource aliases — 2026-10-14
+
+Trigger: the human explicitly clarified that native files/folders must be filesystem symlinks, not ordinary discovery-pointer copies; Windows Developer Mode was enabled to permit creation.
+Options considered: retain regular pointer files / alias whole native configuration trees / real relative aliases for compatible entrypoints/resources with one central Cursor view directory.
+Chosen: real file and directory symlinks, with repository-local Git core.symlinks enabled. This supersedes the transport portion of D-06; canonical ownership and separate native settings remain unchanged.
+Lost alternative: whole configuration-tree aliases — incompatible formats/private settings must not share one directory. Junctions or copied files would misrepresent Git-compatible symbolic-link behavior.
+Cost paid: Windows creation permission and explicit migration preflight are required; incompatible Cursor metadata is a generated view. Validation snapshots, expected staged contents and final mode commit protect failures and concurrent edits.
+Reversibility: easy to inspect and regenerate; a reverse migration is deliberate, never an implicit --portable-pointers overwrite of linked sources.
+Correctness policy: links must be real, relative and resolve the intended owner. Custom/concurrently changed content is preserved; rollback refuses occupied destinations and reports recovery paths. Existing valid aliases do not require new-link permission.

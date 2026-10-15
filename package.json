@@ -1,7 +1,7 @@
 {
   "name": "project-context-system",
-  "version": "3.4.0",
-  "description": "Turns any project into a self-maintaining markdown knowledge base (Karpathy-style LLM wiki) that coding agents read instead of re-exploring the codebase, with a zero-dependency ctx CLI and hooks that enforce it.",
+  "version": "3.7.0",
+  "description": "Project-local markdown context wikis with safe scaffolding, budgeted routing, git-based review signals, portable handoffs and a zero-dependency CLI.",
   "license": "MIT",
   "type": "module",
   "main": "scripts/ctx.mjs",

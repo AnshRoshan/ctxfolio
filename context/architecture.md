@@ -2,54 +2,55 @@
 title: Architecture
 type: architecture
 status: active
-summary: The skill's four layers (router, deep docs, templates, CLI), the shipping boundary, and the invariants every change must hold
-tags: [architecture,stack,invariants]
+summary: Component roles, compilation flow and system invariants; file policy, runtime declarations and decisions have separate owners
+tags: [architecture,components,boundaries]
 covers: [scripts/**, assets/**, references/**, tests/**, SKILL.md]
-updated: 2026-10-07
-verified_at: d5ff854c4cf9
+updated: 2026-10-14
+confidence: verified
+verified_at: 1043ccc98e2a
 ---
 
 # Architecture
 
 ## TL;DR
 
-- Four layers: `SKILL.md` (router the agent loads) → `references/*.md` (deep playbooks) → `assets/*` (templates copied into projects) → `scripts/ctx.mjs` (the zero-dep CLI). `tests/run.mjs` pins the CLI's contract.
-- The CLI is one file, no imports beyond node builtins + git. It writes into OTHER repos — so every path it emits is project-relative.
-- Three boundaries, each test-guarded: dev repo ⊄ installed skill ⊄ scaffolded project.
+- The skill compiles project-local knowledge and shared agent resources into routable markdown and native host adapters.
+- Canonical instruction bodies and native discovery views are separate; configuration formats are not shared across hosts.
+- Tests exercise the installed CLI in disposable projects. Results and commands belong in [testing](testing.md), not here.
 
-## Tech stack — tool and its role
+## Components and roles
 
-| Tool | Version | Role | Why |
-|---|---|---|---|
-| Node | ≥ 18, builtins only | the CLI runtime | zero-dep = installs anywhere, never rots |
-| git CLI | any recent | staleness/impact detection via porcelain + diff | the project already has it |
-| Markdown + YAML frontmatter | — | the wiki format | agents read it natively; humans review diffs |
+| Component | Role | Detail owner |
+|---|---|---|
+| SKILL.md | Entry router for the reusable skill | The skill's references |
+| references/ | Operation and format specifications | Each focused reference |
+| assets/ | Project-neutral scaffold inputs | File ownership contract |
+| scripts/ctx.mjs | Profile detection, markdown bookkeeping and native adapter compilation | [Code map](codebase/map.md) |
+| context/ | This project's normative knowledge pages | [File Ownership](ownership.md) |
+| .agents/ | Shared authorable resource bodies | [Resource entrypoint](../.agents/README.md) |
+| Native host folders | Loader/discovery adapters and host-owned configuration | The host's native files |
+| tests/run.mjs | CLI behavior checks on copied tooling | [Testing](testing.md) |
 
-No frameworks, no dependencies — see D-01 in decisions.md.
+Runtime requirements and installed versions are declared in package.json/manifests. Library usage lives in [library docs](library-docs.md). Design rationale lives in [decisions](decisions.md), including D-01, D-06 and D-07; this page does not repeat it.
 
-## Folder structure
+## Compilation and lookup flow
 
-- `SKILL.md` — lean router (~130 lines): mode table, bootstrap, core loop, recording table. Detail lives in references.
-- `references/` — one playbook per operation (operations, codebase-wiki, tool-delegation, multi-user, ctx-cli, page-format…).
-- `assets/` — every file the scaffold creates has a template here (`.template` suffix stripped at write time; `{{PLACEHOLDER}}` = agent judgement, `{{TODAY}}` = CLI-substituted).
-- `scripts/ctx.mjs` — the CLI; `init` copies it to the project's `context/ctx.mjs`.
-- `tests/run.mjs` — self-test harness: throwaway git repos + real CLI invocations, no framework.
-- `docs/` — human-facing docs (see docs/README.md for the split rule); `context/` — this repo's own wiki.
+1. Project manifests feed profile detection and select applicable scaffold inputs.
+2. Setup creates missing owner pages and canonical resources; human/source-derived content stays in its selected owner.
+3. Compatible native entrypoints/resource folders become real relative symlinks to canonical owners. Cursor metadata is generated once in a central view directory and directory-linked; checks compare both physical link targets and generated metadata.
+4. Page frontmatter generates the catalog; task routing selects relevant pages and evidence review needs.
+5. Git paths and covers globs identify affected owner pages. The main writer updates those owners; the next session resumes through pointers.
 
-## System boundaries & data flow
+## System invariants
 
-Profile detection (`detect()`) drives everything: manifests → langs/kinds/signals → which templates init writes, which rules generate, what `.ctx.json` seeds. `setup` = init → map draft → index → doctor. The CLI never edits project CODE — only `context/`, `docs/`, `AGENTS.md` and friends.
+- The CLI is self-contained and portable; no external runtime install is required for a scaffolded project's bookkeeping.
+- Development repository, installed skill and scaffolded project are distinct shipping boundaries; project output contains no development narrative.
+- Project file operations stay within the chosen lexical and real root. User-authored sources are not silently overwritten; competing owners require deliberate resolution.
+- Native adapter bodies never become independent procedure stores. Derived metadata can be regenerated; canonical bodies remain the editable source.
+- Host configuration folders stay independent. Only compatible resource folders share filesystem aliases; incompatible Cursor metadata has one central generated view owner.
+- Native permissions are checked before link replacement; validated snapshots/staged expected contents protect concurrent edits. Installed resource mode is committed last, and rollback never overwrites a newly occupied destination.
+- Code intelligence tools are optional producers of evidence, not required stores or permission boundaries.
 
-## Invariants — rules the system must never violate
+## Evidence
 
-- `scripts/ctx.mjs` stays zero-dependency (node builtins + git only).
-- Anything written INTO a project carries no repo dev history (no version chatter, no lineage) — tests enforce at both boundaries.
-- All paths in output, docs and generated files are project-relative; the only external reference is the skill dir in the one-time setup command.
-- `init`/`setup` never overwrite filled content; upgrades add files and bump `setupVersion` only.
-- Every CLI behavior change ships with a test in the same commit (the suite IS the contract).
-- git output is parsed positionally — normalize CRLF, never `trim()` porcelain lines (see Lessons).
-- SKILL.md stays a router (~130 lines); depth goes in references, never inline.
-
-## External dependencies
-
-None at runtime. graphify/ctags/aider are *optional delegation targets* the CLI probes for (`ctx tools`) — absence degrades to the manual procedure, never breaks.
+Source review: scripts/ctx.mjs → profile/scaffold flow, resourceInventory, adapterReport, ownershipHealth and git routing; tests/run.mjs → regression checks. Verification results are recorded at [their owner](testing.md#verification-evidence).

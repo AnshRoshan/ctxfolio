@@ -4,7 +4,7 @@ type: guide
 status: active
 summary: The only "libraries" here are node builtins and the git CLI — with the sharp edges already learned
 tags: [libraries,dependencies,docs]
-updated: 2026-10-06
+updated: 2026-10-14
 verified_at: 080a7adb7826
 ---
 
@@ -13,7 +13,7 @@ verified_at: 080a7adb7826
 ## TL;DR
 
 - Zero dependencies by policy (D-01): node builtins (`fs`, `path`, `os`, `child_process`, `url`) + the `git` CLI. Adding an npm dep requires a decision record and a very good reason.
-- Git parsing has the two known traps already handled: CRLF output, and porcelain lines starting with a status-column space.
+- Filename lists/status/diffs use NUL-delimited git output; preserve Unicode, spaces and both sides of renames. Non-filename output is CRLF-normalized.
 
 ## Installed agent skills / MCP servers
 
@@ -25,12 +25,12 @@ verified_at: 080a7adb7826
 ## Per-library usage notes
 
 ### git (via execFileSync)
-- Called only through `git()` in `scripts/ctx.mjs`: CRLF-normalized, trailing-whitespace-stripped, NEVER `.trim()` (porcelain lines start with a space — trimming shifted paths one char and silently broke impact/stale; regression test exists).
+- Called through `git()` / `gitFiles()` in `scripts/ctx.mjs`. NUL filename output is never whitespace-trimmed or dequoted; non-NUL output is CRLF-normalized. Nested project status strips the repository prefix; diffs use `--relative`.
 - `status --porcelain -uall` must be ONE argv token (`-u all` as two args makes `all` a pathspec).
 - Windows: `where` not `which` for bin probes.
 
 ### node builtins
-- `execFileSync` with `stdio: ['ignore','pipe','ignore']` everywhere — a hook reading fd 0 synchronously can hang forever; see the stdin no-hang test.
+- Git commands ignore stdin; hooks synchronously read a JSON payload until EOF. Hosts must close the payload stream; malformed/nonobject Stop input is a no-op. The test harness bounds each subprocess at 30 seconds, but runtime hooks do not bound an open stdin stream.
 
 ## Known operational gotchas
 

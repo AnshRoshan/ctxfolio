@@ -6,18 +6,18 @@ summary: The repo's two code files and the markdown layers around them — where
 tags: [map, structure, entry-points]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [architecture.md]
-updated: 2026-10-07
+updated: 2026-10-14
 confidence: verified
-verified_at: d5ff854c4cf9
+verified_at: 1043ccc98e2a
 ---
 
 # Codebase Map
 
 ## TL;DR
 
-- Stack: one Node file (the CLI) + one Node test file; everything else is markdown. Entry point: `scripts/ctx.mjs` (argv dispatch over the `commands` object).
-- Source: `scripts/`; tests: `tests/run.mjs`; generated-by-tooling: nothing (no build step).
-- <10 source files → per the granularity rule there are no module pages; this map + architecture.md carry it.
+- CLI entrypoint: `scripts/ctx.mjs`; behavior checks: `tests/run.mjs`.
+- Use the symbol routing table below for changes. Component roles and invariants live in [architecture](../architecture.md), not this navigation map.
+- Project-generated catalogs and native adapters are views; edit their canonical inputs.
 
 ## Annotated tree
 
@@ -48,9 +48,17 @@ tests/run.mjs         self-test: sandbox() builds throwaway git repos, ctx() dri
 | change scaffold behavior / add a shipped file | `commands.init` + `INIT_MAP` in scripts/ctx.mjs, template in assets/ |
 | change profile detection | `detect()` / `DEP_MARKERS` / `MANIFEST_LANG` |
 | add a lint rule | `commands.lint` (+ document in references/ctx-cli.md, test in tests/run.mjs) |
+| change context routing/budgets/trust | `commands.brief` + `orientationFiles()`; references/context-routing.md + ctx-cli.md |
+| change git filenames/impact | `gitFiles()` / `changedSince()` / `dirtyFiles()`; NUL-delimited records |
+| change safe setup boundaries | `projectPathError()` / `assertProjectPath()` + init preflight + pristine-template `mapDraft()` |
+| change canonical host integration | `resourceInventory()` / `adapterReport()` / `commands.adapters` |
+| change real symlink layout/migration | `SYMLINK_LAYOUT` / `symlinkReport()` / `probeSymlinks()` / `commands.symlinks` |
+| change file separation checks | `ownershipHealth()` / `duplicateProse()` + ownership template |
 | change task-ledger states | `commands.task` + `TASK_SECTIONS` + tracker template |
 | edit what agents are told | SKILL.md (router) or references/*.md (depth) — never both |
 | ship a new file into projects | assets/*.template + INIT_MAP entry with a profile predicate |
+
+Evidence: scripts/ctx.mjs → commands dispatch, orientationFiles, dirtyFiles, assertProjectPath; read the implementations and tests/run.mjs coverage on 2026-10-14.
 
 ## Generated / do-not-edit
 

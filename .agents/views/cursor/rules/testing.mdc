@@ -1,0 +1,10 @@
+---
+description: "testing rule"
+globs: "**/*.test.*, **/*.spec.*, **/__tests__/**, tests/**, test/**, **/*_test.go"
+alwaysApply: false
+ctx_source: ".agents/rules/testing.md"
+ctx_generated: "project-context-system"
+ctx_checksum: 47cbaa96f918aa7d76c1a42b7818ddf86f9b301968c5cd9a1b0189da84b8d757
+---
+
+Resolve ctx_source above from the project root and follow that canonical source. Edit its source, not this generated view.

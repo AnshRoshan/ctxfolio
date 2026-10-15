@@ -2,7 +2,7 @@
 
 **[Live site: anshroshan.github.io/project-context-system](https://anshroshan.github.io/project-context-system/)**
 
-**The model isn't your bottleneck. Your repo is.** Same model, same prompts — one dev gets a chatbot that re-explores the codebase every session, the other gets an agent that starts each session already knowing the project. The difference is a folder of compiled knowledge. This skill builds that folder, keeps it honest, and never lets it rot.
+A project-local context wiki lets a fresh coding agent recover decisions, contracts and next steps without rediscovering everything. This skill scaffolds that wiki, routes tasks to relevant pages, and flags context that needs review.
 
 [![release](https://img.shields.io/github/v/release/AnshRoshan/project-context-system?color=blue)](https://github.com/AnshRoshan/project-context-system/releases)
 [![ci](https://github.com/AnshRoshan/project-context-system/actions/workflows/ci.yml/badge.svg)](https://github.com/AnshRoshan/project-context-system/actions/workflows/ci.yml)
@@ -15,16 +15,18 @@ Every session, your coding agent re-derives the same facts about the same repo �
 
 ```
 raw (code + context/raw/)  ──►  wiki (context/** pages)  ◄──  schema (AGENTS.md + context/index.md)
-   immutable truth               agent-owned, human-reviewed      how to maintain it
+   code + source snapshots       agent-owned, human-reviewed      how to maintain it
 ```
 
-Hooks and lint make it self-enforcing: code changed without updating the pages that describe it **blocks the session from ending**. Documentation is not a chore at the end of a PR — it is part of the diff, checked by tooling.
+Hooks and lint check context bookkeeping alongside the code diff. In configured Claude sessions, Stop can request missing page/coverage/state updates; its repeat-pass bypass and no-git limits mean it is not a safety or correctness guarantee. Other tools use explicit checks or CI. [Hook contract](references/safety-permissions.md).
 
 ## 60-second start
 
+**Windows:** enable Developer Mode (or obtain the symbolic-link privilege) before creating/cloning real links. `Start-Process 'ms-settings:developers'` opens the setting; the skill never toggles it automatically. You may turn it off after verified creation, but future clones/checkouts/link repairs can require it again. New setup uses real relative symlinks and local Git `core.symlinks=true`; unsupported permissions fail clearly, not as copied files. `--portable-pointers` is an explicit legacy opt-out.
+
 ```bash
 # 1 — install the skill (auto-detects ~/.claude / ~/.qoder; --tool|--dest to steer)
-git clone https://github.com/AnshRoshan/project-context-system
+git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system
 node project-context-system/scripts/ctx.mjs install
 
 # 2 — set up any repo: greenfield or brownfield, any language (run from its root)
@@ -44,8 +46,9 @@ Or just paste to your agent: *"Clone `https://github.com/AnshRoshan/project-cont
 | `AGENTS.md` | the schema every agent reads first — ≤120 lines, routed, with a **Lessons** section that turns each of your corrections into a permanent one-liner |
 | `context/` | the wiki: router index, append-only log, architecture/standards/decisions pages, **codebase map + module pages with `covers:` globs**, feature specs, immutable `raw/` for ingested docs |
 | `context/progress-tracker.md` | the task ledger — In progress (max one) / Blocked / Up next / Completed, moved by `ctx task` |
-| `.claude/rules/` | path-gated conventions: `frontend.md`-style rules load only when an agent touches matching files — zero tokens spent on what doesn't apply |
-| `.claude/agents/` | explorer + reviewer subagents **with their own persistent memory** — agent experience becomes version-controlled |
+| `context/ownership.md` | the responsibility map: where a fact belongs, and where it must not be repeated |
+| `.agents/{agents,rules,skills}/` | canonical reusable instruction bodies, rule routers and internally authored skills |
+| Native resource symlinks | Claude agents/rules/skills and Cursor skills share canonical folders; Cursor rules link one central native-format view folder; host settings remain separate |
 | `docs/` | human-facing docs; agents read `context/` — one fact, one home, linked never duplicated |
 | `context/ctx.mjs` | the zero-dependency CLI the project carries forever |
 
@@ -53,10 +56,11 @@ Or just paste to your agent: *"Clone `https://github.com/AnshRoshan/project-cont
 
 - **Any project, detected not assumed** — `ctx setup` reads manifests (Node, Python, Go, Rust, Java, Ruby, PHP, Dart, Elixir, C++…), classifies the shape (web-app / api / cli / library / mobile / data / monorepo), and scaffolds only what fits. A FastAPI repo gets no Next.js-flavored pages.
 - **Delegates, doesn't hand-roll** — `ctx tools` finds graphify, ctags, aider, dependency-cruiser; the structural pass runs on real code-intelligence, the wiki keeps the distilled result.
-- **Git-backed freshness** — `ctx stale`/`ctx impact` know exactly which pages the last commits invalidated; the Stop hook refuses to end until they agree.
+- **Evidence-aware routing** — `ctx brief <task> --budget 6000 --json` returns ranked pages, TL;DRs, costs, skipped candidates and verification warnings. Retired pages stay out unless `--history`.
+- **Git-backed review signals** — `ctx stale`/`ctx impact` map changed paths to responsible pages. Checks identify review work; they do not prove claims are true.
 - **Built for teams** — one unit = one branch = one owner; merge collisions (duplicate task/spec/decision IDs) surface as lint errors, not arguments. `ctx archive` rotates growth out of the hot files. See [references/multi-user.md](references/multi-user.md).
 - **Prompts are products** — specs and subagent briefs follow ASD-STE100 (Simplified Technical English) discipline: one action per sentence, one word one meaning. [references/prompt-craft.md](references/prompt-craft.md).
-- **Proven on itself** — this repo runs its own context system ([context/](context/)), lint 0 errors / 0 warnings; 47 end-to-end tests on ubuntu + macOS + **windows**; CI badge above is live.
+- **Tested as a CLI** — this repo runs its own context system; `node tests/run.mjs` drives disposable git repos and the copied tool, including budgets, filenames, hook edge cases and non-destructive setup. CI configuration targets Ubuntu, macOS and Windows; local results do not imply a remote CI run.
 
 ## The CLI
 
@@ -66,7 +70,9 @@ brief · rules · coverage · status     route a task to pages; what applies to 
 task add|start|block|done|list        the ledger, one unit at a time
 impact · stale · stamp · lint --fix   keep pages true to code (git-based)
 index · log · new · archive           catalog, timeline, page scaffolds, growth rotation
-doctor · install · hook               wiring checks (12), skill installer, Claude hooks
+doctor · install · hook               wiring checks, skill installer, Claude hooks
+adapters [--check] [--migrate]          recorded layout refresh and central metadata views
+symlinks [--check] [--migrate]          real relative link audit/migration and local Git configuration
 ```
 
 Read-only commands speak `--json` (`{command, ok}`) for scripts and CI. SessionStart/Stop hooks re-inject orientation (even after compaction) and block silent doc drift.

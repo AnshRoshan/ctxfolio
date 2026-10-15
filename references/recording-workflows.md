@@ -2,7 +2,9 @@
 
 The root cause of project decay: "no plan the agent remembers, no record of the decisions, nothing making it build with what already exists instead of just piling more." These templates are the cure. Write at the moment of the event, never batch it to the end.
 
-Enforcement: every rule in this file is advisory as prose. The deterministic layer is hooks (see safety-permissions.md): a SessionStart hook re-injects the reading order (also after compaction), a Stop hook refuses session-end when code changed but progress-tracker.md / memory.md did not. Custom compaction instruction goes in the instruction files: "When compacting, always preserve the full list of modified files, the current unit, test/build commands, and open questions."
+Read-only scope overrides every recording obligation here: return proposed entries without writing pages, logs, stamps, or memory.
+
+Configured Claude hooks provide reminders and limited working-tree checks (see safety-permissions.md), not a guarantee that all recording occurred or claims are true. Stop has a second-pass escape; explicit verification and wiki review still determine completion. Custom compaction instruction goes in the instruction files: "When compacting, always preserve the full list of modified files, the current unit, test/build commands, and open questions."
 
 ## 1. Decision record (context/decisions.md)
 
@@ -19,7 +21,7 @@ Correctness policy: cursor presence may lag 200ms; document state may not lag at
 
 Rules: options and the honest losing alternative are mandatory ("the one who gets hired says why they would pick one over the other and what it costs"). Cost always named in one of: new moving part / single point of failure, per-request latency tax, tolerated incorrectness, money. Reversibility stated, because "going back is its own painful migration".
 
-## 2. Flagged assumption (per feature, tracker + decisions)
+## 2. Flagged assumption (decisions owner; feature/task pointers)
 
 Taken when building under pressure with an undecided value source:
 
@@ -28,7 +30,7 @@ FLAGGED: order total uses the cached price, not the price at checkout time.
 Assumed acceptable to ship Feature 12. Nobody has decided this. Needs a real call.
 ```
 
-"You can override and build anyway, but the moment you do, the assumption gets written down and flagged on that feature until it's properly decided. So even the corner you cut is visible, sitting in a file instead of being lost in the chat forever."
+Write the full assumption once as F-NN in decisions.md. The feature and task reference that entry; neither repeats its undecided value or rationale.
 
 ## 3. Issue entry (context/current-issues.md)
 
@@ -42,15 +44,7 @@ Definition of success: at 100% the header shows "complete"; no other label chang
 
 Statuses: `open` → `analyzing` → `approved` → `fixing` → `pending verification` → `resolved`.
 
-**Error protocol** (mandatory, prevents "the spiral of trying to fix its own bugs while breaking 10 other things"):
-1. "Explore the current-issues file and deeply analyze the problem."
-2. Return the analysis plus the intended fix **and wait for the green light before executing.**
-3. Reproduce reliably first - a bug you can't reproduce on command is a bug you can't prove you fixed.
-4. Form one theory about root cause; test that one thing before touching anything else. Wrong? Throw the change away - no dead edits left behind.
-5. Fix the cause, not the symptom. Don't clamp a null; find out why it was null.
-6. Write a test that fails without the fix and passes with it.
-7. Hunt for the same mistake hiding elsewhere in the code.
-8. If the bug is a bad decision, say so and send it back to the plan instead of papering over it with a patch.
+Use the bug-investigation procedure in the project's workflow-rules.md. Keep reproduction/verification evidence with the issue or its linked testing section; do not maintain a second issue list in memory or architecture.
 
 ## 4. Session handoff (memory.md)
 
@@ -59,20 +53,18 @@ Statuses: `open` → `analyzing` → `approved` → `fixing` → `pending verifi
 _Last updated: 2026-09-29, end of session 4_
 
 ## Current state
-Homepage fully implemented and matches context/designs/landing-page.png.
-Auth works with Better Auth; sessions verified in incognito.
-Build, lint, typecheck all clean.
+Paused at the next acceptance check in context/feature-specs/02-auth.md.
+Task state: context/progress-tracker.md. Verification evidence: context/testing.md#verification.
 
 ## Next step
-Start Feature 02 of Phase 1: authentication - see context/feature-specs/02-auth.md.
-Begin in plan mode; DB schema change is involved.
+Run the second-account session-isolation check from the spec before continuing implementation.
 
 ## Open questions (carried forward, unresolved)
-- Rate limit for the public job search: 10/min or 30/min? (D-05 pending)
-- Do we need soft deletes for applications? Never decided.
+- Resolve F-05 at context/decisions.md before expanding the public-search flow.
+- Resume question: which test account should exercise this check?
 ```
 
-Write it at the end of every session. Open questions must survive across sessions; the whole point is that nothing quietly evaporates.
+Write the resume cursor when authorized. Keep direct questions needed to resume and pointers to issues/assumptions already owned elsewhere; do not copy their full records, current configuration or completed-task history.
 
 ## 5. Changelog / PR description
 Generated from the **actual diff**, not from the agent's memory of what it thinks it changed. Per feature or phase: what changed, why, files touched, how it was verified, what is still open.
@@ -83,9 +75,9 @@ Run at phase boundaries, before handing off to another agent or human, or when d
 - [ ] Code disagrees with a doc → flag the conflict for the human; never silently overwrite docs or code.
 - [ ] Preserve human-written edits; only fill gaps and remove lines no longer true.
 - [ ] Verify progress-tracker states are mutually exclusive (reviewers have caught features listed as both current and complete).
-- [ ] Verify decision records cover every tool/library now in the stack; add missing ones.
+- [ ] Verify meaningful technical choices link their D-NN records; manifests/library notes own current dependency facts, not a duplicated stack inventory in decisions.
 - [ ] Clear/archive current-issues.md before a merge.
-- [ ] Update AGENTS.md only for decisions worth remembering in every session.
+- [ ] Keep shared behavioral policy in AGENTS.md; link technical choices at their decision owner even when frequently used.
 - [ ] Confirm every context file's claims are still checkable (paths exist, commands run).
 
 "So the context you read in month three still describes the app you actually have."

@@ -12,7 +12,7 @@ updated: {{TODAY}}
 
 ## TL;DR
 - Run all: `{{npm test}}` · one file: `{{npm test -- path}}` · typecheck: `{{npm run typecheck}}` · build: `{{npm run build}}`
-- Logic-bearing code ships its failing test first (RED → GREEN → REFACTOR). Every bug fix ships a test that fails without the fix.
+- Verification procedure is in [workflow-rules.md](workflow-rules.md); this page owns the project's actual checks and evidence.
 
 ## Layout & conventions
 {{Where tests live, naming, fixtures/factories, how the DB is handled in tests}}
@@ -22,3 +22,6 @@ updated: {{TODAY}}
 
 ## Known flaky / slow
 {{...}}
+
+## Verification evidence
+{{Dated command/check, scope, result and any limits. Task completions, memory and user docs link here instead of copying the full result. Historical evidence does not redefine current commands.}}

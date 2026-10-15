@@ -8,10 +8,10 @@ if it also constrains the agent, the rule belongs in `context/` and this page li
 |---|---|
 | User guides, tutorials, CLI usage | module pages, contracts, invariants |
 | `runbooks/` — operator steps for humans | `context/runbook.md` — the agent's operational duties |
-| `adr/` — decision records exported for humans (copy of D-NN) | `context/decisions.md` — the decision sink |
+| `adr/` — human-readable pointers to D-NN records | `context/decisions.md` — sole editable decision sink |
 | Onboarding for a new teammate | `context/overview.md`, `AGENTS.md` |
 
 Rules:
-- Never restate a `context/` page — link to it. Duplicated prose drifts.
+- Use [File Ownership](../context/ownership.md) before adding normative content. Explain a user flow here, but link technical facts, commands and decisions at their owner.
 - A feature is not documented until its user-facing behavior is written here (part of "done").
 - `context/log.md` records when docs were regenerated so staleness is visible.

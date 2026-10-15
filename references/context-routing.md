@@ -31,14 +31,16 @@ Maps task type → ordered page list. This is the deterministic layer; `ctx brie
 ## How `ctx brief` ranks
 1. `covers` match on file arguments (+100) — exact responsibility beats everything.
 2. title (+6), tag (+5), summary (+3), path (+3), covers-path (+2), body mentions (+1 each, cap 4).
-3. superseded/archived ÷4; unfilled templates ÷3 (they are not knowledge yet).
+3. Exclude superseded/archived pages by default; `--history` includes them at ÷4 and labels them historical. Unfilled drafts ÷3 (not established knowledge). Ties sort by page path for stable output.
+4. Select within `--limit` and the remaining `--budget`, including mandatory `alwaysRead` cost. Never let the first page bypass the cap; report skipped candidates and orientation overflow. Use `--json` to inspect reasons and verification warnings. Token estimates use full-page characters / 4, not model tokenization.
 Good tags are the cheapest routing investment: 3–6 lowercase nouns a developer would search for.
 
 ## Retrieval discipline for agents
 - Never preload the folder. Never `cat context/*`.
 - Prefer `brief <file>` when you already know which code you'll touch; `brief <keywords>` when exploring.
 - Two hops max from a page via `related`/links before asking whether the task is scoped correctly.
-- If `brief` returns nothing relevant, that is a **signal of a missing page**: after finding the answer in code, create the page.
+- No results can mean budget/limit omissions, not missing knowledge; inspect `skipped` first. For a real gap, verify sources and update an existing page before creating another. Read-only tasks return the proposed fix without writing.
+- Treat `verificationRequired` as a source-check gate, not a reason to hide relevant pages. Git freshness is a bookkeeping signal; verify important claims against code/tests or approved intent.
 
 ## Subagents for research
 Reading-heavy exploration goes to read-only subagents with a fixed return shape ("current behavior, relevant files, constraints, recommended approach — do not implement"). Their output is summarized into pages; the raw exploration never enters the main context.

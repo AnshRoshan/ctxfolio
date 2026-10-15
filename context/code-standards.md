@@ -47,4 +47,4 @@ verified_at: 080a7adb7826
 
 ## Quality gates
 
-- Suite green + `ctx lint` 0 errors + `ctx doctor` 12/12 + CHANGELOG entry + VERSION/metadata bump when the skill's surface changes.
+- Follow the applicable checks and evidence at [testing](testing.md); record user-facing changes and declared release metadata at their owners, not as another check-count inventory here.

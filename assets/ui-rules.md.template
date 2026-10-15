@@ -2,7 +2,7 @@
 title: UI Rules
 type: ui
 status: active
-summary: Design-system behavior: fonts, layout, cards, buttons, states, and what is banned
+summary: Semantic token usage, layout behavior, component interactions and motion intent; raw design values stay in ui-tokens
 tags: [ui,design-system]
 updated: {{TODAY}}
 ---
@@ -17,23 +17,23 @@ Design-system behavior. Generated from Figma via MCP when a source file exists; 
 
 ## Typography
 
-{{Which tokens for headings/body/labels; weights; letter-spacing rules}}
+{{Which tokens apply to headings/body/labels and why. Reference font, weight and tracking token names from ui-tokens.md; do not repeat their raw values.}}
 
 ## Layout
 
-{{Page grid, max widths, section rhythm, container padding}}
+{{Responsive layout behavior and semantic grid/spacing choices. Reference width, spacing and container token names; numerical sizes remain in ui-tokens.md.}}
 
 ## Components behavior
 
 - Cards: {{...}}
-- Buttons: {{primary/secondary/ghost — sizes, states, when each}}
+- Buttons: {{primary/secondary/ghost — semantic size tokens, states and when each is used; raw sizes remain in ui-tokens.md}}
 - Badges: {{...}}
 - Forms: {{labels, error state, focus ring}}
 - Empty/loading/error states: {{each one defined — the agent never invents a state}}
 
 ## Motion
 
-{{Where animation belongs, durations, easing; or "none"}}
+{{Which interactions animate, why and when motion is suppressed. Reference duration/easing tokens from ui-tokens.md; do not duplicate timing values or curves.}}
 
 ## Bans
 

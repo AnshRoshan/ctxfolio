@@ -11,14 +11,12 @@ updated: {{TODAY}}
 
 ## TL;DR
 
-- Phase {{n}}, goal: {{one line}}. In progress: {{Feature NN or none}}. Next: {{Feature NN}}.
+- Read the state sections below; roadmap order lives in [build-plan.md](build-plan.md). Do not maintain a second status summary here.
 
 The only file that updates constantly, and the only place a unit's state lives. States are
 mutually exclusive — nothing is ever in two sections at once. Move lines with `ctx task`
 (`add` / `start` / `block` / `done`); it keeps the ledger honest (one unit In progress at a
 time, `done` requires concrete details). Hand edits are fine — `ctx lint` checks the invariants.
-
-Current phase: {{1}} · Current goal: {{one line, or TBD}}
 
 ## In progress
 
@@ -34,8 +32,6 @@ Current phase: {{1}} · Current goal: {{one line, or TBD}}
 
 ## Completed
 
-- {{Feature NN: name — {{date}} — key decisions: D-NN; concrete details: versions, config paths, env var names}}
+- {{Feature NN: name — {{date}} — decisions: D-NN; evidence: owner-page#verification}}
 
-## Session notes
-
-- {{date}}: {{details worth remembering for the next session — gotchas, versions, "prisma config uses prisma/ and not some other path", "database URL reads from .env"}}
+Completion details identify verified outcomes and link evidence. Current configuration, library versions and env-variable purpose remain at their owners; do not turn completion notes into a permanent configuration inventory.

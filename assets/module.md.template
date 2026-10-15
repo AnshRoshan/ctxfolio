@@ -1,13 +1,13 @@
 ---
 title: {{Module name}}
 type: module
-status: active
+status: draft
 summary: {{One line — what this module owns and its main entry point}}
 tags: [{{auth}}, {{security}}]
 covers: [{{src/auth/**}}, {{src/middleware.ts}}]
 related: [decisions.md, data-model.md]
 updated: {{TODAY}}
-confidence: verified
+confidence: inferred
 ---
 
 # {{Module name}}
@@ -37,6 +37,8 @@ confidence: verified
 
 ## Tests
 {{Where the tests live; the command that runs just them}}
+
+Evidence: {{source path + symbol/section, revision/date, and check performed; named human confirmation for intent. Keep inferred until checked; stamping alone is not verification.}}
 
 ## Open questions
 {{Unknowns, flagged assumptions (F-NN). Delete the section if none.}}

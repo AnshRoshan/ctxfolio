@@ -4,7 +4,7 @@ type: plan
 status: active
 summary: The skill's phases — v2.1–v2.4 done, Phase 3 (verification + reach) next; what comes next is never the agent's call
 tags: [plan,roadmap,phases]
-updated: 2026-10-06
+updated: 2026-10-14
 verified_at: 080a7adb7826
 ---
 
@@ -26,10 +26,13 @@ verified_at: 080a7adb7826
 
 ## Phase 3 — verification and reach (CURRENT)
 
-- Phase 3 Feature 05: evals runner — make `references/evals.md` executable: a cold-start script that answers questions from the wiki only and diffs against ground truth → spec: feature-specs/05-evals-runner.md
-- Phase 3 Feature 06: hook parity beyond Claude — wire SessionStart/Stop equivalents for Codex/Cursor where the tool allows → spec: feature-specs/06-hook-parity.md
-- Phase 3 Feature 07: `ctx query` filing — auto-scaffold a `type: query` page skeleton from a brief hit so reusable answers get written, not retyped → spec: feature-specs/07-query-filing.md
-- Phase 3 Feature 08: opt-in project skills — `--skills` scaffolds security-review/deploy/release playbooks into the project's skills/ → spec: feature-specs/08-project-skills.md
+- Feature 05: reliable routing and safe updates — user-requested skill upgrade; spec: feature-specs/05-reliable-context.md. Includes budgeted JSON, explicit trust flags, safe setup, lossless git paths and evidence-aware instructions.
+- Feature 06: single-source agent resources and file ownership — [authorized scope](feature-specs/06-single-source.md); execution status is in the task ledger, and evidence is in testing.md.
+- Feature 07: real Git-compatible relative symlinks — [authorized scope](feature-specs/07-native-symlinks.md); host settings remain separate, and evidence lives in testing.md.
+- Backlog: evals runner — make `references/evals.md` executable against a human-reviewed answer set. Create the next free numbered spec when authorized.
+- Backlog: hook parity beyond Claude — wire equivalents only where the host supports them; spec pending.
+- Backlog: `ctx query` filing — reusable answer skeleton from a brief hit; spec pending.
+- Backlog: opt-in project skills — authorized security-review/deploy/release playbooks; spec pending.
 
 ## Rules
 

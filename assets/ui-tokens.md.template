@@ -2,7 +2,7 @@
 title: UI Tokens
 type: ui
 status: active
-summary: Every color, spacing, radius and type value as CSS variables — no hard-coded hex anywhere
+summary: Canonical visual values as CSS variables: color, spacing, type, layout, elevation and motion
 tags: [ui,design-tokens,css]
 updated: {{TODAY}}
 ---
@@ -33,6 +33,15 @@ Every visual value lives here as a CSS variable. Code contains NO hard-coded hex
   --font-display: {{...}}; --font-body: {{...}};
   --text-xs: {{...}}; --text-sm: {{...}}; --text-base: {{...}};
   --text-lg: {{...}}; --text-xl: {{...}}; --text-2xl: {{...}}; --text-4xl: {{...}};
+  --weight-body: {{...}}; --weight-heading: {{...}};
+  --tracking-body: {{...}}; --tracking-heading: {{...}};
+
+  /* layout */
+  --page-max-width: {{...}}; --container-padding: {{...}}; --section-gap: {{...}};
+
+  /* motion */
+  --motion-fast: {{...}}; --motion-normal: {{...}}; --motion-slow: {{...}};
+  --ease-standard: {{...}}; --ease-enter: {{...}}; --ease-exit: {{...}};
 
   /* elevation */
   --shadow-sm: {{...}}; --shadow-md: {{...}};

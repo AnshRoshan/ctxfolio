@@ -6,6 +6,12 @@ The skill is three things you can install independently:
 2. **The CLI** — `scripts/ctx.mjs`, zero dependencies, Node ≥ 18.
 3. **The scaffold** — what the CLI writes into *your* project (AGENTS.md, `context/`, hooks).
 
+## Windows: native symlink prerequisite
+
+Enable Developer Mode or obtain the create-symbolic-link privilege before cloning/creating real links. `Start-Process 'ms-settings:developers'` opens Settings; the skill never toggles OS security automatically. You may turn it off after verified creation; existing links and normal canonical edits still work, while Git clones/checkouts or missing-link repairs may require it again.
+
+New setup enables local Git `core.symlinks=true` and fails clearly if native creation is denied. It never silently substitutes junctions or regular files. `--portable-pointers` explicitly opts out for a fresh/legacy project; it is not a reverse migration for an installed/pending symlink layout.
+
 ## 1. The skill
 
 **From a GitHub link (recommended):** paste this to your agent —
@@ -15,7 +21,7 @@ The skill is three things you can install independently:
 Or do the same by hand:
 
 ```bash
-git clone https://github.com/AnshRoshan/project-context-system
+git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system
 node project-context-system/scripts/ctx.mjs install              # auto-detects ~/.claude / ~/.qoder
 node project-context-system/scripts/ctx.mjs install --tool claude  # or --dest <skills-dir>
 ```
@@ -72,9 +78,9 @@ node /path/to/project-context-system/scripts/ctx.mjs setup
 ```
 
 It detects the project profile (languages, kinds, UI/DB/API signals, installed agent tools)
-and does everything mechanical: full scaffold + path-gated `.claude/rules/` + subagent
-definitions with their own memory + a `codebase/map.md` draft from the real file census
-(brownfield included) + `ctx index` + a 12-point `ctx doctor` self-check. Optional:
+and creates the owner pages, canonical .agents resources, real native resource links,
+central Cursor metadata views, agent experience files and a codebase draft where applicable,
+then runs the catalog and doctor checks. Optional:
 `--danger "src/auth,src/payments"` for nested landmine warnings; `--ui/--no-ui`,
 `--full`, `--pointers`, `--no-detect` to override detection.
 
@@ -93,9 +99,10 @@ node context/ctx.mjs brief src/whatever.ts
 
 ```bash
 node context/ctx.mjs doctor
+node context/ctx.mjs symlinks --check
 ```
 
-12 checks covering the things that quietly break: that `CLAUDE.md` really imports
+Checks cover the things that quietly break: that native entrypoints resolve shared
 `AGENTS.md`, that git actually ignores `context/current-issues.md`, `CLAUDE.local.md` and
 `.claude/settings.local.json`, that `.claude/settings.json` denies `.env*` reads and has
 both hooks, that the path-gated rules and subagent memory exist, and that the project is

@@ -1,6 +1,7 @@
 ---
-description: Project context system — orient from the wiki before touching code
+description: Shared project entrypoint
 alwaysApply: true
+ctx_source: AGENTS.md
 ---
 
-Read `AGENTS.md`, then `context/index.md` and `memory.md` before any work. Use `context/index.md` task routing to load only the relevant pages (TL;DR first). After changing code, update the context pages that cover those files and `context/progress-tracker.md`. AGENTS.md is the single source of truth; do not duplicate rules here.
+Read [shared agent instructions](../../AGENTS.md). Edit the source, not this tool adapter.

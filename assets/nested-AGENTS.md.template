@@ -1,14 +1,16 @@
 # AGENTS.md (nested — {{packages/storefront/}})
 
-Package-local instructions. The root AGENTS.md is still law; this file adds what is true only in this area. The agent loads it only when working inside {{packages/storefront/}}.
+Scope-specific agent exceptions for {{packages/storefront/}}. Shared policy remains at the root AGENTS.md; this file does not copy package contracts, configuration or command values. Resolve owner pointers from the project root.
 
-## Facts
+## Local agent exceptions
 
-- This package: {{what it is, entry command}}
-- {{e.g. Design system comes from @acme/ui — never duplicate a component locally}}
-- {{e.g. Checkout code: money math uses integer cents, never floats}}
+- {{Extra approval or owner-reading behavior required only in this area; omit if none}}
 
-## Extra rules for this area
+## Owner pointers
 
-- {{e.g. Any change here requires the pricing test suite to run: npm run test -w storefront}}
-- {{e.g. Never import from packages/admin — shared code goes in packages/core}}
+- Package identity/location: {{codebase map or package overview owner}}
+- Entry/setup instructions: {{package runbook section or manifest pointer; no copied command}}
+- Domain contracts and dependency boundaries: {{module/contract/architecture owner sections; no copied rules}}
+- Required checks and evidence: {{package testing section; no copied test command}}
+
+Consult `context/ownership.md` when a fact needs a home.

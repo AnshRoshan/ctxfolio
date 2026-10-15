@@ -2,8 +2,8 @@
 title: Architecture
 type: architecture
 status: active
-summary: Tech stack and role of each tool, system boundaries, data flow and the invariants the system must never violate
-tags: [architecture,stack,invariants]
+summary: System boundaries, component roles, interactions and system-wide invariants; other facts remain at their owners
+tags: [architecture,boundaries,invariants]
 covers: [{{src/**}}]
 updated: {{TODAY}}
 ---
@@ -14,21 +14,17 @@ updated: {{TODAY}}
 
 {{3–5 lines an agent can stop at: the facts that change what it does next.}}
 
-## Tech stack — tool and its role
+## Components and roles
 
-Naming the role in advance stops the agent inventing a custom solution when a library is already chosen.
+| Component | Architectural role | Detail owner |
+|---|---|---|
+| {{application boundary}} | {{what responsibility this component owns}} | {{module/library/contract page link}} |
 
-| Tool | Version | Role | Why this tool |
-|---|---|---|---|
-| {{Next.js}} | {{16}} | {{app + API routes}} | {{...}} |
-| {{Postgres}} | {{...}} | {{system of record}} | {{...}} |
-| {{Liveblocks}} | {{...}} | {{presence + realtime sync}} | {{...}} |
+Link dependency manifests and [library notes](library-docs.md) for installed versions and version-specific usage. Link [decision records](decisions.md) for alternatives and rationale; do not reproduce those inventories here.
 
-Full decision rationale lives in decisions.md (D-NN refs), not here.
+## Boundary layout
 
-## Folder structure
-
-{{Top-level layout and what belongs where}}
+{{Only directories that define architectural boundaries; link codebase/map.md for the detailed location map}}
 
 ## System boundaries & data flow
 
@@ -44,8 +40,9 @@ Full decision rationale lives in decisions.md (D-NN refs), not here.
 - {{e.g. Auth AND ownership are enforced at every mutation boundary, not just at the UI}}
 - {{e.g. Public routes are an explicit list; everything else is protected by default}}
 - {{e.g. Metadata lives in Postgres; large artifacts live in blob storage — never in DB columns}}
-- {{e.g. Reuse existing Clerk env variable names — never rename or invent parallel ones}}
 
-## External dependencies
+## Cross-cutting references
 
-{{Services the app calls; which user-facing paths must NOT be coupled to their availability (queue the slow work instead)}}
+Where applicable, link the owning `data-model.md`, `api-contracts.md`, `integrations.md` or `runbook.md` page. Do not create links to absent pages or invent facilities to fill a template.
+
+This page does not own task/session state, agent/tool policy, deployment steps, full schemas, route inventories or environment-variable lists. Consult [File Ownership](ownership.md) before adding material.

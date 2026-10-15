@@ -28,7 +28,9 @@
  *   task        task ledger: list|add|start|done|block (Now/Up next/Blocked/Completed)
  *   archive     rotate old log/tracker entries into context/archive/ (growth control)
  *   stamp       mark pages re-verified against current code
- *   new         create a page with correct frontmatter (module|feature|source|<any>)
+ *   new         create wiki pages or canonical agent|rule|skill resources
+ *   adapters    check/refresh the recorded native resource layout
+ *   symlinks    real relative link/Git audit or migration (--check, --migrate, --json)
  *   status      one-screen health summary
  *   hook        session-start | stop   (for .claude/settings.json hooks)
  *
@@ -43,24 +45,27 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const SELF = fileURLToPath(import.meta.url);
 const SKILL_DIR = path.resolve(path.dirname(SELF), '..');
-const VERSION = '2.4.0';
+const VERSION = '2.7.0';
 
 /* ------------------------------------------------------------------ args */
-const VALUE_FLAGS = new Set(['root', 'since', 'budget', 'covers', 'title', 'm', 'tail', 'limit', 'type', 'summary', 'spec', 'danger', 'days', 'keep-days', 'tool', 'dest']);
+const VALUE_FLAGS = new Set(['root', 'since', 'budget', 'covers', 'paths', 'title', 'm', 'tail', 'limit', 'type', 'summary', 'spec', 'danger', 'days', 'keep-days', 'tool', 'dest']);
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const flags = {};
 const pos = [];
+let argError = '';
 for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
-  if (a === '-m') flags.m = argv[++i];
-  else if (a.startsWith('--')) {
-    const k = a.slice(2);
-    if (VALUE_FLAGS.has(k) && argv[i + 1] !== undefined && !argv[i + 1].startsWith('--')) flags[k] = argv[++i];
-    else flags[k] = true;
+  if (a === '-m' || a.startsWith('--')) {
+    const k = a === '-m' ? 'm' : a.slice(2);
+    if (VALUE_FLAGS.has(k)) {
+      if (argv[i + 1] === undefined || argv[i + 1].startsWith('--') || argv[i + 1] === '-m') argError ||= `${a} requires a value`;
+      else flags[k] = argv[++i];
+    } else flags[k] = true;
   } else pos.push(a);
 }
 
@@ -91,11 +96,12 @@ function findRoot() {
     dir = up;
   }
 }
-const ROOT = cmd === 'init' ? path.resolve(String(flags.root || process.cwd())) : findRoot();
+const ROOT = ['init', 'setup'].includes(cmd) ? path.resolve(String(flags.root || process.cwd())) : findRoot();
 const CTX = path.join(ROOT, 'context');
 const rel = (abs) => posix(path.relative(ROOT, abs));
 
 const DEFAULTS = {
+  resourceMode: 'pointer', // existing projects keep their layout until deliberate migration
   maxPageLines: 160,
   maxAgentsLines: 120,
   maxSummaryChars: 160,
@@ -103,21 +109,35 @@ const DEFAULTS = {
   archiveAfterDays: 180,
   trackerKeepDays: 90,
   alwaysRead: ['context/index.md', 'memory.md'],
-  ignoreDirs: ['node_modules', '.git', '.next', 'dist', 'build', 'out', 'coverage', '.turbo', '.venv', 'venv', '__pycache__', 'target', 'vendor', '.cache', '.claude', '.cursor'],
+  ignoreDirs: ['node_modules', '.git', '.next', 'dist', 'build', 'out', 'coverage', '.turbo', '.venv', 'venv', '__pycache__', 'target', 'vendor', '.cache', '.claude', '.cursor', '.agents'],
   sourceExt: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs', '.java', '.kt', '.rb', '.php', '.cs', '.swift', '.sql', '.prisma', '.vue', '.svelte'],
   ignoreSourceGlobs: ['**/*.d.ts', '**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/migrations/**', '**/drizzle/**', '**/*.config.*', '**/next-env.d.ts'],
   pageExcludes: ['context/raw/', 'context/designs/', 'context/screenshots/', 'context/archive/', 'context/agents/', 'context/index.md', 'context/log.md', 'context/current-issues.md', 'context/README.md'],
 };
 let CONFIG = { ...DEFAULTS };
+let CONFIG_ERROR = '';
 try {
-  CONFIG = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(path.join(CTX, '.ctx.json'), 'utf8')) };
-} catch {}
+  const cfgPath = path.join(CTX, '.ctx.json');
+  if (fs.existsSync(cfgPath)) {
+    const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) throw new Error('expected an object');
+    if ('resourceMode' in cfg && !['pointer', 'symlink'].includes(cfg.resourceMode)) throw new Error('resourceMode must be pointer or symlink');
+    if ('requestedResourceMode' in cfg && !['pointer', 'symlink'].includes(cfg.requestedResourceMode)) throw new Error('requestedResourceMode must be pointer or symlink');
+    for (const key of ['alwaysRead', 'ignoreDirs', 'sourceExt', 'ignoreSourceGlobs', 'pageExcludes']) {
+      if (key in cfg && (!Array.isArray(cfg[key]) || cfg[key].some((v) => typeof v !== 'string'))) throw new Error(`${key} must be an array of strings`);
+    }
+    CONFIG = { ...DEFAULTS, ...cfg };
+  }
+} catch (e) {
+  CONFIG_ERROR = `context/.ctx.json is invalid: ${e.message} — fix it before setup`;
+}
 
 function git(args, opts = {}) {
   try {
     // normalize line endings only — do NOT trim(): git status --porcelain lines
     // start with a status-column space and a global trim would shift every path by one
-    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024, ...opts }).replace(/\r\n/g, '\n').replace(/\s+$/, '');
+    const out = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024, ...opts });
+    return args.includes('-z') ? out : out.replace(/\r\n/g, '\n').replace(/\s+$/, '');
   } catch {
     return null;
   }
@@ -175,6 +195,31 @@ const matchers = (globs) =>
 const anyMatch = (rxs, f) => rxs.some((r) => r.test(f));
 
 /* ------------------------------------------------------------ frontmatter */
+function splitList(value) {
+  let text = String(value).trim();
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+    } catch {}
+    text = text.slice(1, -1);
+  }
+  const out = [];
+  let start = 0, depth = 0, quote = '', escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === '{' || c === '[') depth++;
+    else if (c === '}' || c === ']') depth = Math.max(0, depth - 1);
+    else if (c === ',' && !depth) { out.push(text.slice(start, i)); start = i + 1; }
+  }
+  out.push(text.slice(start));
+  return out.map((item) => unquote(item.trim())).filter(Boolean);
+}
 function parseFrontmatter(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!m) return { data: {}, body: text, has: false };
@@ -194,12 +239,15 @@ function parseFrontmatter(text) {
     curKey = kv[1];
     const v = kv[2].trim();
     if (v === '') data[curKey] = '';
-    else if (v.startsWith('[') && v.endsWith(']')) data[curKey] = v.slice(1, -1).split(',').map((s) => unquote(s.trim())).filter(Boolean);
+    else if (v.startsWith('[') && v.endsWith(']')) data[curKey] = splitList(v);
     else data[curKey] = unquote(v);
   }
   return { data, body: text.slice(m[0].length), has: true };
 }
 function unquote(s) {
+  if (s.startsWith('"')) {
+    try { const value = JSON.parse(s); if (typeof value === 'string') return value; } catch {}
+  }
   return s.replace(/^["'](.*)["']$/, '$1');
 }
 function upsertFm(text, key, value) {
@@ -234,6 +282,20 @@ function tldr(p, n = 3) {
   const m = p.body.match(/##\s*TL;DR\s*\n([\s\S]*?)(?:\n##\s|$)/i);
   if (!m) return [];
   return m[1].split('\n').map((l) => l.trim()).filter(Boolean).slice(0, n);
+}
+function orientationFiles() {
+  const files = CONFIG.alwaysRead.map((f) => f.replace(/\\/g, '/').replace(/^\.\//, ''));
+  const found = new Map();
+  for (const f of files) {
+    if (!f || path.isAbsolute(f) || /^[A-Za-z]:/.test(f) || f.split('/').some((part) => part === '..' || part.startsWith('.env'))) die(`unsafe alwaysRead path: ${f} — use project-relative non-secret files`);
+    const abs = path.resolve(ROOT, f);
+    assertProjectPath(abs);
+    const exists = fs.existsSync(abs);
+    if (exists && (!fs.statSync(abs).isFile() || posix(fs.realpathSync(abs)).split('/').some((part) => part.startsWith('.env')))) die(`alwaysRead must reference a non-secret file: ${f}`);
+    const file = rel(abs);
+    if (!found.has(file)) found.set(file, { page: file, tokens: exists ? tokens(fs.readFileSync(abs, 'utf8')) : 0, missing: !exists });
+  }
+  return [...found.values()];
 }
 function stripCode(text) {
   return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
@@ -367,25 +429,35 @@ function hasBin(name) {
 }
 
 /* --------------------------------------------------------------- git state */
+function gitFiles(args) {
+  const out = git(args);
+  return out === null ? null : out.split('\0').filter(Boolean);
+}
+function changedSince(base) {
+  return gitFiles(['diff', '--name-only', '-z', '--no-renames', '--relative', base, 'HEAD', '--', '.']);
+}
 function dirtyFiles() {
-  const out = git(['status', '--porcelain', '-uall']);
-  if (!out) return new Set();
+  const out = git(['status', '--porcelain', '-z', '-uall']);
   const s = new Set();
-  for (const line of out.split('\n')) {
-    if (!line.trim()) continue;
-    let f = line.slice(3);
-    if (f.includes(' -> ')) f = f.split(' -> ')[1];
-    f = f.replace(/\s+$/, '');
-    if (f.startsWith('"') && f.endsWith('"')) f = f.slice(1, -1);
-    s.add(f);
+  if (!out) return s;
+  // Porcelain -z always uses repository-root paths, even from a nested project.
+  const prefix = git(['rev-parse', '--show-prefix']) || '';
+  const add = (f) => {
+    if (!prefix || f.startsWith(prefix)) s.add(f.slice(prefix.length));
+  };
+  const records = out.split('\0');
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+    if (!record) continue;
+    add(record.slice(3));
+    if (/[RC]/.test(record.slice(0, 2))) add(records[++i]); // destination then original
   }
   return s;
 }
 const diffCache = new Map();
 function committedDiff(base) {
   if (!diffCache.has(base)) {
-    const o = git(['diff', '--name-only', base, 'HEAD']);
-    diffCache.set(base, o === null ? null : o.split('\n').filter(Boolean));
+    diffCache.set(base, changedSince(base));
   }
   return diffCache.get(base);
 }
@@ -430,8 +502,7 @@ function staleReport() {
 }
 
 function sourceFiles() {
-  let files = git(['ls-files', '-co', '--exclude-standard']);
-  files = files ? files.split('\n').filter(Boolean) : walk(ROOT).map(rel);
+  const files = gitFiles(['ls-files', '-z', '-co', '--exclude-standard']) ?? walk(ROOT).map(rel);
   const ign = matchers(CONFIG.ignoreSourceGlobs);
   return files.filter((f) => !f.startsWith('context/') && CONFIG.sourceExt.includes(path.extname(f)) && !CONFIG.ignoreDirs.some((d) => f.split('/').includes(d)) && !anyMatch(ign, f) && fs.existsSync(path.join(ROOT, f)));
 }
@@ -508,17 +579,50 @@ commands.install = () => {
 
 /* ---- brief */
 commands.brief = () => {
-  if (!pos.length) return die('usage: ctx brief <file | feature | keywords...> [--limit N] [--budget TOKENS]');
-  const limit = Number(flags.limit || 8);
-  const budget = flags.budget ? Number(flags.budget) : Infinity;
-  const terms = pos.flatMap((t) => t.toLowerCase().split(/[^a-z0-9_.\/-]+/)).filter((t) => t.length > 2);
+  if (!pos.length) return die('usage: ctx brief <file | feature | keywords...> [--limit N] [--budget TOKENS] [--json] [--history]');
+  const limit = flags.limit === undefined ? 8 : Number(flags.limit);
+  const budget = flags.budget === undefined ? Infinity : Number(flags.budget);
+  if (!Number.isSafeInteger(limit) || limit < 1) return die('--limit must be a positive integer');
+  if (budget !== Infinity && (!Number.isSafeInteger(budget) || budget < 0) || flags.budget !== undefined && budget === Infinity) return die('--budget must be a non-negative integer');
+  const inputs = [...new Set(pos.map((s) => s.replace(/\\/g, '/').replace(/^\.\//, '')))];
+  const terms = [...new Set(inputs.flatMap((t) => t.toLowerCase().split(/[^a-z0-9_.\/-]+/)).filter((t) => t.length > 2))];
+  const alwaysRead = orientationFiles();
+  const health = staleReport();
+  const stale = new Set(health.items.map((i) => i.p.rel));
+  const dirtySources = health.available ? [...dirtyFiles()].filter((f) => !f.startsWith('context/')) : [];
+  const trust = (p) => {
+    const cov = matchers(p.data.covers);
+    const warnings = [];
+    const changedSources = dirtySources.filter((f) => anyMatch(cov, f));
+    const isStale = stale.has(p.rel) || p.data.status === 'stale';
+    const retired = ['superseded', 'archived'].includes(p.data.status);
+    const unfilled = /\{\{[^}]+\}\}/.test(stripCode(p.text)) || /^summary:\s*TODO\b/m.test(p.text) || tldr(p).some((l) => /\bTODO\b/.test(l));
+    if (changedSources.length) warnings.push('Covered working-tree sources changed: verify claims even if this page was touched');
+    if (p.data.status === 'draft') warnings.push('DRAFT: not approved current guidance');
+    if (isStale) warnings.push('STALE: verify against current sources');
+    if (unfilled) warnings.push('UNFILLED: draft is not established knowledge');
+    if (retired) warnings.push('HISTORY: not current instructions');
+    if (p.data.confidence && p.data.confidence !== 'verified') warnings.push(`Confidence: ${p.data.confidence}`);
+    if (cov.length && !p.data.confidence) warnings.push('No recorded confidence for code claims');
+    if (cov.length && !health.available) warnings.push('Git unavailable: freshness not checked');
+    return { confidence: p.data.confidence || null, stale: isStale, verificationRequired: warnings.length > 0, changedSources, warnings };
+  };
+  const knownPages = pages();
+  for (const p of alwaysRead) {
+    const page = knownPages.find((known) => known.rel === p.page);
+    if (!page) continue;
+    if (['superseded', 'archived'].includes(page.data.status) && !flags.history) die(`retired alwaysRead page: ${p.page} — remove it from orientation or explicitly use --history`);
+    Object.assign(p, trust(page));
+  }
+  const alwaysSet = new Set(alwaysRead.map((p) => p.page));
   const scored = [];
   for (const p of pages()) {
+    const retired = ['superseded', 'archived'].includes(p.data.status);
+    if (alwaysSet.has(p.rel) || retired && !flags.history) continue;
     let score = 0;
     const why = [];
     const cov = matchers(p.data.covers);
-    for (const raw of pos) {
-      const f = raw.replace(/^\.\//, '');
+    for (const f of inputs) {
       if (cov.length && anyMatch(cov, f)) {
         score += 100;
         why.push(`covers ${f}`);
@@ -537,54 +641,57 @@ commands.brief = () => {
       const c = body.split(t).length - 1;
       if (c) score += Math.min(c, 4);
     }
-    if (p.data.status === 'superseded' || p.data.status === 'archived') score = Math.floor(score / 4);
-    const unfilled = /\{\{[^}]+\}\}/.test(stripCode(p.text));
-    if (unfilled) {
-      score = Math.floor(score / 3);
-      why.push('UNFILLED template');
-    }
-    if (score > 0) scored.push({ p, score, why: [...new Set(why)].slice(0, 3) });
+    if (retired) score = Math.floor(score / 4);
+    const unfilled = /\{\{[^}]+\}\}/.test(stripCode(p.text)) || /^summary:\s*TODO\b/m.test(p.text) || tldr(p).some((l) => /\bTODO\b/.test(l));
+    if (unfilled) score = Math.floor(score / 3);
+    if (score <= 0) continue;
+    scored.push({ page: p.rel, title: p.data.title || '', type: p.data.type || '', status: p.data.status || '', summary: p.data.summary || '', ...trust(p), score, reasons: [...new Set(why)].slice(0, 3), tokens: tokens(p.text), tldr: tldr(p, 3) });
   }
-  scored.sort((a, b) => b.score - a.score);
-
-  console.log('ALWAYS READ (orient):');
-  let used = 0;
-  for (const f of CONFIG.alwaysRead) {
-    const abs = path.join(ROOT, f);
-    if (!fs.existsSync(abs)) continue;
-    const t = tokens(fs.readFileSync(abs, 'utf8'));
-    used += t;
-    console.log(`  - ${f}  (~${fmtTok(t)} tok)`);
-  }
-  console.log('\nTASK-RELEVANT (read in this order, stop when you have enough):');
-  let n = 0;
+  scored.sort((a, b) => b.score - a.score || a.page.localeCompare(b.page));
+  let used = alwaysRead.reduce((n, p) => n + p.tokens, 0);
+  const budgetExceeded = used > budget;
+  const selected = [], skipped = [];
   for (const s of scored) {
-    if (n >= limit) break;
-    const t = tokens(s.p.text);
-    if (used + t > budget && n > 0) continue;
-    used += t;
-    n++;
-    console.log(`  ${n}. ${s.p.rel}  [${s.p.data.type || '?'}${s.p.data.status ? '/' + s.p.data.status : ''}, ~${fmtTok(t)} tok]  ${s.why.length ? '(' + s.why.join(', ') + ')' : ''}`);
-    if (s.p.data.summary) console.log(`     ${s.p.data.summary}`);
-    for (const l of tldr(s.p, 2)) console.log(`     > ${l.replace(/^[-*]\s*/, '')}`);
+    const reason = selected.length >= limit ? 'limit' : used + s.tokens > budget ? 'budget' : null;
+    if (reason) skipped.push({ page: s.page, tokens: s.tokens, reason });
+    else {
+      used += s.tokens;
+      selected.push(s);
+    }
   }
-  if (!n) console.log('  (no matching pages — grep the code, then CREATE a page for what you learn: ctx new <type> <name>)');
-  console.log(`\nEstimated total: ~${fmtTok(used)} tokens. Read TL;DR first; open full pages only when needed.`);
-
-  // Blind spot: a positional arg that looks like a file path but no page covers.
-  const covering = pages().flatMap((p) => (p.data.status === 'superseded' || p.data.status === 'archived' ? [] : matchers(p.data.covers)));
-  const blind = pos.filter((raw) => (raw.includes('/') || /\.[a-z0-9]+$/i.test(raw)) && !anyMatch(covering, raw.replace(/^\.\//, '')));
-  if (blind.length) {
-    console.log(`\nBLIND SPOT: no page documents ${blind.join(', ')}. After you read the code, capture what you learned: ctx new module <area> --covers "<glob>" (otherwise this stays invisible to the next session).`);
-  }
+  const covering = pages_().flatMap((p) => matchers(p.data.covers));
+  const blindSpots = inputs.filter((f) => (f.includes('/') || /\.[a-z0-9]+$/i.test(f)) && !anyMatch(covering, f));
+  const payload = { command: 'brief', ok: !budgetExceeded && !alwaysRead.some((p) => p.missing || p.verificationRequired) && selected.length > 0 && !blindSpots.length && !selected.some((p) => p.verificationRequired), alwaysRead, pages: selected, skipped, blindSpots, estimatedTokens: used, budget: budget === Infinity ? null : budget, budgetExceeded, gitAvailable: health.available };
+  emit(payload, () => {
+    console.log('ALWAYS READ (orient):');
+    for (const p of alwaysRead) {
+      console.log(`  - ${p.page}  (${p.missing ? 'MISSING' : '~' + fmtTok(p.tokens) + ' tok'})`);
+      for (const warning of p.warnings || []) console.log(`     ! ${warning}`);
+    }
+    if (budgetExceeded) console.log(`\nBUDGET EXCEEDED: mandatory orientation alone costs ~${fmtTok(used)} tokens. Raise --budget or reduce alwaysRead; no task pages selected.`);
+    console.log('\nTASK-RELEVANT (read in this order, stop when you have enough):');
+    selected.forEach((p, i) => {
+      console.log(`  ${i + 1}. ${p.page}  [${p.type || '?'}/${p.status || '?'}, ~${fmtTok(p.tokens)} tok]  (${p.reasons.join(', ')})`);
+      if (p.summary) console.log(`     ${p.summary}`);
+      for (const l of p.tldr) console.log(`     > ${l.replace(/^[-*]\s*/, '')}`);
+      for (const w of p.warnings) console.log(`     ! ${w}`);
+    });
+    if (!selected.length) console.log(scored.length ? '  (matching pages omitted by budget/limit; inspect skipped in --json or raise the budget)' : '  (no matching pages; inspect relevant sources and record only reusable knowledge)');
+    if (skipped.length) console.log(`\nOmitted: ${skipped.filter((p) => p.reason === 'budget').length} by budget, ${skipped.filter((p) => p.reason === 'limit').length} by limit.`);
+    if (blindSpots.length) console.log(`\nBLIND SPOT: no current page documents ${blindSpots.join(', ')}. Check the sources; update a relevant page or create a reusable module page.`);
+    console.log(`\nEstimated full-page read cost: ~${fmtTok(used)} tokens (characters / 4, not model tokenization). Read TL;DR first; verify flagged claims before relying on them.`);
+  });
 };
 
 /* ---- impact */
-function impactData() {
+function impactData(workingTreeOnly = false) {
   const dirty = dirtyFiles();
-  let changed = new Set(dirty);
-  if (flags.since) for (const f of git(['diff', '--name-only', String(flags.since), 'HEAD'])?.split('\n').filter(Boolean) || []) changed.add(f);
-  else if (!dirty.size) for (const f of git(['diff', '--name-only', 'HEAD~1', 'HEAD'])?.split('\n').filter(Boolean) || []) changed.add(f);
+  const changed = new Set(dirty);
+  if (!workingTreeOnly && flags.since) {
+    const files = validCommit(String(flags.since)) ? changedSince(String(flags.since)) : null;
+    if (files === null) die(`invalid --since commit: ${flags.since}`);
+    for (const f of files) changed.add(f);
+  } else if (!workingTreeOnly && !dirty.size) for (const f of changedSince('HEAD~1') || []) changed.add(f);
   const all = [...changed];
   const code = all.filter((f) => !f.startsWith('context/') && !/^(AGENTS|CLAUDE|CLAUDE\.local|memory|GEMINI)\.md$/.test(f) && !f.startsWith('.claude/'));
   const touchedPages = new Set(all);
@@ -632,6 +739,42 @@ commands.stale = () => {
   });
   if (flags.strict && r.available && r.items.length) process.exit(1);
 };
+
+/* ---- ownership: structural checks; semantic separation still needs review */
+const CORE_OWNERS = ['AGENTS.md', 'memory.md', 'context/index.md', 'context/ownership.md', 'context/decisions.md', 'context/progress-tracker.md'];
+function ownershipHealth() {
+  const errors = CORE_OWNERS.filter((file) => !fs.existsSync(path.join(ROOT, file))).map((file) => `missing canonical owner: ${file} — re-run setup`);
+  for (const dir of ['.agents/agents', '.agents/rules', '.agents/skills']) if (!fs.existsSync(path.join(ROOT, dir)) || !fs.statSync(path.join(ROOT, dir)).isDirectory()) errors.push(`missing canonical resource directory: ${dir} — re-run setup`);
+  const adapters = adapterReport({ check: true });
+  errors.push(...adapters.errors);
+  for (const conflict of adapters.conflicts) errors.push(`adapter conflict ${conflict.file}: ${conflict.reason} (canonical: ${conflict.source})`);
+  for (const adapter of adapters.adapters) if (!adapter.ok) errors.push(`adapter out of sync: ${adapter.file} -> ${adapter.source} — run ctx adapters or review the conflict`);
+  return { errors: [...new Set(errors)], adapters };
+}
+function duplicateProse(ps, resources) {
+  // ponytail: exact long paragraphs only; semantic paraphrases require human review.
+  const docs = ps.filter((p) => ['active', 'stale'].includes(p.data.status) && !['decision-log', 'tracker', 'source', 'feature'].includes(p.data.type)).map((p) => ({ file: p.rel, body: p.body }));
+  for (const file of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'memory.md']) {
+    const abs = path.join(ROOT, file);
+    if (fs.existsSync(abs)) docs.push({ file, body: parseFrontmatter(fs.readFileSync(abs, 'utf8')).body });
+  }
+  for (const resource of resources) docs.push({ file: resource.file, body: resource.body });
+  const seen = new Map();
+  const realOwners = new Set();
+  for (const doc of docs) {
+    const owner = fs.realpathSync(path.resolve(ROOT, doc.file));
+    if (realOwners.has(owner)) continue; // symlinked entrypoints are the same owner, not copied prose
+    realOwners.add(owner);
+    for (const paragraph of stripCode(doc.body).split(/\n\s*\n/)) {
+      if (/\{\{|\bTODO\b|^\s*(?:#|\||>|<!--)/m.test(paragraph)) continue;
+      const key = paragraph.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (key.length < 180) continue;
+      if (!seen.has(key)) seen.set(key, new Set());
+      seen.get(key).add(doc.file);
+    }
+  }
+  return [...seen.values()].filter((files) => files.size > 1).map((files) => `duplicate prose: ${[...files].sort().join(' and ')} — keep one live owner and link to it; review for intentional snapshots`);
+}
 
 /* ---- lint */
 const DECISION_FIELDS = ['Trigger', 'Options considered', 'Chosen', 'Lost alternative', 'Cost paid', 'Reversibility', 'Correctness policy'];
@@ -762,9 +905,13 @@ commands.lint = () => {
     if (!/context\/index\.md/.test(fs.readFileSync(agents, 'utf8'))) W('AGENTS.md does not route through context/index.md');
   }
   const claude = path.join(ROOT, 'CLAUDE.md');
-  if (fs.existsSync(claude) && !fs.readFileSync(claude, 'utf8').trimStart().startsWith('@AGENTS.md')) W('CLAUDE.md should start with `@AGENTS.md` (one source of truth, no drift)');
+  if (fs.existsSync(claude) && (!fs.existsSync(agents) || fs.realpathSync(claude) !== fs.realpathSync(agents)) && !fs.readFileSync(claude, 'utf8').trimStart().startsWith('@AGENTS.md')) W('CLAUDE.md must link to AGENTS.md, or use the explicit legacy import layout');
   for (const legacy of ['.cursorrules', '.windsurfrules', 'AGENT.md']) if (fs.existsSync(path.join(ROOT, legacy))) W(`${legacy}: legacy instruction file shadows/duplicates AGENTS.md — delete or migrate`);
   if (!fs.existsSync(path.join(CTX, 'log.md'))) W('context/log.md missing (append-only activity timeline)');
+
+  const ownership = ownershipHealth();
+  ownership.errors.forEach(E);
+  duplicateProse(ps, ownership.adapters.resources).forEach(W);
 
   // staleness
   const st = staleReport();
@@ -784,8 +931,7 @@ commands.lint = () => {
 let _all;
 function sourceFilesAll() {
   if (_all) return _all;
-  let f = git(['ls-files', '-co', '--exclude-standard']);
-  _all = f ? f.split('\n').filter(Boolean) : walk(ROOT).map(rel);
+  _all = gitFiles(['ls-files', '-z', '-co', '--exclude-standard']) ?? walk(ROOT).map(rel);
   return _all;
 }
 
@@ -1055,6 +1201,578 @@ commands.stamp = () => {
   }
 };
 
+/* ---- canonical resources and portable host adapters */
+const RESOURCE_DIRS = { agent: '.agents/agents', rule: '.agents/rules', skill: '.agents/skills' };
+const ruleGlobs = (data) => {
+  const value = data.paths || data.globs;
+  return Array.isArray(value) ? value.map(String) : value ? splitList(value) : data.alwaysApply === true || data.alwaysApply === 'true' ? ['**'] : [];
+};
+const ADAPTER_MARK = 'project-context-system';
+const hashAdapter = (text) => {
+  const normalized = text.replace(/\r\n/g, '\n');
+  const unsigned = normalized.replace(/^---\n[\s\S]*?\n---(?:\n|$)/, (frontmatter) => frontmatter.replace(/^ctx_checksum:[^\n]*(?:\n|$)/m, ''));
+  return createHash('sha256').update(unsigned).digest('hex');
+};
+const resourceName = (file, kind) => kind === 'skill' ? path.basename(path.dirname(file)) : path.basename(file, path.extname(file));
+const canonicalResourcePath = (kind, name) => `${RESOURCE_DIRS[kind]}/${name}${kind === 'skill' ? '/SKILL.md' : '.md'}`;
+
+function resourceFiles(dir, kind, errors) {
+  const abs = path.resolve(ROOT, dir);
+  const error = projectPathError(abs);
+  if (error) { errors.push(error); return []; }
+  if (!fs.existsSync(abs)) return [];
+  try {
+    const found = [];
+    for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || /^README\.md$/i.test(entry.name)) continue;
+      const file = kind === 'skill' ? path.join(abs, entry.name, 'SKILL.md') : path.join(abs, entry.name);
+      if (kind !== 'skill' && !/\.(md|mdc)$/.test(entry.name)) continue;
+      const unsafe = projectPathError(file);
+      if (unsafe) { errors.push(unsafe); continue; }
+      if (fs.existsSync(file) && fs.statSync(file).isFile()) found.push(rel(file));
+    }
+    return found.sort();
+  } catch (e) { errors.push(`${dir}: ${e.message}`); return []; }
+}
+
+function resourceInventory() {
+  const resources = [], errors = [];
+  for (const [kind, dir] of Object.entries(RESOURCE_DIRS)) {
+    for (const file of resourceFiles(dir, kind, errors)) {
+      const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      const { data, body, has } = parseFrontmatter(text);
+      if (!has) errors.push(`${file}: canonical resource needs frontmatter`);
+      if (data.ctx_source) errors.push(`${file}: canonical resource cannot point to another owner`);
+      resources.push({ kind, name: resourceName(file, kind), file, data, body, text });
+    }
+  }
+  return { resources, errors };
+}
+
+function nativeResources(errors) {
+  const out = [];
+  for (const [kind, dir] of [['agent', '.claude/agents'], ['rule', '.claude/rules'], ['rule', '.cursor/rules'], ['skill', '.claude/skills'], ['skill', '.cursor/skills']]) {
+    for (const file of resourceFiles(dir, kind, errors)) {
+      if (file === '.cursor/rules/project-context.mdc') continue; // root AGENTS.md adapter, not a reusable rule
+      const canonical = path.join(ROOT, canonicalResourcePath(kind, resourceName(file, kind)));
+      if (fs.existsSync(canonical) && fs.realpathSync(path.join(ROOT, file)) === fs.realpathSync(canonical)) continue;
+      const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      const { data, body } = parseFrontmatter(text);
+      out.push({ kind, name: resourceName(file, kind), file, data, body, text });
+    }
+  }
+  return out;
+}
+
+function adapterTargets(resource) {
+  const { kind, name } = resource;
+  if (kind === 'agent') return [`.claude/agents/${name}.md`];
+  if (kind === 'rule') return [`.claude/rules/${name}.md`, `.cursor/rules/${name}.mdc`];
+  return [`.claude/skills/${name}/SKILL.md`, `.cursor/skills/${name}/SKILL.md`];
+}
+
+function renderAdapter(resource, file) {
+  const { kind, name, data } = resource;
+  const fields = { name: data.name || name, description: data.description || data.summary || data.title || `${name} ${kind}` };
+  if (kind === 'rule') {
+    delete fields.name;
+    const globs = ruleGlobs(data);
+    if (file.startsWith('.claude/')) fields.paths = globs;
+    else { fields.globs = globs.join(', '); fields.alwaysApply = data.alwaysApply === true || data.alwaysApply === 'true'; }
+  }
+  if (kind === 'agent' && data.tools) fields.tools = Array.isArray(data.tools) ? data.tools.join(', ') : data.tools;
+  fields.ctx_source = resource.file;
+  fields.ctx_generated = ADAPTER_MARK;
+  const target = posix(path.relative(path.dirname(path.join(ROOT, file)), path.join(ROOT, resource.file))).split('/').map(encodeURIComponent).join('/');
+  const text = `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\n\nRead and follow the [canonical ${kind}](${target}). Edit its source, not this adapter.\n`;
+  return text.replace('\n---\n\n', `\nctx_checksum: ${hashAdapter(text)}\n---\n\n`);
+}
+
+/* Relative native links are Git objects, not pointer-file fallbacks or junctions. */
+const SYMLINK_LAYOUT = [
+  ['CLAUDE.md', 'AGENTS.md', 'file'],
+  ['GEMINI.md', 'AGENTS.md', 'file'],
+  ['.github/copilot-instructions.md', 'AGENTS.md', 'file'],
+  ['.claude/agents', '.agents/agents', 'dir'],
+  ['.claude/rules', '.agents/rules', 'dir'],
+  ['.claude/skills', '.agents/skills', 'dir'],
+  ['.cursor/skills', '.agents/skills', 'dir'],
+  ['.cursor/rules', '.agents/views/cursor/rules', 'dir'],
+];
+const CURSOR_VIEWS = '.agents/views/cursor/rules';
+const CURSOR_VIEW_BODY = 'Resolve ctx_source above from the project root and follow that canonical source. Edit its source, not this generated view.';
+function renderCursorView(resource, file) {
+  const adapter = renderAdapter(resource, file);
+  // The same view is discovered at two depths through the directory alias.
+  const text = adapter.replace(parseFrontmatter(adapter).body, `\n${CURSOR_VIEW_BODY}\n`);
+  return text.replace(/^ctx_checksum:[^\n]*$/m, `ctx_checksum: ${hashAdapter(text)}`);
+}
+function configureLocalSymlinkGit() {
+  const result = { available: HAS_GIT(), enabled: false, errors: [] };
+  if (!result.available) return result;
+  for (const flag of ['--git-dir', '--git-common-dir']) {
+    const location = git(['rev-parse', flag]);
+    const unsafe = location === null ? 'cannot locate repository-local Git configuration' : projectPathError(path.resolve(ROOT, location));
+    if (unsafe) result.errors.push(`refusing Git configuration outside project: ${unsafe}`);
+  }
+  if (!result.errors.length && git(['config', '--local', 'core.symlinks', 'true']) === null) result.errors.push('cannot enable repository-local Git core.symlinks');
+  result.enabled = git(['config', '--bool', 'core.symlinks']) === 'true';
+  if (!result.enabled) result.errors.push('git core.symlinks must be true for a native-link checkout');
+  return result;
+}
+function linkStat(abs) {
+  try { return fs.lstatSync(abs); } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
+}
+function guardLinkOperation(abs, intended = abs) {
+  if (path.resolve(abs) !== path.resolve(intended) || path.resolve(abs) === path.resolve(ROOT)) throw new Error('refusing operation on an unintended path');
+  const relative = path.relative(ROOT, abs);
+  if (path.isAbsolute(relative) || relative === '..' || relative.startsWith('..' + path.sep)) throw new Error(`path escapes project root: ${rel(abs)}`);
+  // Resolve the parent, not the final link: unlink/rename must never follow it.
+  const unsafe = projectPathError(path.dirname(abs));
+  if (unsafe) throw new Error(unsafe);
+}
+function removeLinkTree(abs, intended = abs) {
+  guardLinkOperation(abs, intended);
+  const stat = linkStat(abs);
+  if (!stat) return;
+  if (stat.isDirectory() && !stat.isSymbolicLink()) {
+    for (const name of fs.readdirSync(abs)) removeLinkTree(path.join(abs, name));
+    fs.rmdirSync(abs);
+  } else fs.unlinkSync(abs);
+}
+function symlinkPermissionError(e) {
+  return `${e.code || 'ERROR'}: native symbolic links could not be created: ${e.message}. On Windows enable Developer Mode or grant the create-symbolic-link privilege, then retry; do not use junctions or regular-file copies. Existing valid links can still be read and reused without creation privilege.`;
+}
+// Shared init preflight hook. Owns only this guarded temporary directory.
+function probeSymlinks() {
+  const errors = [];
+  let temp;
+  try {
+    const prefix = path.join(ROOT, '.ctx-symlink-probe-');
+    guardLinkOperation(prefix);
+    temp = fs.mkdtempSync(prefix);
+    guardLinkOperation(temp);
+    fs.writeFileSync(path.join(temp, 'source-file'), 'probe\n', { flag: 'wx' });
+    fs.mkdirSync(path.join(temp, 'source-dir'));
+    for (const [name, source, type] of [['file-link', 'source-file', 'file'], ['dir-link', 'source-dir', 'dir']]) {
+      const abs = path.join(temp, name);
+      guardLinkOperation(abs);
+      fs.symlinkSync(source, abs, type);
+      if (!fs.lstatSync(abs).isSymbolicLink() || fs.readlinkSync(abs).replace(/\\/g, '/') !== source || fs.realpathSync(abs) !== fs.realpathSync(path.join(temp, source))) throw new Error(`${type} symbolic-link verification failed`);
+    }
+  } catch (e) { errors.push(symlinkPermissionError(e)); }
+  finally {
+    if (temp) {
+      try { removeLinkTree(temp); } catch (e) { errors.push(`cannot clean symlink probe ${rel(temp)}: ${e.message}; remove this recovery directory manually`); }
+    }
+  }
+  return { supported: !errors.length, errors };
+}
+function managedLinkWrapper(text, source, file) {
+  const { data, body } = parseFrontmatter(text);
+  const target = posix(path.relative(path.dirname(path.join(ROOT, file)), path.join(ROOT, source))).split('/').map(encodeURIComponent).join('/');
+  const pointer = ['agent', 'rule', 'skill'].some((kind) => body.trim() === `Read and follow the [canonical ${kind}](${target}). Edit its source, not this adapter.`);
+  const centralView = file.startsWith(CURSOR_VIEWS + '/') && body.trim() === CURSOR_VIEW_BODY;
+  return data.ctx_generated === ADAPTER_MARK && data.ctx_source === source && data.ctx_checksum === hashAdapter(text) && (pointer || centralView);
+}
+function linkPathSnapshot(abs) {
+  guardLinkOperation(abs);
+  const stat = linkStat(abs);
+  if (!stat) return 'missing';
+  if (stat.isSymbolicLink()) return `link:${fs.readlinkSync(abs)}`;
+  if (stat.isDirectory()) return JSON.stringify(fs.readdirSync(abs).sort().map((name) => [name, linkPathSnapshot(path.join(abs, name))]));
+  if (!stat.isFile()) throw new Error(`unsupported file type: ${rel(abs)}`);
+  return `file:${createHash('sha256').update(fs.readFileSync(abs)).digest('hex')}`;
+}
+function knownRootPointer(file, text) {
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  if (['CLAUDE.md', 'GEMINI.md'].includes(file) && normalized === '@AGENTS.md') return true;
+  const pointers = {
+    'GEMINI.md': '@AGENTS.md\n\n# GEMINI.md\n\n<!-- Shared instructions are imported above. Keep only Gemini-specific loader notes here; do not copy shared policy or wiki content. -->',
+    '.github/copilot-instructions.md': '# Copilot project entrypoint\n\nRead [shared agent instructions](../AGENTS.md). This adapter owns no project policy or facts.',
+    '.cursor/rules/project-context.mdc': '---\ndescription: Shared project entrypoint\nalwaysApply: true\nctx_source: AGENTS.md\n---\n\nRead [shared agent instructions](../../AGENTS.md). Edit the source, not this tool adapter.',
+  };
+  return normalized === pointers[file];
+}
+function migratableLinkPath(abs, file, source, type) {
+  const inspect = (target, relative = '') => {
+    const unsafe = projectPathError(target);
+    if (unsafe) return unsafe;
+    const stat = fs.lstatSync(target);
+    if (stat.isSymbolicLink()) return 'unexpected symbolic link preserved';
+    if (stat.isDirectory()) {
+      if (type !== 'dir') return 'expected a file, found a directory';
+      for (const name of fs.readdirSync(target)) {
+        const reason = inspect(path.join(target, name), relative ? `${relative}/${name}` : name);
+        if (reason) return `${relative ? relative + '/' : ''}${name}: ${reason}`;
+      }
+      return '';
+    }
+    if (!stat.isFile()) return 'unrecognized native content preserved';
+    if (type === 'dir' && path.basename(target) === '.gitkeep' && stat.size === 0) return '';
+    const nativeFile = type === 'file' ? file : `${file}/${relative}`;
+    const text = fs.readFileSync(target, 'utf8');
+    if (knownRootPointer(nativeFile, text)) return '';
+    let expected = source;
+    if (type === 'dir') {
+      const kind = file.endsWith('/skills') ? 'skill' : file.endsWith('/agents') ? 'agent' : 'rule';
+      const valid = kind === 'skill' ? /^[^/]+\/SKILL\.md$/.test(relative) : /^[^/]+\.(md|mdc)$/.test(relative);
+      if (!valid) return 'unrecognized companion content preserved';
+      expected = canonicalResourcePath(kind, resourceName(nativeFile, kind));
+      if (nativeFile === '.cursor/rules/project-context.mdc') expected = 'AGENTS.md';
+    }
+    if (!managedLinkWrapper(text, expected, nativeFile)) return ['CLAUDE.md', 'GEMINI.md'].includes(nativeFile) ? 'extra loader notes or custom text preserved; deliberately move them to the native context owner before migration' : 'not a checksum-intact generated adapter; custom content preserved';
+    return '';
+  };
+  return inspect(abs);
+}
+function inspectNativeLink(file, source, type) {
+  const abs = path.join(ROOT, file), canonical = path.join(ROOT, source);
+  const target = posix(path.relative(path.dirname(abs), canonical));
+  const row = { file, source, type, target, linked: false, exists: false, ok: false };
+  const stat = linkStat(abs);
+  row.exists = !!stat;
+  if (!stat) return row;
+  row.linked = stat.isSymbolicLink();
+  if (!row.linked) { row.reason = 'not a symbolic link (including Git checkouts materialized as regular files)'; return row; }
+  const actual = fs.readlinkSync(abs);
+  row.actualTarget = actual;
+  if (path.isAbsolute(actual) || path.win32.isAbsolute(actual) || /^[A-Za-z]:/.test(actual) || actual.replace(/\\/g, '/') !== target) { row.reason = 'wrong or non-relative symbolic-link target preserved'; return row; }
+  const unsafe = projectPathError(abs) || projectPathError(canonical);
+  if (unsafe) { row.reason = unsafe; return row; }
+  try {
+    const sourceStat = fs.statSync(canonical);
+    row.ok = (type === 'dir' ? sourceStat.isDirectory() : sourceStat.isFile()) && fs.realpathSync(abs) === fs.realpathSync(canonical);
+    if (!row.ok) row.reason = 'symbolic-link source type or real target is incorrect';
+  } catch (e) { row.reason = `symbolic-link source is missing or unreadable: ${e.message}`; }
+  return row;
+}
+function symlinkReport({ check = false, migrate = false } = {}) {
+  let inventory;
+  try { inventory = resourceInventory(); }
+  catch (e) { inventory = { resources: [], errors: [`cannot read canonical resource inventory: ${e.message}`] }; }
+  const report = { resources: inventory.resources, adapters: [], conflicts: [], errors: [...inventory.errors], written: [], git: { available: HAS_GIT(), enabled: false } };
+  const { errors, conflicts, adapters, written } = report;
+  report.git.enabled = report.git.available && git(['config', '--bool', 'core.symlinks']) === 'true';
+  if (CONFIG_ERROR) errors.push(CONFIG_ERROR);
+  const plans = [], directories = [];
+  const conflict = (file, source, reason) => conflicts.push({ file, source, reason });
+  const parentSafety = (abs) => {
+    const unsafe = projectPathError(path.dirname(abs));
+    if (unsafe) return unsafe;
+    for (let dir = path.dirname(abs); path.resolve(dir) !== path.resolve(ROOT); dir = path.dirname(dir)) {
+      const stat = linkStat(dir);
+      if (stat?.isSymbolicLink()) return `symbolic-link parent preserved: ${rel(dir)}; native configuration folders must remain independent`;
+    }
+    return '';
+  };
+  for (const [file, source, type] of SYMLINK_LAYOUT) {
+    try {
+      const abs = path.join(ROOT, file), canonical = path.join(ROOT, source);
+      const unsafe = parentSafety(abs) || projectPathError(canonical);
+      if (unsafe) { errors.push(unsafe); adapters.push({ file, source, type, linked: false, ok: false }); continue; }
+      const sourceStat = linkStat(canonical);
+      if (!sourceStat && type === 'dir' && source !== CURSOR_VIEWS) {
+        if (check) errors.push(`missing canonical resource directory: ${source}`);
+        else directories.push(canonical);
+      } else if (source !== CURSOR_VIEWS && (!sourceStat || !(type === 'dir' ? fs.statSync(canonical).isDirectory() : fs.statSync(canonical).isFile()))) errors.push(`missing or incorrect canonical ${type}: ${source}`);
+      const row = inspectNativeLink(file, source, type);
+      adapters.push(row);
+      if (row.ok) continue;
+      if (row.linked) {
+        // An exact relative alias can be reused while its missing generated/empty
+        // directory is repaired, without needing symbolic-link creation privilege.
+        if (!sourceStat && type === 'dir' && row.actualTarget.replace(/\\/g, '/') === row.target) continue;
+        conflict(file, source, row.reason); continue;
+      }
+      const before = linkPathSnapshot(abs);
+      if (row.exists) {
+        const reason = migratableLinkPath(abs, file, source, type);
+        if (reason) { conflict(file, source, reason); continue; }
+        if (linkPathSnapshot(abs) !== before) { conflict(file, source, 'native content changed during validation; preserved'); continue; }
+        if (!migrate) { conflict(file, source, 'existing adapter path requires --migrate; preserved'); continue; }
+      }
+      if (!check) plans.push({ file, abs, source, type, target: row.target, row, before });
+    } catch (e) { errors.push(`${file}: ${e.message}`); }
+  }
+  // Cursor needs native .mdc metadata, but its generated body only links the owner.
+  const shared = { kind: 'rule', name: 'project-context', file: 'AGENTS.md', data: { description: 'Shared project policy', alwaysApply: true, paths: ['**'] } };
+  const views = new Map();
+  for (const resource of [...inventory.resources.filter((r) => r.kind === 'rule'), shared]) {
+    const file = `${CURSOR_VIEWS}/${resource.name}.mdc`;
+    if (views.has(file)) { errors.push(`${file}: rule name collides with shared project-context view`); continue; }
+    views.set(file, { resource, text: renderCursorView(resource, file) });
+  }
+  let viewsChanged = false;
+  const viewAbs = path.join(ROOT, CURSOR_VIEWS);
+  try {
+    const unsafe = parentSafety(viewAbs) || projectPathError(viewAbs);
+    if (unsafe) throw new Error(unsafe);
+    const before = linkPathSnapshot(viewAbs);
+    const stat = linkStat(viewAbs);
+    if (stat && (!stat.isDirectory() || stat.isSymbolicLink())) conflict(CURSOR_VIEWS, '.agents/rules', 'central Cursor views must be a real generated directory; existing content preserved');
+    else if (stat) {
+      for (const name of fs.readdirSync(viewAbs)) {
+        const abs = path.join(viewAbs, name), file = `${CURSOR_VIEWS}/${name}`;
+        const child = fs.lstatSync(abs);
+        if (name === '.gitkeep' && child.isFile() && child.size === 0) continue;
+        if (child.isSymbolicLink() || !child.isFile() || !name.endsWith('.mdc')) { conflict(file, '.agents/rules', 'unrecognized central view content preserved'); continue; }
+        const text = fs.readFileSync(abs, 'utf8');
+        const source = name === 'project-context.mdc' ? 'AGENTS.md' : canonicalResourcePath('rule', name.slice(0, -4));
+        if (!managedLinkWrapper(text, source, file)) {
+          conflict(file, source, 'generated view checksum/source validation failed; preserved');
+          errors.push(`${file}: generated Cursor view checksum/source validation failed`);
+        } else if (!views.has(file)) { viewsChanged = true; if (check) errors.push(`${file}: obsolete generated Cursor view`); }
+      }
+    }
+    for (const [file, { resource, text: expected }] of views) {
+      const abs = path.join(ROOT, file);
+      const stat = linkStat(abs);
+      const ok = !!stat && stat.isFile() && !stat.isSymbolicLink() && fs.readFileSync(abs, 'utf8').replace(/\r\n/g, '\n') === expected;
+      adapters.push({ file, source: resource.file, type: 'view', linked: false, exists: !!stat, managed: !!stat && stat.isFile() && !stat.isSymbolicLink() && managedLinkWrapper(fs.readFileSync(abs, 'utf8'), resource.file, file), ok });
+      if (!ok) { viewsChanged = true; if (check) errors.push(`${file}: generated Cursor view is missing or out of sync`); }
+    }
+    if (linkPathSnapshot(viewAbs) !== before) conflict(CURSOR_VIEWS, '.agents/rules', 'central views changed during validation; preserved');
+    if (viewsChanged && !check) plans.unshift({ file: CURSOR_VIEWS, abs: viewAbs, type: 'views', before });
+  } catch (e) { errors.push(`${CURSOR_VIEWS}: ${e.message}`); }
+  if (check) {
+    if (report.git.available && !report.git.enabled) errors.push('git core.symlinks is not true; run ctx symlinks to configure it locally before Git recreates links');
+    report.errors = [...new Set(errors)];
+    return report;
+  }
+  const cfgAbs = path.join(CTX, '.ctx.json');
+  let cfg, cfgBefore;
+  try {
+    const unsafe = parentSafety(cfgAbs) || projectPathError(cfgAbs);
+    if (unsafe) throw new Error(unsafe);
+    const stat = linkStat(cfgAbs);
+    if (stat && (!stat.isFile() || stat.isSymbolicLink())) throw new Error('configuration must be a regular file');
+    cfgBefore = linkPathSnapshot(cfgAbs);
+    cfg = stat ? JSON.parse(fs.readFileSync(cfgAbs, 'utf8')) : {};
+    if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) throw new Error('configuration must be an object');
+    if (linkPathSnapshot(cfgAbs) !== cfgBefore) throw new Error('configuration changed during validation; preserved');
+  } catch (e) { errors.push(`context/.ctx.json: ${e.message}`); }
+  if (errors.length || conflicts.length) return report;
+  try { for (const plan of plans) if (linkPathSnapshot(plan.abs) !== plan.before) throw new Error(`validated content changed: ${plan.file}`); }
+  catch (e) { errors.push(`cannot validate adapter staging boundary: ${e.message}`); return report; }
+  // Turning off Developer Mode does not prevent no-op reuse or ordinary view updates.
+  if (plans.some((p) => p.type === 'file' || p.type === 'dir')) {
+    const probe = probeSymlinks();
+    report.supported = probe.supported;
+    errors.push(...probe.errors);
+    if (!probe.supported) return report;
+  }
+  if (report.git.available) {
+    const state = configureLocalSymlinkGit();
+    report.git.enabled = state.enabled;
+    errors.push(...state.errors);
+    if (errors.length) return report;
+  }
+  if (cfg.resourceMode !== 'symlink' || cfg.requestedResourceMode) {
+    const installed = { ...cfg, resourceMode: 'symlink' };
+    delete installed.requestedResourceMode;
+    plans.push({ file: 'context/.ctx.json', abs: cfgAbs, type: 'config', before: cfgBefore, text: JSON.stringify(installed, null, 2) + '\n' });
+  }
+  let temp;
+  const createdDirs = [], prepared = [];
+  const mkdir = (abs) => {
+    if (linkStat(abs)) { if (!fs.statSync(abs).isDirectory()) throw new Error(`not a directory: ${rel(abs)}`); return; }
+    mkdir(path.dirname(abs));
+    guardLinkOperation(abs);
+    fs.mkdirSync(abs);
+    createdDirs.push(abs);
+  };
+  const rename = (from, to) => { guardLinkOperation(from); guardLinkOperation(to); fs.renameSync(from, to); };
+  try {
+    temp = fs.mkdtempSync(path.join(ROOT, '.ctx-symlinks-'));
+    guardLinkOperation(temp);
+    for (const dir of directories) mkdir(dir);
+    for (const [index, plan] of plans.entries()) {
+      mkdir(path.dirname(plan.abs));
+      const token = `${path.basename(temp)}-${index}`;
+      plan.stage = path.join(path.dirname(plan.abs), `${token}-new`);
+      plan.backup = path.join(path.dirname(plan.abs), `${token}-backup`);
+      guardLinkOperation(plan.stage); guardLinkOperation(plan.backup);
+      if (linkStat(plan.stage) || linkStat(plan.backup)) throw new Error(`temporary sibling already exists: ${plan.file}`);
+      prepared.push(plan);
+      if (plan.type === 'views') {
+        fs.mkdirSync(plan.stage);
+        for (const [file, { text }] of views) fs.writeFileSync(path.join(plan.stage, path.basename(file)), text, { flag: 'wx' });
+      } else if (plan.type === 'config') fs.writeFileSync(plan.stage, plan.text, { flag: 'wx' });
+      else fs.symlinkSync(plan.target, plan.stage, plan.type);
+      plan.after = linkPathSnapshot(plan.stage); // expected unpublished content, never a mutable destination baseline
+    }
+    // Every new link exists before the first old adapter is moved.
+    for (const plan of prepared) {
+      if (plan.type === 'config') {
+        for (const row of adapters) {
+          if (row.type === 'view') continue;
+          const current = inspectNativeLink(row.file, row.source, row.type);
+          if (!current.ok) throw new Error(`installed link failed validation: ${row.file}`);
+        }
+      }
+      if (linkPathSnapshot(plan.abs) !== plan.before) throw new Error(`adapter changed during staging; preserved: ${plan.file}`);
+      if (linkStat(plan.abs)) { rename(plan.abs, plan.backup); plan.backedUp = true; }
+      rename(plan.stage, plan.abs); plan.installed = true;
+    }
+    for (const row of adapters) {
+      if (row.type === 'view') {
+        const abs = path.join(ROOT, row.file), stat = fs.lstatSync(abs);
+        row.ok = stat.isFile() && !stat.isSymbolicLink() && fs.readFileSync(abs, 'utf8').replace(/\r\n/g, '\n') === views.get(row.file).text;
+        row.exists = true; row.managed = row.ok;
+      } else {
+        delete row.reason;
+        Object.assign(row, inspectNativeLink(row.file, row.source, row.type));
+      }
+      if (!row.ok) throw new Error(`installed adapter failed validation: ${row.file}`);
+    }
+    CONFIG.resourceMode = 'symlink';
+    written.push(...prepared.map((p) => p.file));
+  } catch (e) {
+    errors.push(`symbolic-link install failed: ${e.code === 'EPERM' ? symlinkPermissionError(e) : e.message}`);
+    for (const plan of [...prepared].reverse()) {
+      try {
+        if (plan.installed) {
+          if (linkPathSnapshot(plan.abs) !== plan.after) throw new Error('installed path changed; refusing to delete new custom content');
+          removeLinkTree(plan.abs);
+        }
+        if (plan.backedUp) {
+          if (linkStat(plan.abs)) throw new Error('rollback destination was occupied by new content; backup preserved');
+          rename(plan.backup, plan.abs);
+        }
+        removeLinkTree(plan.stage);
+      } catch (rollback) {
+        report.recovery ||= [];
+        if (linkStat(plan.backup)) report.recovery.push(rel(plan.backup));
+        if (linkStat(plan.stage)) report.recovery.push(rel(plan.stage));
+        if (linkStat(plan.abs)) report.recovery.push(rel(plan.abs));
+        errors.push(`rollback failed for ${plan.file}: ${rollback.message}; preserved recovery backup ${rel(plan.backup)}`);
+      }
+    }
+    for (const row of adapters) row.ok = false;
+    for (const dir of [...createdDirs].reverse()) {
+      try { guardLinkOperation(dir); if (linkStat(dir) && fs.readdirSync(dir).length === 0) fs.rmdirSync(dir); } catch (cleanup) { errors.push(`cannot clean temporary directory ${rel(dir)}: ${cleanup.message}`); }
+    }
+  }
+  if (!errors.length) {
+    // Old generated wrappers are removed only after installation and validation.
+    for (const plan of prepared.filter((p) => p.backedUp)) {
+      try {
+        if (linkPathSnapshot(plan.backup) !== plan.before) throw new Error('backup changed; refusing to delete new custom content');
+        removeLinkTree(plan.backup);
+      } catch (e) {
+        report.recovery ||= []; report.recovery.push(rel(plan.backup));
+        report.warnings ||= []; report.warnings.push(`installed successfully; old managed backup preserved at ${rel(plan.backup)}: ${e.message}`);
+      }
+    }
+  }
+  if (temp) {
+    try { removeLinkTree(temp); } catch (e) { report.warnings ||= []; report.warnings.push(`temporary recovery directory preserved at ${rel(temp)}: ${e.message}`); }
+  }
+  report.errors = [...new Set(errors)];
+  return report;
+}
+
+function adapterReport({ check = false, migrate = false, promote = [] } = {}) {
+  if (CONFIG.resourceMode === 'symlink' || CONFIG.requestedResourceMode === 'symlink') return symlinkReport({ check, migrate });
+  const errors = [], conflicts = [], written = [], adapters = [];
+  const native = nativeResources(errors);
+  const promoted = new Set(promote);
+  if (migrate && !check) {
+    const groups = new Map();
+    for (const item of native.filter((r) => !r.data.ctx_source && !promoted.has(r.file))) {
+      const source = canonicalResourcePath(item.kind, item.name);
+      if (!groups.has(source)) groups.set(source, []);
+      groups.get(source).push(item);
+    }
+    for (const [source, items] of groups) {
+      const abs = path.join(ROOT, source);
+      const unsafe = projectPathError(abs);
+      if (unsafe) { errors.push(unsafe); continue; }
+      if (fs.existsSync(abs)) { conflicts.push({ file: items[0].file, source, reason: 'canonical resource already exists; refusing competing owners' }); continue; }
+      if (items.length !== 1) { conflicts.push({ file: items.map((r) => r.file).join(', '), source, reason: 'multiple legacy owners; choose one before migration' }); continue; }
+      const item = items[0];
+      if (item.kind === 'skill' && fs.readdirSync(path.dirname(path.join(ROOT, item.file))).some((f) => f !== 'SKILL.md' && f !== '.gitkeep')) {
+        conflicts.push({ file: item.file, source, reason: 'skill has companion resources; move the entire validated folder manually' }); continue;
+      }
+      if (!parseFrontmatter(item.text).has) { conflicts.push({ file: item.file, source, reason: 'legacy resource needs frontmatter before promotion' }); continue; }
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, item.text); // explicit promotion preserves the exact source, not a rewritten summary
+      promoted.add(item.file);
+      written.push(source);
+    }
+  }
+  const inventory = resourceInventory();
+  errors.push(...inventory.errors);
+  const resources = inventory.resources;
+  const expectedFiles = new Set();
+  for (const resource of resources) {
+    for (const file of adapterTargets(resource)) {
+      expectedFiles.add(file);
+      const abs = path.join(ROOT, file);
+      const unsafe = projectPathError(abs);
+      if (unsafe) { errors.push(unsafe); adapters.push({ kind: resource.kind, file, source: resource.file, exists: false, managed: false, ok: false, changed: true }); continue; }
+      const exists = fs.existsSync(abs);
+      const text = exists && fs.statSync(abs).isFile() ? fs.readFileSync(abs, 'utf8') : '';
+      const data = parseFrontmatter(text).data;
+      const managed = data.ctx_generated === ADAPTER_MARK;
+      const expected = renderAdapter(resource, file);
+      const row = { kind: resource.kind, file, source: resource.file, exists, managed, ok: text.replace(/\r\n/g, '\n') === expected, changed: false };
+      if (exists && !promoted.has(file) && (!managed || data.ctx_checksum !== hashAdapter(text))) {
+        conflicts.push({ file, source: resource.file, reason: managed ? 'adapter hand edits detected; preserved' : 'unmanaged native content preserved; migrate or reconcile explicitly' });
+      } else if (!row.ok) {
+        row.changed = true;
+        if (!check) {
+          fs.mkdirSync(path.dirname(abs), { recursive: true });
+          fs.writeFileSync(abs, expected);
+          written.push(file); row.ok = true; row.managed = true;
+        }
+      }
+      adapters.push(row);
+    }
+  }
+  for (const item of native) {
+    if (expectedFiles.has(item.file)) continue;
+    if (item.data.ctx_source) {
+      const source = String(item.data.ctx_source);
+      const unsafe = projectPathError(path.resolve(ROOT, source));
+      if (unsafe) errors.push(unsafe);
+      else errors.push(`${item.file}: adapter source is missing or not inventoried: ${source}`);
+    } else if (!conflicts.some((c) => c.file.split(', ').includes(item.file))) {
+      conflicts.push({ file: item.file, source: canonicalResourcePath(item.kind, item.name), reason: 'legacy owner needs explicit migration; no canonical copy was seeded' });
+    }
+  }
+  return { resources, adapters, conflicts, errors: [...new Set(errors)], written };
+}
+
+commands.symlinks = () => {
+  if (pos.length) return die('usage: ctx symlinks [--check] [--migrate] [--json]');
+  const report = symlinkReport({ check: !!flags.check, migrate: !!flags.migrate });
+  const ok = !report.errors.length && !report.conflicts.length && report.adapters.every((a) => a.ok);
+  emit({ command: 'symlinks', ok, ...report, resources: report.resources.map(({ kind, name, file }) => ({ kind, name, file })), exitCode: ok ? 0 : 1 }, () => {
+    for (const file of report.written) console.log(`symlink/view: ${file}`);
+    for (const error of report.errors) console.log(`ERROR ${error}`);
+    for (const item of report.conflicts) console.log(`CONFLICT ${item.file}: ${item.reason}`);
+    for (const warning of report.warnings || []) console.log(`WARN ${warning}`);
+    for (const adapter of report.adapters.filter((a) => !a.ok)) console.log(`REVIEW ${adapter.file} -> ${adapter.source}`);
+    console.log(`symlinks: ${report.resources.length} canonical resources, ${ok ? 'clean' : 'needs attention'}; Git ${report.git.available ? report.git.enabled ? 'core.symlinks=true' : 'core.symlinks is not true' : 'unavailable'}`);
+  });
+  if (!ok) process.exit(1);
+};
+
+commands.adapters = () => {
+  const report = adapterReport({ check: !!flags.check, migrate: !!flags.migrate });
+  const ok = !report.errors.length && !report.conflicts.length && report.adapters.every((a) => a.ok);
+  emit({ command: 'adapters', ok, ...report, resources: report.resources.map(({ kind, name, file }) => ({ kind, name, file })), exitCode: ok ? 0 : 1 }, () => {
+    for (const file of report.written) console.log(`adapter/resource: ${file}`);
+    for (const error of report.errors) console.log(`ERROR ${error}`);
+    for (const conflict of report.conflicts) console.log(`CONFLICT ${conflict.file}: ${conflict.reason}`);
+    for (const adapter of report.adapters.filter((a) => !a.ok)) console.log(`REVIEW ${adapter.file} -> ${adapter.source}`);
+    console.log(`adapters: ${report.resources.length} canonical resources, ${ok ? 'clean' : 'needs attention'}`);
+  });
+  if (!ok) process.exit(1);
+};
+
 /* ---- new */
 const SKELETONS = {
   module: (t, slug, covers) => `---\ntitle: ${t}\ntype: module\nstatus: draft\nsummary: TODO one line — what this module owns\ntags: [${slug}]\ncovers: [${covers || `src/${slug}/**`}]\nrelated: []\nupdated: ${today()}\nconfidence: inferred\n---\n\n# ${t}\n\n## TL;DR\n- Owns: TODO\n- Entry points: TODO (file → exported symbol)\n- Biggest gotcha: TODO\n\n## Responsibilities\n\n## Public surface\n| Symbol / route | File | Contract |\n|---|---|---|\n\n## Data flow\n\n## Depends on / used by\n\n## Gotchas & invariants\n\n## Tests\n\n## Open questions\n`,
@@ -1066,7 +1784,38 @@ commands.new = () => {
   if (!type || !rest.length) return die('usage: ctx new <module|feature|source|type> <name> [--covers "src/a/**,src/b.ts"] [--title "Title"]');
   const slug = rest.join('-').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const title = flags.title && flags.title !== true ? String(flags.title) : rest.join(' ').replace(/^./, (c) => c.toUpperCase());
-  const covers = flags.covers && flags.covers !== true ? String(flags.covers).split(',').map((s) => s.trim()).join(', ') : '';
+  const covers = flags.covers && flags.covers !== true ? splitList(flags.covers).join(', ') : '';
+  if (Object.hasOwn(RESOURCE_DIRS, type)) {
+    if (!slug) return die('resource name must contain letters or numbers');
+    const file = canonicalResourcePath(type, slug);
+    const abs = path.join(ROOT, file);
+    assertProjectPath(abs);
+    for (const native of adapterTargets({ kind: type, name: slug })) assertProjectPath(path.join(ROOT, native));
+    if (fs.existsSync(abs)) return die(`${file} already exists`);
+    for (const native of CONFIG.resourceMode === 'symlink' ? [] : adapterTargets({ kind: type, name: slug })) {
+      const target = path.join(ROOT, native);
+      if (!fs.existsSync(target)) continue;
+      if (!fs.statSync(target).isFile()) return die(`native resource path is not a file: ${native}`);
+      const text = fs.readFileSync(target, 'utf8');
+      const data = parseFrontmatter(text).data;
+      if (data.ctx_generated !== ADAPTER_MARK || data.ctx_source !== file || data.ctx_checksum !== hashAdapter(text)) return die(`native resource conflict: ${native} — preserve its owner; explicitly migrate or reconcile before creating ${file}`);
+    }
+    const fields = { name: slug, description: String(flags.summary || `TODO ${type} purpose`) };
+    if (type === 'rule') fields.paths = splitList(flags.paths || flags.covers || '**/*');
+    if (type === 'agent') fields.tools = 'Read, Grep, Glob, Bash';
+    const body = type === 'rule' ? `# ${title}\n\nRead the owning context page before editing matching paths. Add links here, not copies of its rules.\n` : type === 'agent' ? `# ${title}\n\nRead AGENTS.md first.\n\n## Purpose\nTODO\n\n## Procedure\nTODO reusable role behavior only; link to project facts and workflow owners.\n` : `# ${title}\n\nRead AGENTS.md first.\n\n## When to use\nTODO\n\n## Procedure\nTODO reusable procedure only; project facts stay at their owners. Resolve companion resources relative to this canonical skill directory.\n`;
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\n\n${body}`);
+    const report = adapterReport();
+    const ok = !report.errors.length && !report.conflicts.length && report.adapters.every((a) => a.ok);
+    emit({ command: 'new', ok, file, ...report, resources: report.resources.map(({ kind, name, file }) => ({ kind, name, file })), exitCode: ok ? 0 : 1 }, () => {
+      console.log(`created ${file} — edit this canonical resource only; adapters route to it`);
+      for (const error of report.errors) console.log(`ERROR ${error}`);
+      for (const conflict of report.conflicts) console.log(`CONFLICT ${conflict.file}: ${conflict.reason}`);
+    });
+    if (!ok) process.exit(1);
+    return;
+  }
   let dest;
   if (type === 'module') dest = path.join(CTX, 'codebase', 'modules', `${slug}.md`);
   else if (type === 'feature') {
@@ -1095,7 +1844,9 @@ commands.doctor = () => {
   };
   C(fs.existsSync(path.join(ROOT, 'AGENTS.md')), 'AGENTS.md present', 'run ctx init');
   const claude = read('CLAUDE.md');
-  C(!claude || /^\s*@AGENTS\.md\s*$/m.test(claude), 'CLAUDE.md imports AGENTS.md', 'first line of CLAUDE.md must be `@AGENTS.md` (single source of truth)');
+  const claudePath = path.join(ROOT, 'CLAUDE.md'), agentsPath = path.join(ROOT, 'AGENTS.md');
+  const sameInstructions = fs.existsSync(claudePath) && fs.existsSync(agentsPath) && fs.lstatSync(claudePath).isSymbolicLink() && fs.realpathSync(claudePath) === fs.realpathSync(agentsPath);
+  C(sameInstructions || !claude || /^\s*@AGENTS\.md\s*$/m.test(claude), 'CLAUDE.md resolves shared AGENTS.md', 'create the real AGENTS.md symlink, or preserve the explicit legacy import layout');
   C(fs.existsSync(path.join(CTX, 'index.md')) && read('context/index.md').includes('<!-- ctx:index:start -->'), 'context/index.md has ctx markers', 'run ctx index');
   C(fs.existsSync(path.join(CTX, 'ctx.mjs')), 'context/ctx.mjs present', 'copy scripts/ctx.mjs to context/');
   const gi = read('.gitignore');
@@ -1106,8 +1857,8 @@ commands.doctor = () => {
     settings = JSON.parse(read('.claude/settings.json'));
   } catch {}
   if (settings) {
-    const deny = (settings.permissions && settings.permissions.deny) || [];
-    C(deny.some((r) => /\.env/.test(r)), 'settings.json denies .env reads', 'add a deny rule like `Read(**/.env*)`');
+    const deny = Array.isArray(settings.permissions?.deny) ? settings.permissions.deny : [];
+    C(deny.some((r) => typeof r === 'string' && /\.env/.test(r)), 'settings.json denies .env reads', 'add a deny rule like `Read(**/.env*)`');
     const hooks = settings.hooks || {};
     const flat = JSON.stringify(hooks);
     C(/SessionStart/.test(flat), 'SessionStart hook wired', 'wire `ctx hook session-start` in .claude/settings.json hooks');
@@ -1122,11 +1873,13 @@ commands.doctor = () => {
       return null;
     }
   })();
-  C(!cfgJ || cfgJ.setupVersion === VERSION, `project tooling at skill version ${VERSION}`, `project was set up by ${cfgJ.setupVersion || 'an older version'} — re-run: node <skill>/scripts/ctx.mjs setup --root . (idempotent upgrade)`);
+  C(!!cfgJ && !CONFIG_ERROR && cfgJ.setupVersion === VERSION, `project tooling at skill version ${VERSION}`, CONFIG_ERROR || `project was set up by ${cfgJ?.setupVersion || 'an older version'} — re-run: node <skill>/scripts/ctx.mjs setup --root . (idempotent upgrade)`);
   const dr = detect(ROOT);
   const expectRules = uiOn(dr, {}) || dr.signals.includes('backend') || dr.signals.includes('db') || dr.langs.some((l) => l !== 'docs');
   C(!expectRules || fs.existsSync(path.join(ROOT, '.claude', 'rules')), '.claude/rules/ path-gated rules present', 're-run ctx setup to generate them');
   C(!fs.existsSync(path.join(CTX, 'agents')) || fs.existsSync(path.join(CTX, 'agents', 'context-explorer', 'MEMORY.md')), 'subagent memory wired', 're-run ctx setup to scaffold context/agents/*/MEMORY.md');
+  const ownership = ownershipHealth();
+  C(!ownership.errors.length, 'canonical owners and host adapters resolve', ownership.errors.slice(0, 3).join('; '));
   const fails = checks.filter((c) => !c.ok);
   emit({ command: 'doctor', ok: !fails.length, checks }, () => {
     for (const c of checks) console.log(`${c.ok ? 'ok  ' : 'FAIL'}  ${c.label}${c.ok ? '' : ' — ' + c.fix}`);
@@ -1144,7 +1897,7 @@ commands.status = () => {
   const files = sourceFiles();
   const rx = ps.flatMap((p) => matchers(p.data.covers));
   const cov = files.length ? Math.round((files.filter((f) => anyMatch(rx, f)).length / files.length) * 100) : 100;
-  const always = CONFIG.alwaysRead.map((f) => (fs.existsSync(path.join(ROOT, f)) ? tokens(fs.readFileSync(path.join(ROOT, f), 'utf8')) : 0)).reduce((a, b) => a + b, 0);
+  const always = orientationFiles().reduce((n, p) => n + p.tokens, 0);
   const tr = ps.find((p) => p.rel === 'context/progress-tracker.md');
   const inProgress = tr ? ((tr.text.match(/##\s*In progress[^\n]*\n([\s\S]*?)(?:\n##\s|$)/i) || [])[1] || '').split('\n').filter((l) => l.trim().startsWith('-') && !/\{\{/.test(l)).map((l) => l.trim()) : [];
   const logPath = path.join(CTX, 'log.md');
@@ -1163,9 +1916,14 @@ commands.status = () => {
 commands.hook = () => {
   const which = pos[0];
   let input = {};
+  let validInput = true;
   try {
-    if (!process.stdin.isTTY) input = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
-  } catch {}
+    if (!process.stdin.isTTY) {
+      const parsed = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) input = parsed;
+      else validInput = false;
+    }
+  } catch { validInput = false; }
   if (which === 'session-start') {
     if (input.source === 'compact') console.log('[project-context-system] Context was compacted — your memory of this session is lossy. Re-read the files below before continuing; trust the tracker and memory.md over recall.');
     const mem = path.join(ROOT, 'memory.md');
@@ -1182,11 +1940,12 @@ commands.hook = () => {
     return;
   }
   if (which === 'stop') {
-    if (input.stop_hook_active) return; // never loop
+    if (!validInput || input.stop_hook_active === true) return; // malformed payloads are a no-op; never loop
     if (!HAS_GIT()) return;
-    const { code, rows, trackerTouched } = impactData();
+    const { code, rows, trackerTouched, uncovered } = impactData(true);
     if (!code.length) return; // nothing changed -> allow stop
     const problems = [];
+    if (uncovered.length) problems.push(`Uncovered changed source files: ${uncovered.slice(0, 6).join(', ')}. Add a documenting page or update its covers before stopping.`);
     const stale = rows.filter((r) => !r.updated);
     if (stale.length) problems.push(`Context pages not updated for changed code: ${stale.slice(0, 6).map((r) => r.p.rel).join(', ')}. Update them (or confirm nothing they describe changed) then run \`node context/ctx.mjs stamp <page>\`.`);
     if (!trackerTouched.length) problems.push('Neither context/progress-tracker.md nor memory.md was updated this session.');
@@ -1217,8 +1976,10 @@ const INIT_MAP = [
   ['claude-local.md.template', 'CLAUDE.local.md', () => true],
   ['memory.md.template', 'memory.md', () => true],
   ['settings.json.template', '.claude/settings.json', () => true],
-  ['agent-explorer.md.template', '.claude/agents/context-explorer.md', () => true],
-  ['agent-reviewer.md.template', '.claude/agents/context-reviewer.md', () => true],
+  ['agent-explorer.md.template', '.agents/agents/context-explorer.md', () => true],
+  ['agent-reviewer.md.template', '.agents/agents/context-reviewer.md', () => true],
+  ['agents-readme.md.template', '.agents/README.md', () => true],
+  ['ownership.md.template', 'context/ownership.md', () => true],
   ['docs-readme.md.template', 'docs/README.md', () => true],
   ['index.md.template', 'context/index.md', () => true],
   ['log.md.template', 'context/log.md', () => true],
@@ -1252,10 +2013,48 @@ const POINTER_MAP = [
 /* ---- setup — the ONE command: everything mechanical, greenfield or brownfield.
    Idempotent (never clobbers filled content) and upgrade-safe (re-run after updating
    the skill: refreshes context/ctx.mjs, adds new files, bumps setupVersion). */
+function projectPathError(abs) {
+  const inside = (base, target) => {
+    const r = path.relative(base, target);
+    return !path.isAbsolute(r) && r !== '..' && !r.startsWith('..' + path.sep);
+  };
+  const real = (target) => {
+    let parent = target;
+    const suffix = [];
+    for (;;) {
+      try {
+        fs.lstatSync(parent);
+      } catch (e) {
+        if (e.code !== 'ENOENT') throw e;
+        const up = path.dirname(parent);
+        if (up === parent) throw e;
+        suffix.unshift(path.basename(parent));
+        parent = up;
+        continue;
+      }
+      // A dangling link exists according to lstat; never mistake realpath's
+      // ENOENT for an ordinary missing destination and follow it during writes.
+      return path.resolve(fs.realpathSync(parent), ...suffix);
+    }
+  };
+  try {
+    if (!inside(ROOT, abs) || !inside(real(ROOT), real(abs))) return `path escapes project root: ${rel(abs)}`;
+  } catch (e) {
+    return `cannot safely resolve project path ${rel(abs)}: ${e.message}`;
+  }
+  return '';
+}
+function assertProjectPath(abs) {
+  const error = projectPathError(abs);
+  if (error) die(error);
+}
 function mapDraft() {
   const mp = path.join(CTX, 'codebase', 'map.md');
-  const filled = fs.existsSync(mp) && !/\{\{/.test(fs.readFileSync(mp, 'utf8'));
-  if (filled) return { skipped: 'filled' };
+  if (fs.existsSync(mp)) {
+    const normalize = (text) => text.replace(/\r\n/g, '\n').replace(/^updated: (?:\d{4}-\d{2}-\d{2}|\{\{TODAY\}\})$/m, 'updated: {{TODAY}}');
+    const template = path.join(SKILL_DIR, 'assets', 'codebase-map.md.template');
+    if (!fs.existsSync(template) || normalize(fs.readFileSync(mp, 'utf8')) !== normalize(fs.readFileSync(template, 'utf8'))) return { skipped: 'filled' };
+  }
   const files = sourceFiles();
   if (files.length < 3) return { skipped: 'small', files: files.length }; // greenfield: the template is the honest answer
   const byDir = new Map();
@@ -1344,40 +2143,36 @@ Then: ctx task add "<first unit>" — and the system runs itself from there.`);
 /* ---- rules — path-gated: what must be read for THESE files */
 commands.rules = () => {
   if (!pos.length) return die('usage: ctx rules <file...>');
-  const ruleFiles = [...walk(path.join(ROOT, '.claude', 'rules')), ...walk(path.join(ROOT, '.cursor', 'rules'))].filter((f) => f.endsWith('.md'));
-  const rules = ruleFiles.map((f) => {
-    const { data } = parseFrontmatter(fs.readFileSync(f, 'utf8'));
-    return { file: rel(f), globs: asList(data.paths || data.globs).flatMap((g) => String(g).split(',').map((s) => s.trim()).filter(Boolean)), read: String(data.read || '').trim() };
-  });
+  const inventory = resourceInventory();
+  const native = nativeResources(inventory.errors).filter((r) => r.kind === 'rule');
+  const definitions = [...inventory.resources.filter((r) => r.kind === 'rule'), ...native.filter((r) => !r.data.ctx_source)];
+  const rules = definitions.map((r) => ({ file: r.file, globs: ruleGlobs(r.data), read: asList(r.data.read).flatMap((s) => String(s).split(/\s*→\s*/)).map((s) => s.trim()).filter(Boolean) }));
   const out = [];
   for (const raw of pos) {
-    const f = raw.replace(/^\.\//, '');
+    const f = raw.replace(/\\/g, '/').replace(/^\.\//, '');
     const matched = rules.filter((r) => r.globs.length && anyMatch(matchers(r.globs), f));
-    const pages = [];
-    for (const p of pages_()) {
-      const rx = matchers(p.data.covers);
-      if (rx.length && anyMatch(rx, f)) pages.push(p.rel);
-    }
+    const pages = new Set(matched.flatMap((r) => r.read).filter((p) => /^context\/.+\.md$/.test(p)));
+    for (const p of pages_()) if (anyMatch(matchers(p.data.covers), f)) pages.add(p.rel);
     const nested = [];
-    for (const p of ['AGENTS.md', ...(() => {
-      const parts = f.split('/');
-      const acc = [];
-      for (let i = 1; i < parts.length; i++) acc.push(parts.slice(0, i).join('/') + '/AGENTS.md');
-      return acc;
-    })()]) if (fs.existsSync(path.join(ROOT, p)) && p !== 'AGENTS.md') nested.push(p);
-    out.push({ file: f, rules: matched.map((m) => m.file), pages, nestedAgents: nested });
+    const parts = f.split('/');
+    for (let i = 1; i < parts.length; i++) {
+      const local = parts.slice(0, i).join('/') + '/AGENTS.md';
+      if (fs.existsSync(path.join(ROOT, local))) nested.push(local);
+    }
+    out.push({ file: f, rules: [...new Set(matched.map((r) => r.file))], adapters: native.filter((r) => r.data.ctx_source && matched.some((m) => m.file === r.data.ctx_source)).map((r) => r.file), pages: [...pages], nestedAgents: nested });
   }
-  emit({ command: 'rules', ok: true, matches: out }, () => {
+  emit({ command: 'rules', ok: !inventory.errors.length, matches: out, errors: inventory.errors }, () => {
     for (const m of out) {
       console.log(`${m.file}:`);
       for (const r of m.rules) {
-        const rr = rules.find((x) => x.file === r);
-        console.log(`  rule  ${r}${rr && rr.read ? ' — read ' + rr.read : ''}`);
+        const rule = rules.find((x) => x.file === r);
+        console.log(`  rule  ${r}${rule.read.length ? ' — read ' + rule.read.join(' → ') : ''}`);
       }
       for (const p of m.pages) console.log(`  page  ${p}`);
       for (const n of m.nestedAgents) console.log(`  local ${n} (danger zone — read before editing)`);
       if (!m.rules.length && !m.pages.length && !m.nestedAgents.length) console.log('  (nothing path-gated — orient via: ctx brief ' + m.file + ')');
     }
+    for (const error of inventory.errors) console.log(`ERROR ${error}`);
   });
 };
 function pages_() {
@@ -1386,10 +2181,53 @@ function pages_() {
 commands.init = () => {
   const assetsDir = path.join(SKILL_DIR, 'assets');
   if (!fs.existsSync(assetsDir)) return die(`init needs the skill's assets/ folder — use the skill's own scripts/ctx.mjs from your project root (node <skill-dir>/scripts/ctx.mjs init); this copy at ${SELF} ships without it.`);
+  if (CONFIG_ERROR) return die(CONFIG_ERROR);
+  if (flags.symlinks && flags['portable-pointers']) return die('choose --symlinks or --portable-pointers, not both');
+  const existingConfig = fs.existsSync(path.join(CTX, '.ctx.json'));
+  const previousMode = CONFIG.resourceMode;
+  if (existingConfig && flags['portable-pointers'] && (previousMode === 'symlink' || CONFIG.requestedResourceMode === 'symlink')) return die('--portable-pointers cannot downgrade an installed or pending symlink layout; a deliberate reviewed migration is required');
+  const mode = flags['portable-pointers'] ? 'pointer' : flags.symlinks ? 'symlink' : CONFIG.requestedResourceMode || (existingConfig ? previousMode : 'symlink');
+  // Validate every writable boundary before the first scaffold file is created.
+  for (const dest of [...INIT_MAP.map(([, dst]) => dst), ...POINTER_MAP.map(([, dst]) => dst), 'context/.ctx.json', 'context/ctx.mjs', '.gitignore', '.agents/agents', '.agents/rules', '.agents/skills', '.claude/agents', '.claude/rules', '.claude/skills', '.cursor/rules', '.cursor/skills', 'context/agents', 'context/feature-specs', 'context/codebase/modules', 'context/designs', 'context/screenshots', 'context/sources', 'context/archive', 'docs/adr', 'docs/runbooks']) assertProjectPath(path.resolve(ROOT, dest));
+  for (const name of ['context-explorer', 'context-reviewer']) assertProjectPath(path.join(ROOT, '.claude', 'agents', name + '.md'));
+  for (const name of ['frontend', 'api', 'data', 'testing']) {
+    assertProjectPath(path.join(ROOT, '.agents', 'rules', name + '.md'));
+    assertProjectPath(path.join(ROOT, '.claude', 'rules', name + '.md'));
+    assertProjectPath(path.join(ROOT, '.cursor', 'rules', name + '.mdc'));
+  }
+  for (const agent of ['context-explorer', 'context-reviewer']) assertProjectPath(path.join(CTX, 'agents', agent, 'MEMORY.md'));
+  const dangerZones = flags.danger ? String(flags.danger).split(',').map((s) => s.trim()).filter(Boolean) : [];
+  for (const zone of dangerZones) {
+    if (path.isAbsolute(zone) || zone.replace(/\\/g, '/').split('/').includes('..')) die(`danger zone must stay inside project root: ${zone}`);
+    const abs = path.resolve(ROOT, zone);
+    assertProjectPath(path.join(abs, 'AGENTS.md'));
+    if (fs.existsSync(abs) && !fs.statSync(abs).isDirectory()) die(`danger zone is not a directory: ${zone}`);
+  }
+  if (mode === 'symlink') {
+    if (!existingConfig || previousMode !== 'symlink') {
+      const probe = probeSymlinks();
+      if (!probe.supported) return die(probe.errors.join('\n'));
+    }
+    const gitState = configureLocalSymlinkGit();
+    if (gitState.errors.length) return die(gitState.errors.join('\n'));
+  }
+  CONFIG.resourceMode = mode;
   const d = flags['no-detect'] ? { langs: [], kinds: ['generic'], signals: [], isMonorepo: false, tools: [], sourceExt: DEFAULTS.sourceExt, ignoreSourceGlobs: DEFAULTS.ignoreSourceGlobs } : detect(ROOT);
   const created = [];
   const skipped = [];
+  const promoted = [];
+  const canSeedResource = (kind, name, text) => {
+    const legacy = adapterTargets({ kind, name }).filter((file) => fs.existsSync(path.join(ROOT, file)) && !parseFrontmatter(fs.readFileSync(path.join(ROOT, file), 'utf8')).data.ctx_source);
+    if (!legacy.length) return true;
+    if (legacy.length !== 1 || fs.readFileSync(path.join(ROOT, legacy[0]), 'utf8').replace(/\r\n/g, '\n') !== text.replace(/\r\n/g, '\n')) return false;
+    promoted.push(legacy[0]);
+    return true;
+  };
   const put = (asset, dest) => {
+    if (mode === 'symlink' && (dest === 'CLAUDE.md' || POINTER_MAP.some(([, file]) => file === dest))) {
+      skipped.push(dest + ' (native symlink owns the entrypoint)');
+      return;
+    }
     const src = path.join(assetsDir, asset);
     const dst = path.join(ROOT, dest);
     if (!fs.existsSync(src)) {
@@ -1400,19 +2238,26 @@ commands.init = () => {
       skipped.push(dest);
       return;
     }
+    const text = fs.readFileSync(src, 'utf8').replace(/\{\{TODAY\}\}/g, today());
+    const kind = Object.keys(RESOURCE_DIRS).find((key) => dest.startsWith(RESOURCE_DIRS[key] + '/'));
+    if (kind && !canSeedResource(kind, resourceName(dest, kind), text)) {
+      skipped.push(`${dest} (legacy owner preserved; explicit migration required)`);
+      return;
+    }
     fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.writeFileSync(dst, fs.readFileSync(src, 'utf8').replace(/\{\{TODAY\}\}/g, today()));
+    fs.writeFileSync(dst, text);
     created.push(dest);
   };
   for (const [asset, dest, when] of INIT_MAP) if (when(d, flags)) put(asset, dest);
-  if (flags.pointers) for (const [asset, dest] of POINTER_MAP) put(asset, dest);
-  else for (const [asset, dest, tool] of POINTER_MAP) if (d.tools.includes(tool)) put(asset, dest);
+  for (const [asset, dest, tool] of POINTER_MAP) if (flags.pointers || tool === 'cursor' || d.tools.includes(tool)) put(asset, dest);
 
   // config: seeded from the detected stack so coverage/impact speak this project's language
   const cfgPath = path.join(CTX, '.ctx.json');
   if (!fs.existsSync(cfgPath)) {
     fs.mkdirSync(CTX, { recursive: true });
     const cfg = {
+      resourceMode: mode === 'symlink' ? 'pointer' : mode, // installed strategy is committed by the validated link transaction
+      requestedResourceMode: mode === 'symlink' ? 'symlink' : undefined,
       setupVersion: VERSION,
       profile: { langs: d.langs, kinds: d.kinds },
       maxPageLines: DEFAULTS.maxPageLines,
@@ -1444,25 +2289,21 @@ commands.init = () => {
   if (d.signals.includes('db')) RULES.push(['data.md', ['**/schema.ts', '**/schema.py', 'prisma/**', 'drizzle/**', '**/models/**', '**/migrations/**', '**/*.sql'], 'context/data-model.md → grep context/decisions.md for the area']);
   if (d.langs.some((l) => l !== 'docs')) RULES.push(['testing.md', ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', 'tests/**', 'test/**', '**/*_test.go'], 'context/testing.md']);
   for (const [name, globs, read] of RULES) {
-    const dst = path.join(ROOT, '.claude', 'rules', name);
-    if (fs.existsSync(dst)) {
-      skipped.push('.claude/rules/' + name);
-      continue;
-    }
+    const dest = '.agents/rules/' + name;
+    const dst = path.join(ROOT, dest);
+    if (fs.existsSync(dst)) { skipped.push(dest); continue; }
+    const text = fs.readFileSync(path.join(assetsDir, 'rule.md.template'), 'utf8')
+      .replace(/\{\{TODAY\}\}/g, today())
+      .replace(/\{\{NAME\}\}/g, name.replace(/\.md$/, ''))
+      .replace(/\{\{GLOBS\}\}/g, globs.join(', '))
+      .replace(/\{\{READ\}\}/g, read);
+    if (!canSeedResource('rule', name.replace(/\.md$/, ''), text)) { skipped.push(`${dest} (legacy owner preserved; explicit migration required)`); continue; }
     fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.writeFileSync(
-      dst,
-      fs
-        .readFileSync(path.join(assetsDir, 'rule.md.template'), 'utf8')
-        .replace(/\{\{TODAY\}\}/g, today())
-        .replace(/\{\{NAME\}\}/g, name.replace(/\.md$/, ''))
-        .replace(/\{\{GLOBS\}\}/g, globs.join(', '))
-        .replace(/\{\{READ\}\}/g, read)
-    );
-    created.push('.claude/rules/' + name + ' (path-gated)');
+    fs.writeFileSync(dst, text);
+    created.push(dest + ' (canonical path route)');
   }
 
-  // subagent memory: each agent owns a MEMORY.md it reads first and appends lessons to
+  // subagent memory: read-only agents suggest lessons; the main agent persists authorized updates
   for (const agent of ['context-explorer', 'context-reviewer']) {
     const dst = path.join(CTX, 'agents', agent, 'MEMORY.md');
     if (fs.existsSync(dst)) {
@@ -1492,11 +2333,15 @@ commands.init = () => {
     }
   }
 
-  for (const dir of ['context/feature-specs', 'context/codebase/modules', 'context/designs', 'context/screenshots', 'context/sources', 'context/archive', 'docs/adr', 'docs/runbooks']) {
+  const resourceDirs = ['.agents/agents', '.agents/rules', '.agents/skills', 'context/feature-specs', 'context/codebase/modules', 'context/designs', 'context/screenshots', 'context/sources', 'context/archive', 'docs/adr', 'docs/runbooks'];
+  if (mode === 'pointer') resourceDirs.push('.claude/agents', '.claude/rules', '.claude/skills', '.cursor/rules', '.cursor/skills');
+  for (const dir of resourceDirs) {
     fs.mkdirSync(path.join(ROOT, dir), { recursive: true });
     const keep = path.join(ROOT, dir, '.gitkeep');
     if (!fs.existsSync(keep) && !fs.readdirSync(path.join(ROOT, dir)).length) fs.writeFileSync(keep, '');
   }
+  const adapterState = adapterReport({ migrate: !!flags.migrate, promote: promoted });
+  created.push(...adapterState.written);
   const self = path.join(ROOT, 'context', 'ctx.mjs');
   if (path.resolve(self) !== path.resolve(SELF)) {
     const srcBuf = fs.readFileSync(SELF);
@@ -1526,13 +2371,18 @@ commands.init = () => {
   }).map((t) => t.id);
   if (delegated.length) console.log(`\ndelegation available (ctx tools): ${delegated.join(', ')} — prefer them for the code map; see references/tool-delegation.md`);
   console.log(`\nNext: fill every {{PLACEHOLDER}} from the planning conversation (never from guesses), then:\n  node context/ctx.mjs index && node context/ctx.mjs lint && node context/ctx.mjs doctor`);
+  for (const error of adapterState.errors) console.error(`ERROR ${error}`);
+  for (const conflict of adapterState.conflicts) console.error(`CONFLICT ${conflict.file}: ${conflict.reason}`);
+  if (adapterState.errors.length || adapterState.conflicts.length || adapterState.adapters.some((a) => !a.ok)) die('shared resource adapters need attention — reconcile the reported owners or explicitly run ctx adapters --migrate');
 };
 
 /* ----------------------------------------------------------------- main */
 function die(msg) {
-  console.error(msg);
+  if (flags.json) console.log(JSON.stringify({ command: cmd || null, ok: false, error: msg, exitCode: 1 }));
+  else console.error(msg);
   process.exit(1);
 }
+if (argError) die(argError);
 if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '--version' || !commands[cmd]) {
   if (cmd === '--version') {
     console.log(`ctx ${VERSION}`);

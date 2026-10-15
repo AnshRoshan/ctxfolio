@@ -20,13 +20,14 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CTX_SRC = path.join(HERE, '..', 'scripts', 'ctx.mjs');
 
 let passed = 0;
+let skipped = 0;
 const failures = [];
 const filter = process.argv[2] || '';
 
 /* ----------------------------------------------------------------- helpers */
 function sh(cmd, args, cwd, env = {}, input) {
   try {
-    return { code: 0, out: execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...env }, input }) };
+    return { code: 0, out: execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 30000, env: { ...process.env, ...env }, input }) };
   } catch (e) {
     return { code: e.status ?? 1, out: (e.stdout || '') + (e.stderr || '') };
   }
@@ -65,6 +66,12 @@ function test(name, fn) {
     passed++;
     console.log(`  ok   ${name}`);
   } catch (e) {
+    if (e.nativeSkip) {
+      skipped++;
+      console.log(` SKIP  ${name}: ${e.message}`);
+      if (dir) fs.rmSync(dir, { recursive: true, force: true });
+      return;
+    }
     failures.push({ name, message: e.message });
     console.log(` FAIL  ${name}\n       ${String(e.message).split('\n').join('\n       ')}`);
     if (dir) fs.rmSync(dir, { recursive: true, force: true });
@@ -80,7 +87,7 @@ const assertContains = (haystack, needle, msg = '') =>
   assert(String(haystack).includes(needle), `${msg}\n--- expected to find ---\n${needle}\n--- in ---\n${String(haystack).slice(0, 2500)}`);
 
 function initRepo(dir, extra = []) {
-  const r = sh('node', [CTX_SRC, 'init', '--root', dir, ...extra], dir);
+  const r = sh('node', [CTX_SRC, 'init', '--root', dir, '--portable-pointers', ...extra], dir);
   assert(r.code === 0, `init failed: ${r.out}`);
   // Fill the one placeholder-free page we need and commit, mirroring a real setup.
   return r;
@@ -233,7 +240,7 @@ test('lint enforces tracker state exclusivity', (dir) => {
     tr,
     fs.readFileSync(tr, 'utf8')
       .replace('- {{Feature NN: name — started {{date}}}}', '- Feature 03: the same work')
-      .replace('- {{Feature NN: name — {{date}} — key decisions: D-NN; concrete details: versions, config paths, env var names}}', '- Feature 03: the same work — done'),
+      .replace('- {{Feature NN: name — {{date}} — decisions: D-NN; evidence: owner-page#verification}}', '- Feature 03: the same work — done'),
   );
   const r = ctx(dir, 'lint');
   assert(r.code !== 0, 'lint should fail when a feature is both in progress and complete');
@@ -438,7 +445,7 @@ test('unknown command prints usage instead of a stack trace', (dir) => {
 test('init adapts the scaffold to the detected project profile', (dir) => {
   fs.rmSync(path.join(dir, 'package.json'));
   fs.writeFileSync(path.join(dir, 'pyproject.toml'), '[project]\nname="x"\ndependencies=["fastapi","sqlalchemy"]\n');
-  const r = sh('node', [CTX_SRC, 'init', '--root', dir], dir);
+  const r = sh('node', [CTX_SRC, 'init', '--root', dir, '--portable-pointers'], dir);
   assert(r.code === 0, `init failed: ${r.out}`);
   assert(!fs.existsSync(path.join(dir, 'context', 'ui-tokens.md')), 'UI pages created for a headless API');
   assert(fs.existsSync(path.join(dir, 'context', 'data-model.md')), 'data-model missing for a DB project');
@@ -451,7 +458,7 @@ test('init adapts the scaffold to the detected project profile', (dir) => {
 
 test('a frontend profile gets the UI pages', (dir) => {
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'ui', dependencies: { react: '^19.0.0', next: '^15.0.0' } }));
-  const r = sh('node', [CTX_SRC, 'init', '--root', dir], dir);
+  const r = sh('node', [CTX_SRC, 'init', '--root', dir, '--portable-pointers'], dir);
   assert(r.code === 0, `init failed: ${r.out}`);
   assert(fs.existsSync(path.join(dir, 'context', 'ui-tokens.md')), 'UI pages missing for a React project');
 });
@@ -485,7 +492,7 @@ test('detect and tools honour the json contract', (dir) => {
 });
 
 function setupRepo(dir, extra = []) {
-  const r = sh('node', [CTX_SRC, 'setup', '--root', dir, ...extra], dir);
+  const r = sh('node', [CTX_SRC, 'setup', '--root', dir, '--portable-pointers', ...extra], dir);
   assert(r.code === 0, `setup failed: ${r.out}`);
   return r;
 }
@@ -494,7 +501,7 @@ test('setup does the whole mechanical job on a brownfield repo, then no-ops', (d
   fs.mkdirSync(path.join(dir, 'src', 'components'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'src', 'components', 'Button.tsx'), 'export const B = 1;\n');
   const r = setupRepo(dir);
-  assertContains(r.out, 'ctx doctor: 12/12', 'a fresh setup must pass every doctor check:\n' + r.out);
+  assertContains(r.out, 'ctx doctor: 13/13', 'a fresh setup must pass every doctor check:\n' + r.out);
   const map = fs.readFileSync(path.join(dir, 'context', 'codebase', 'map.md'), 'utf8');
   assertContains(map, 'src/auth/', 'map draft missing the directory census');
   assertContains(map, 'next dev', 'map draft missing entry points from the manifest');
@@ -606,8 +613,658 @@ test('install ships the skill files and keeps repo dev history behind', (dir) =>
   assert(again.code === 0 && again.out.includes('installed'), `re-install failed:\n${again.out}`);
 });
 
+/* ---- reliability regressions */
+test('reliability setup stays in cwd rather than an ancestor project', (dir) => {
+  const child = path.join(dir, 'child');
+  fs.mkdirSync(child);
+  const r = sh('node', [CTX_SRC, 'setup', '--portable-pointers'], child);
+  assert(r.code === 0, `child setup failed: ${r.out}`);
+  assert(fs.existsSync(path.join(child, 'context', 'ctx.mjs')), 'setup escaped into ancestor git repo');
+  assert(!fs.existsSync(path.join(dir, 'AGENTS.md')), 'ancestor was mutated');
+});
+
+test('reliability missing value flags fail before mutation and preserve JSON errors', (dir) => {
+  for (const args of [['setup', '--root'], ['setup', '--danger'], ['setup', '--root', '--json']]) {
+    const r = sh('node', [CTX_SRC, ...args], dir);
+    assert(r.code !== 0, `missing flag value accepted: ${args}`);
+    assert(!fs.existsSync(path.join(dir, 'context')), 'invalid invocation wrote files');
+    if (args.includes('--json')) assert(JSON.parse(r.out).ok === false, 'missing flag JSON error contract');
+  }
+});
+
+test('reliability danger rejects traversal and external junctions before writes', (dir) => {
+  const project = path.join(dir, 'project');
+  const outside = path.join(dir, 'outside');
+  fs.mkdirSync(project); fs.mkdirSync(outside);
+  fs.symlinkSync(outside, path.join(project, 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
+  for (const zone of ['../outside', 'linked']) {
+    const r = sh('node', [CTX_SRC, 'setup', '--root', project, '--danger', zone], project);
+    assert(r.code !== 0, `unsafe danger accepted: ${zone}`);
+    assert(!fs.existsSync(path.join(outside, 'AGENTS.md')), 'external directory was written');
+    assert(!fs.existsSync(path.join(project, 'AGENTS.md')), 'unsafe setup partially mutated project');
+  }
+});
+
+test('reliability setup rejects external context directory links before writes', (dir) => {
+  const project = path.join(dir, 'project'), outside = path.join(dir, 'outside');
+  fs.mkdirSync(project); fs.mkdirSync(outside);
+  fs.symlinkSync(outside, path.join(project, 'context'), process.platform === 'win32' ? 'junction' : 'dir');
+  const r = sh('node', [CTX_SRC, 'setup', '--root', project], project);
+  assert(r.code !== 0, 'external context link accepted');
+  assert(!fs.existsSync(path.join(project, 'AGENTS.md')) && !fs.readdirSync(outside).length, 'setup wrote before rejecting escape');
+});
+
+test('reliability setup rejects dangling destination symlinks before writes', (dir) => {
+  const project = path.join(dir, 'project'), outside = path.join(dir, 'outside');
+  fs.mkdirSync(project); fs.mkdirSync(outside);
+  const target = path.join(outside, 'missing-directory');
+  fs.symlinkSync(target, path.join(project, 'context'), process.platform === 'win32' ? 'junction' : 'dir');
+  const r = sh('node', [CTX_SRC, 'setup', '--root', project], project);
+  assert(r.code !== 0, 'dangling destination symlink accepted');
+  assert(!fs.existsSync(target) && !fs.existsSync(path.join(project, 'AGENTS.md')), 'setup mutated project before rejecting dangling symlink');
+});
+
+test('reliability setup preserves partially filled maps containing placeholders', (dir) => {
+  setupRepo(dir);
+  const p = path.join(dir, 'context', 'codebase', 'map.md');
+  const edited = fs.readFileSync(p, 'utf8').replace('## TL;DR', '## TL;DR\nHuman-authored contract; {{unfinished}} remains.');
+  fs.writeFileSync(p, edited);
+  fs.writeFileSync(path.join(dir, 'src', 'more.ts'), 'export const more = 1;\n');
+  setupRepo(dir);
+  assert(fs.readFileSync(p, 'utf8') === edited, 'partially filled map was clobbered');
+});
+
+test('reliability Unicode git paths are exact in impact stale and coverage', (dir) => {
+  initRepo(dir);
+  const name = 'src/auth/caf\u00e9.ts';
+  fs.writeFileSync(path.join(dir, name), 'export const cafe = 1;\n');
+  ctx(dir, 'new', 'module', 'unicode', '--covers', name);
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'base'], dir);
+  fs.appendFileSync(path.join(dir, name), '// changed\n');
+  const impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  assert(impact.pages.some((p) => p.hits.includes(name)), 'Unicode status path does not route');
+  assert(JSON.parse(ctx(dir, 'stale', '--json').out).items.some((p) => p.hits.includes(name)), 'Unicode stale hit is missing');
+  assert(JSON.parse(ctx(dir, 'coverage', '--json').out).total === 3, 'Unicode source excluded from coverage');
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'Unicode change'], dir);
+  assert(JSON.parse(ctx(dir, 'stale', '--json').out).items.some((p) => p.hits.includes(name)), 'Unicode committed diff does not route');
+});
+
+test('reliability renamed paths review both old and new coverage', (dir) => {
+  initRepo(dir); ctx(dir, 'new', 'module', 'auth', '--covers', 'src/auth/**');
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'base'], dir);
+  sh('git', ['mv', 'src/auth/session.ts', 'src/moved.ts'], dir);
+  const data = JSON.parse(ctx(dir, 'impact', '--json').out);
+  assert(data.pages.some((p) => p.hits.includes('src/auth/session.ts')), 'old rename path not reviewed');
+  assert(data.uncovered.includes('src/moved.ts'), 'new rename path not reported');
+  assert(JSON.parse(ctx(dir, 'stale', '--json').out).items.length > 0, 'rename out of covered area was fresh');
+});
+
+test('reliability git paths are relative to nested project root', (dir) => {
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'parent'], dir);
+  const child = path.join(dir, 'child'); fs.mkdirSync(child);
+  fs.writeFileSync(path.join(child, 'package.json'), '{"name":"child"}');
+  fs.mkdirSync(path.join(child, 'src')); fs.writeFileSync(path.join(child, 'src', 'one.ts'), 'export const one=1;');
+  initRepo(child); ctx(child, 'new', 'module', 'child', '--covers', 'src/**');
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'child'], dir);
+  fs.appendFileSync(path.join(child, 'src', 'one.ts'), '// change');
+  fs.appendFileSync(path.join(dir, 'src', 'auth', 'session.ts'), '// parent change');
+  const data = JSON.parse(ctx(child, 'impact', '--json').out);
+  assert(data.changedCode === 1 && data.pages.some((p) => p.hits.includes('src/one.ts')), 'nested project status paths leaked parent prefix/files');
+  assert(JSON.parse(ctx(child, 'stale', '--json').out).items.some((p) => p.hits.includes('src/one.ts')), 'nested git log/diff do not route');
+});
+
+test('reliability invalid since commit fails instead of reporting clean', (dir) => {
+  initRepo(dir);
+  const r = ctx(dir, 'impact', '--since', 'does-not-exist', '--json');
+  assert(r.code !== 0 && JSON.parse(r.out).ok === false, 'invalid revision silently ignored');
+});
+
+test('reliability malformed config diagnoses and setup does not partly mutate', (dir) => {
+  fs.mkdirSync(path.join(dir, 'context'));
+  const cfg = path.join(dir, 'context', '.ctx.json');
+  for (const text of ['{broken', 'null', '{"alwaysRead":"wrong-type"}']) {
+    fs.writeFileSync(cfg, text);
+    const r = sh('node', [CTX_SRC, 'setup', '--root', dir], dir);
+    assert(r.code !== 0 && !r.out.includes('TypeError'), 'setup did not reject malformed config cleanly');
+    assert(!fs.existsSync(path.join(dir, 'AGENTS.md')), 'malformed config caused partial setup');
+    const doctor = sh('node', [CTX_SRC, 'doctor', '--root', dir, '--json'], dir);
+    assert(doctor.code !== 0 && JSON.parse(doctor.out).ok === false, 'doctor must emit diagnostics for malformed config');
+  }
+  fs.rmSync(cfg);
+  const doctor = sh('node', [CTX_SRC, 'doctor', '--root', dir, '--json'], dir);
+  assert(doctor.code !== 0 && JSON.parse(doctor.out).ok === false, 'doctor crashed on missing config');
+});
+
+test('reliability hook accepts null and nonobject input without crashes', (dir) => {
+  initRepo(dir); sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'base'], dir);
+  for (const payload of [null, [], 'not-an-object', 42]) for (const which of ['stop', 'session-start']) {
+    const r = ctxHook(dir, which, payload);
+    assert(r.code === 0 && !r.out.includes('TypeError'), `hook crashed on ${JSON.stringify(payload)}: ${r.out}`);
+  }
+});
+
+test('reliability stop ignores prior commits and blocks uncovered working code', (dir) => {
+  initRepo(dir); sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'base'], dir);
+  fs.appendFileSync(path.join(dir, 'src', 'auth', 'session.ts'), '// change');
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'prior-session-code'], dir);
+  assert(ctxHook(dir, 'stop', {}).code === 0, 'clean session blocked because of previous commit');
+  fs.writeFileSync(path.join(dir, 'src', 'uncovered.ts'), 'export const uncovered=1;');
+  fs.appendFileSync(path.join(dir, 'memory.md'), '\nUpdated handoff');
+  const r = ctxHook(dir, 'stop', {});
+  assert(r.code === 2 && r.out.includes('uncovered.ts'), 'uncovered source passed Stop gate');
+});
+
+/* ---- routing regressions */
+function routingPage(dir, name, body, extra = '') {
+  fs.writeFileSync(path.join(dir, 'context', `${name}.md`), `---\ntitle: ${name}\ntype: module\nstatus: active\nsummary: routing contract\nupdated: 2026-10-14\n${extra}---\n\n# ${name}\n\n## TL;DR\n${body}\n`);
+}
+
+test('brief JSON exposes reasons, TLDR and verification needs', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'routing', '- Route requests safely', 'covers: [src/auth/**]\nconfidence: inferred\n');
+  const r = ctx(dir, 'brief', 'src/auth/session.ts', '--json');
+  const data = JSON.parse(r.out);
+  assert(data.command === 'brief' && typeof data.ok === 'boolean', 'brief JSON contract');
+  const page = data.pages.find((p) => p.page === 'context/routing.md');
+  assert(page && page.reasons.includes('covers src/auth/session.ts'), 'missing cover reason');
+  assert(page.verificationRequired && page.confidence === 'inferred', 'inferred claim must be verified');
+  assert(page.tldr.includes('- Route requests safely'), 'missing TLDR');
+});
+
+test('brief enforces budget even for the first matching page', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'huge', 'routing '.repeat(1200), 'covers: [src/auth/**]\n');
+  const cfg = path.join(dir, 'context', '.ctx.json');
+  fs.writeFileSync(cfg, JSON.stringify({ alwaysRead: [] }));
+  const r = ctx(dir, 'brief', 'src/auth/session.ts', '--budget', '100', '--json');
+  const data = JSON.parse(r.out);
+  assert(data.estimatedTokens <= 100 && data.pages.length === 0, 'first page must not bypass budget');
+  assert(data.skipped.some((p) => p.page === 'context/huge.md' && p.reason === 'budget'), 'budget omission must be visible');
+});
+
+test('brief reports mandatory orientation overflow without adding pages', (dir) => {
+  initRepo(dir);
+  const data = JSON.parse(ctx(dir, 'brief', 'auth', '--budget', '1', '--json').out);
+  assert(data.budgetExceeded && !data.ok && data.pages.length === 0, 'mandatory overflow must be explicit');
+  assert(data.alwaysRead.length > 0, 'do not silently drop orientation');
+});
+
+test('brief excludes history unless requested and normalizes Windows paths', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'retired', '- historical contract', 'covers: [src/auth/**]\n');
+  const p = path.join(dir, 'context', 'retired.md');
+  fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('status: active', 'status: superseded'));
+  routingPage(dir, 'current', '- current contract', 'covers: [src/auth/**]\nconfidence: verified\n');
+  const data = JSON.parse(ctx(dir, 'brief', 'src\\auth\\session.ts', '--json').out);
+  assert(data.pages.some((p) => p.page === 'context/current.md' && p.reasons.includes('covers src/auth/session.ts')), 'Windows paths do not route');
+  assert(!data.pages.some((p) => p.page === 'context/retired.md'), 'retired instructions leaked into current routing');
+  const hist = JSON.parse(ctx(dir, 'brief', 'src/auth/session.ts', '--history', '--json').out);
+  assert(hist.pages.some((p) => p.page === 'context/retired.md' && p.verificationRequired), 'explicit history should be labelled');
+});
+
+test('brief flags stale pages and unavailable git without claiming trust', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'current', '- auth contract', 'covers: [src/auth/**]\nconfidence: verified\n');
+  sh('git', ['add', '-A'], dir);
+  sh('git', ['commit', '-qm', 'base'], dir);
+  fs.appendFileSync(path.join(dir, 'src', 'auth', 'session.ts'), '// changed\n');
+  let data = JSON.parse(ctx(dir, 'brief', 'src/auth/session.ts', '--json').out);
+  assert(data.pages.find((p) => p.page === 'context/current.md').stale, 'stale claim not labelled');
+  fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+  data = JSON.parse(ctx(dir, 'brief', 'src/auth/session.ts', '--json').out);
+  assert(data.gitAvailable === false && data.pages.find((p) => p.page === 'context/current.md').verificationRequired, 'no git cannot establish freshness');
+});
+
+test('brief rejects invalid numeric limits and emits JSON errors', (dir) => {
+  initRepo(dir);
+  for (const args of [['--budget', 'NaN'], ['--budget', '-1'], ['--limit', '0'], ['--limit', '1.5']]) {
+    const r = ctx(dir, 'brief', 'auth', ...args, '--json');
+    assert(r.code !== 0, `invalid flag accepted: ${args}`);
+    const data = JSON.parse(r.out);
+    assert(data.command === 'brief' && data.ok === false && data.error, 'invalid flag must be actionable JSON');
+  }
+});
+
+test('brief fits smaller pages and does not double-count mandatory reads', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'huge', 'routing '.repeat(1000), 'covers: [src/auth/**]\n');
+  routingPage(dir, 'small', '- routing contract', 'confidence: verified\n');
+  const cfg = path.join(dir, 'context', '.ctx.json');
+  fs.writeFileSync(cfg, JSON.stringify({ alwaysRead: ['context/small.md', 'context/small.md'] }));
+  let data = JSON.parse(ctx(dir, 'brief', 'routing', '--json').out);
+  assert(data.alwaysRead.length === 1 && !data.pages.some((p) => p.page === 'context/small.md'), 'mandatory page counted twice');
+  fs.writeFileSync(cfg, JSON.stringify({ alwaysRead: [] }));
+  data = JSON.parse(ctx(dir, 'brief', 'src/auth/session.ts', 'routing', '--budget', '200', '--json').out);
+  assert(data.pages.some((p) => p.page === 'context/small.md') && data.estimatedTokens <= 200, 'a large top result must not starve a fitting page');
+});
+
+test('brief refuses unsafe orientation paths before reading', (dir) => {
+  initRepo(dir);
+  const cfg = path.join(dir, 'context', '.ctx.json');
+  for (const file of ['../outside.md', '.env.local', path.resolve(dir, 'AGENTS.md')]) {
+    fs.writeFileSync(cfg, JSON.stringify({ alwaysRead: [file] }));
+    const r = ctx(dir, 'brief', 'auth', '--json');
+    assert(r.code !== 0, `unsafe orientation accepted: ${file}`);
+    assert(JSON.parse(r.out).ok === false, 'unsafe path must emit an actionable error');
+  }
+});
+
+test('module templates and generated pages do not claim unearned verification', (dir) => {
+  const template = fs.readFileSync(path.join(HERE, '..', 'assets', 'module.md.template'), 'utf8');
+  assert(/^status: draft$/m.test(template) && /^confidence: inferred$/m.test(template), 'fresh module template must start draft/inferred');
+  initRepo(dir);
+  ctx(dir, 'new', 'module', 'knowledge');
+  const page = fs.readFileSync(path.join(dir, 'context', 'codebase', 'modules', 'knowledge.md'), 'utf8');
+  assert(/^status: draft$/m.test(page) && /^confidence: inferred$/m.test(page), 'copied CLI must also start draft/inferred');
+});
+
+test('brief does not mistake touched documentation for verified dirty sources', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'current', '- auth contract', 'covers: [src/auth/**]\nconfidence: verified\n');
+  sh('git', ['add', '-A'], dir); sh('git', ['commit', '-qm', 'base'], dir);
+  fs.appendFileSync(path.join(dir, 'src', 'auth', 'session.ts'), '// changed\n');
+  fs.appendFileSync(path.join(dir, 'context', 'current.md'), '\nUnrelated typo fix\n');
+  const data = JSON.parse(ctx(dir, 'brief', 'src/auth/session.ts', '--json').out);
+  const page = data.pages.find((p) => p.page === 'context/current.md');
+  assert(page.verificationRequired && page.changedSources.includes('src/auth/session.ts'), 'touching page must not certify code freshness');
+});
+
+test('brief checks trust and history for mandatory module pages too', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'mandatory', '- routing contract', 'covers: [src/auth/**]\nconfidence: inferred\n');
+  const cfg = path.join(dir, 'context', '.ctx.json');
+  fs.writeFileSync(cfg, JSON.stringify({ alwaysRead: ['context/mandatory.md'] }));
+  let data = JSON.parse(ctx(dir, 'brief', 'auth', '--json').out);
+  assert(!data.ok && data.alwaysRead[0].verificationRequired, 'mandatory page bypassed trust checks');
+  const page = path.join(dir, 'context', 'mandatory.md');
+  fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace('status: active', 'status: superseded'));
+  const r = ctx(dir, 'brief', 'auth', '--json');
+  assert(r.code !== 0 && JSON.parse(r.out).error.includes('retired'), 'mandatory history bypassed opt-in');
+  data = JSON.parse(ctx(dir, 'brief', 'auth', '--history', '--json').out);
+  assert(data.alwaysRead[0].verificationRequired, 'explicit mandatory history was not labelled');
+});
+
+test('brief ignores literal placeholder examples inside code', (dir) => {
+  initRepo(dir);
+  routingPage(dir, 'routing', '- Use the documented format\n\nExample: `{{PLACEHOLDER}}` names a template marker.', 'confidence: verified\n');
+  const data = JSON.parse(ctx(dir, 'brief', 'routing', '--json').out);
+  const page = data.pages.find((p) => p.page === 'context/routing.md');
+  assert(page && !page.warnings.some((w) => w.startsWith('UNFILLED')), 'literal example was mistaken for an unfinished page');
+});
+
+/* ---- ownership and host-adapter regressions */
+test('ownership scaffold includes canonical resources and linked host adapters', (dir) => {
+  setupRepo(dir, ['--pointers']);
+  for (const f of ['memory.md', 'context/decisions.md', 'context/ownership.md', '.agents/README.md', '.agents/agents/context-explorer.md', '.agents/agents/context-reviewer.md', '.agents/rules/testing.md']) assert(fs.existsSync(path.join(dir, f)), `missing owner: ${f}`);
+  assert(fs.statSync(path.join(dir, '.agents', 'skills')).isDirectory(), 'canonical local skill directory missing');
+  for (const [native, source] of [['.claude/agents/context-explorer.md', '.agents/agents/context-explorer.md'], ['.claude/rules/testing.md', '.agents/rules/testing.md'], ['.cursor/rules/testing.mdc', '.agents/rules/testing.md']]) {
+    const text = fs.readFileSync(path.join(dir, native), 'utf8');
+    assertContains(text, `ctx_source: ${JSON.stringify(source)}`, 'native adapter must route to canonical owner');
+    assert(!text.includes('Your memory:') && !text.includes('Procedure:'), 'canonical instruction body copied into native adapter');
+  }
+});
+
+test('ownership copied CLI creates internal agent rule and skill resources', (dir) => {
+  setupRepo(dir);
+  for (const type of ['agent', 'rule', 'skill']) {
+    const r = ctx(dir, 'new', type, 'local-check', '--covers', 'src/auth/**');
+    assert(r.code === 0, `${type} creation failed: ${r.out}`);
+  }
+  for (const f of ['.agents/agents/local-check.md', '.agents/rules/local-check.md', '.agents/skills/local-check/SKILL.md', '.claude/agents/local-check.md', '.cursor/rules/local-check.mdc', '.claude/skills/local-check/SKILL.md', '.cursor/skills/local-check/SKILL.md']) assert(fs.existsSync(path.join(dir, f)), `resource/adaptor not created: ${f}`);
+  assert(!fs.existsSync(path.join(dir, 'context', 'local-check.md')), 'agent resources were misfiled as wiki pages');
+  const checked = ctx(dir, 'adapters', '--check', '--json');
+  assert(checked.code === 0, 'fresh adapters must be synchronized');
+  assert(JSON.parse(checked.out).resources.every((r) => !('body' in r) && !('text' in r)), 'audit JSON unnecessarily dumped canonical bodies twice');
+});
+
+test('ownership adapter refresh derives metadata but never copies rule bodies', (dir) => {
+  setupRepo(dir);
+  ctx(dir, 'new', 'rule', 'local-route', '--covers', 'src/auth/**');
+  const source = path.join(dir, '.agents', 'rules', 'local-route.md');
+  let text = fs.readFileSync(source, 'utf8');
+  text = text.replace('src/auth/**', 'src/billing/**') + '\nUNIQUE DOMAIN CONTRACT MUST LIVE ONLY HERE\n';
+  fs.writeFileSync(source, text);
+  assert(ctx(dir, 'adapters', '--check', '--json').code !== 0, 'stale native metadata not detected');
+  assert(ctx(dir, 'adapters', '--json').code === 0, 'safe generated adapter refresh failed');
+  for (const f of ['.claude/rules/local-route.md', '.cursor/rules/local-route.mdc']) {
+    const adapter = fs.readFileSync(path.join(dir, f), 'utf8');
+    assertContains(adapter, 'src/billing/**', 'derived glob metadata stale');
+    assert(!adapter.includes('UNIQUE DOMAIN CONTRACT'), 'adapter duplicated canonical data');
+  }
+  assert(ctx(dir, 'adapters', '--check', '--json').code === 0, 'refreshed adapter drift remains');
+});
+
+test('ownership adapter refresh preserves hand edits and reports conflicts', (dir) => {
+  setupRepo(dir);
+  const file = path.join(dir, '.claude', 'rules', 'testing.md');
+  const edited = fs.readFileSync(file, 'utf8') + '\nHUMAN EDIT DO NOT ERASE\n';
+  fs.writeFileSync(file, edited);
+  const r = ctx(dir, 'adapters', '--json');
+  assert(r.code !== 0 && JSON.parse(r.out).ok === false, 'hand-edited adapter conflict hidden');
+  assert(fs.readFileSync(file, 'utf8') === edited, 'hand edits clobbered');
+});
+
+test('ownership explicit migration preserves sole legacy agent content', (dir) => {
+  setupRepo(dir);
+  const legacy = path.join(dir, '.claude', 'agents', 'custom-reader.md');
+  const original = '---\nname: custom-reader\ndescription: Custom investigator\ntools: Read, Grep\n---\n\nHUMAN AUTHORED ROLE CONTRACT\n';
+  fs.writeFileSync(legacy, original);
+  assert(ctx(dir, 'adapters', '--check', '--json').code !== 0, 'unmanaged native resource was not surfaced');
+  assert(ctx(dir, 'adapters', '--migrate', '--json').code === 0, 'explicit sole-owner migration failed');
+  const source = path.join(dir, '.agents', 'agents', 'custom-reader.md');
+  assert(fs.readFileSync(source, 'utf8') === original, 'migration changed the authored contract');
+  assertContains(fs.readFileSync(legacy, 'utf8'), 'ctx_source: ".agents/agents/custom-reader.md"');
+  assert(!fs.readFileSync(legacy, 'utf8').includes('HUMAN AUTHORED ROLE'), 'migration left two editable bodies');
+});
+
+test('ownership competing legacy and canonical bodies refuse automatic merge', (dir) => {
+  setupRepo(dir);
+  ctx(dir, 'new', 'agent', 'contested');
+  const native = path.join(dir, '.claude', 'agents', 'contested.md');
+  const source = path.join(dir, '.agents', 'agents', 'contested.md');
+  const canonical = fs.readFileSync(source, 'utf8');
+  fs.writeFileSync(native, '---\nname: contested\ndescription: Other contract\n---\n\nHUMAN NATIVE OWNER\n');
+  const r = ctx(dir, 'adapters', '--migrate', '--json');
+  assert(r.code !== 0, 'conflicting instruction owners were silently resolved');
+  assert(fs.readFileSync(source, 'utf8') === canonical && fs.readFileSync(native, 'utf8').includes('HUMAN NATIVE OWNER'), 'automatic merge lost a competing owner');
+});
+
+test('ownership rules query includes canonical routes and native Cursor mdc', (dir) => {
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, '.cursor', 'rules', 'custom.mdc'), '---\ndescription: Custom billing\nglobs: src/billing/**\n---\nRead context/decisions.md\n');
+  ctx(dir, 'new', 'rule', 'auth-route', '--covers', 'src/auth/**');
+  const auth = JSON.parse(ctx(dir, 'rules', 'src/auth/session.ts', '--json').out).matches[0];
+  assert(auth.rules.includes('.agents/rules/auth-route.md'), 'canonical rule not routed');
+  assert(!auth.rules.includes('.claude/rules/auth-route.md') && !auth.rules.includes('.cursor/rules/auth-route.mdc'), 'same canonical rule routed more than once');
+  const billing = JSON.parse(ctx(dir, 'rules', 'src/billing/charge.ts', '--json').out).matches[0];
+  assert(billing.rules.includes('.cursor/rules/custom.mdc'), 'native .mdc rule ignored');
+});
+
+test('ownership lint catches missing owners and broken canonical adapter sources', (dir) => {
+  setupRepo(dir);
+  const owner = path.join(dir, 'context', 'ownership.md');
+  fs.renameSync(owner, owner + '.saved');
+  let data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(data.errors.some((e) => e.includes('ownership.md')), 'missing ownership contract passed lint');
+  fs.renameSync(owner + '.saved', owner);
+  const file = path.join(dir, '.claude', 'rules', 'testing.md');
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('ctx_source: ".agents/rules/testing.md"', 'ctx_source: ".agents/rules/missing.md"'));
+  data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(data.errors.some((e) => /adapter|canonical|ctx_source/i.test(e)), 'broken canonical route passed lint');
+});
+
+test('ownership lint flags exact repeated live prose but not historical snapshots', (dir) => {
+  setupRepo(dir);
+  const claim = 'Billing entries are settled only after both the ledger record and the provider acknowledgement have been durably recorded, and every failed settlement remains available for an explicit operator retry rather than being silently discarded.';
+  for (const [file, status] of [['first.md', 'active'], ['second.md', 'active'], ['history.md', 'complete']]) fs.writeFileSync(path.join(dir, 'context', file), `---\ntitle: ${file}\ntype: guide\nstatus: ${status}\nsummary: Billing invariant\nupdated: 2026-10-14\n---\n\n# Billing\n\n## TL;DR\n\n${claim}\n`);
+  let data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(data.warns.some((w) => /duplicate prose/i.test(w) && w.includes('first.md') && w.includes('second.md')), 'repeated live fact not detected');
+  fs.writeFileSync(path.join(dir, 'context', 'second.md'), fs.readFileSync(path.join(dir, 'context', 'second.md'), 'utf8').replace('status: active', 'status: complete'));
+  data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(!data.warns.some((w) => /duplicate prose/i.test(w) && w.includes('history.md')), 'intentional historical evidence treated as a live owner');
+});
+
+test('ownership authoring refuses native collisions before creating another owner', (dir) => {
+  setupRepo(dir);
+  const native = path.join(dir, '.claude', 'agents', 'existing.md');
+  const text = '---\nname: existing\ndescription: Authored role\n---\n\nKEEP THIS ONLY OWNER\n';
+  fs.writeFileSync(native, text);
+  const r = ctx(dir, 'new', 'agent', 'existing', '--json');
+  assert(r.code !== 0 && !fs.existsSync(path.join(dir, '.agents', 'agents', 'existing.md')), 'failed new command left a competing canonical body');
+  assert(fs.readFileSync(native, 'utf8') === text, 'native owner changed');
+});
+
+test('ownership metadata-shaped adapter body edits cannot bypass preservation', (dir) => {
+  setupRepo(dir);
+  const file = path.join(dir, '.claude', 'rules', 'testing.md');
+  const edited = fs.readFileSync(file, 'utf8') + 'ctx_checksum: HUMAN NOTE\n';
+  fs.writeFileSync(file, edited);
+  const r = ctx(dir, 'adapters', '--json');
+  assert(r.code !== 0 && fs.readFileSync(file, 'utf8') === edited, 'checksum-shaped body edit was overwritten');
+});
+
+test('ownership brace globs survive canonical and native metadata roundtrip', (dir) => {
+  setupRepo(dir);
+  const r = ctx(dir, 'new', 'rule', 'two-areas', '--covers', 'src/{auth,billing}/**');
+  assert(r.code === 0, `brace resource creation failed: ${r.out}`);
+  for (const file of ['src/auth/session.ts', 'src/billing/charge.ts']) {
+    const data = JSON.parse(ctx(dir, 'rules', file, '--json').out);
+    assert(data.matches[0].rules.includes('.agents/rules/two-areas.md'), `brace glob lost path: ${file}`);
+  }
+  assert(ctx(dir, 'adapters', '--check', '--json').code === 0, 'brace metadata did not roundtrip');
+});
+
+test('ownership companion skill migration refuses partial relocation', (dir) => {
+  setupRepo(dir);
+  const legacy = path.join(dir, '.claude', 'skills', 'with-script');
+  fs.mkdirSync(legacy, { recursive: true });
+  const text = '---\nname: with-script\ndescription: Uses a companion\n---\n\nRun scripts/check.mjs\n';
+  fs.writeFileSync(path.join(legacy, 'SKILL.md'), text);
+  fs.mkdirSync(path.join(legacy, 'scripts'));
+  fs.writeFileSync(path.join(legacy, 'scripts', 'check.mjs'), 'console.log("keep");\n');
+  const r = ctx(dir, 'adapters', '--migrate', '--json');
+  assert(r.code !== 0 && !fs.existsSync(path.join(dir, '.agents', 'skills', 'with-script')), 'partial skill move created a broken new owner');
+  assert(fs.readFileSync(path.join(legacy, 'SKILL.md'), 'utf8') === text && fs.existsSync(path.join(legacy, 'scripts', 'check.mjs')), 'legacy skill resources were lost');
+});
+
+test('ownership checks do not mutate and refuse external canonical directories', (dir) => {
+  setupRepo(dir);
+  const paths = ['.agents/rules/testing.md', '.claude/rules/testing.md', '.cursor/rules/testing.mdc'];
+  const before = paths.map((f) => fs.readFileSync(path.join(dir, f), 'utf8'));
+  assert(ctx(dir, 'adapters', '--check', '--json').code === 0, 'valid check failed');
+  assert(paths.every((f, i) => fs.readFileSync(path.join(dir, f), 'utf8') === before[i]), 'read-only adapter check mutated files');
+  const project = path.join(dir, 'project');
+  fs.mkdirSync(project);
+  setupRepo(project);
+  const external = path.join(dir, 'outside');
+  fs.mkdirSync(external);
+  fs.writeFileSync(path.join(external, 'SKILL.md'), 'PRIVATE OUTSIDE MARKER');
+  fs.symlinkSync(external, path.join(project, '.agents', 'skills', 'escape'), process.platform === 'win32' ? 'junction' : 'dir');
+  const r = ctx(project, 'adapters', '--check', '--json');
+  assert(r.code !== 0 && !r.out.includes('PRIVATE OUTSIDE MARKER'), 'external canonical data was followed or exposed');
+});
+
+test('ownership linked factual duplicates warn without treating routes as facts', (dir) => {
+  setupRepo(dir);
+  const claim = 'The settlement service must preserve the provider acknowledgement and the durable ledger entry together before marking the transaction complete, and failed operations remain visible for an explicit retry rather than being discarded.';
+  for (const name of ['linked-a', 'linked-b']) fs.writeFileSync(path.join(dir, 'context', `${name}.md`), `---\ntitle: ${name}\ntype: guide\nstatus: active\nsummary: Settlement behavior\nupdated: 2026-10-14\n---\n\n# Settlement\n\n${claim} [Evidence](../README.md)\n`);
+  const data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(data.warns.some((w) => /duplicate prose/i.test(w) && w.includes('linked-a') && w.includes('linked-b')), 'adding a source link concealed copied live facts');
+});
+
+test('ownership legacy resource names produce valid escaped markdown links', (dir) => {
+  setupRepo(dir);
+  const name = 'caf\u00e9 reader';
+  fs.writeFileSync(path.join(dir, '.claude', 'agents', `${name}.md`), '---\nname: reader\ndescription: Legacy reader\n---\n\nRead-only local role.\n');
+  assert(ctx(dir, 'adapters', '--migrate', '--json').code === 0, 'legacy filename migration failed');
+  const text = fs.readFileSync(path.join(dir, '.claude', 'agents', `${name}.md`), 'utf8');
+  assertContains(text, `${encodeURIComponent(name)}.md)`, 'native pointer did not escape spaces/Unicode for Markdown');
+});
+
+/* ---- native symbolic-link regressions */
+function requireNativeLinks(dir) {
+  const probe = path.join(dir, 'native-link-probe');
+  fs.mkdirSync(probe);
+  try {
+    fs.writeFileSync(path.join(probe, 'owner'), 'probe');
+    fs.symlinkSync('owner', path.join(probe, 'alias'), 'file');
+    fs.mkdirSync(path.join(probe, 'owner-dir'));
+    fs.symlinkSync('owner-dir', path.join(probe, 'alias-dir'), 'dir');
+  } catch (e) {
+    if (['EPERM', 'EACCES', 'ENOTSUP'].includes(e.code)) {
+      const skip = new Error(`native link privilege unavailable (${e.code}); no success simulated`);
+      skip.nativeSkip = true;
+      throw skip;
+    }
+    throw e;
+  } finally {
+    assert(path.resolve(probe) === path.join(path.resolve(dir), 'native-link-probe'), 'unexpected probe cleanup target');
+    fs.rmSync(probe, { recursive: true, force: true });
+  }
+}
+function nativeSetup(dir) {
+  const r = sh('node', [CTX_SRC, 'setup', '--root', dir], dir);
+  assert(r.code === 0, `native setup failed: ${r.out}`);
+  return r;
+}
+function denyLinkCreation(dir) {
+  const hook = path.join(dir, 'deny-link-creation.cjs');
+  fs.writeFileSync(hook, 'const fs=require("node:fs"); fs.symlinkSync=()=>{const e=new Error("test denied native symlinks");e.code="EPERM";throw e;};\n');
+  return { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` };
+}
+
+test('symlinks default setup creates real relative aliases and enables local Git', (dir) => {
+  requireNativeLinks(dir);
+  nativeSetup(dir);
+  for (const [file, target] of [['CLAUDE.md', 'AGENTS.md'], ['GEMINI.md', 'AGENTS.md'], ['.github/copilot-instructions.md', '../AGENTS.md'], ['.claude/agents', '../.agents/agents'], ['.claude/rules', '../.agents/rules'], ['.claude/skills', '../.agents/skills'], ['.cursor/skills', '../.agents/skills'], ['.cursor/rules', '../.agents/views/cursor/rules']]) {
+    const abs = path.join(dir, file);
+    assert(fs.lstatSync(abs).isSymbolicLink(), `${file} is a regular copy, not a native symlink`);
+    assert(fs.readlinkSync(abs).replace(/\\/g, '/') === target, `${file} has the wrong/absolute target`);
+  }
+  assert(sh('git', ['config', '--local', '--get', 'core.symlinks'], dir).out.trim() === 'true', 'repo-local Git symlinks not enabled');
+  const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'context', '.ctx.json'), 'utf8'));
+  assert(cfg.resourceMode === 'symlink', 'new setup did not persist the real-link strategy');
+  assert(ctx(dir, 'symlinks', '--check', '--json').code === 0, 'native link audit failed');
+});
+
+test('symlinks canonical edits and skills remain visible through one directory owner', (dir) => {
+  requireNativeLinks(dir);
+  nativeSetup(dir);
+  const source = path.join(dir, '.agents', 'agents', 'context-explorer.md');
+  fs.appendFileSync(source, '\nONE LIVE BODY\n');
+  assert(fs.readFileSync(path.join(dir, '.claude', 'agents', 'context-explorer.md'), 'utf8').includes('ONE LIVE BODY'), 'native host does not see canonical changes');
+  assert(ctx(dir, 'new', 'skill', 'shared-check').code === 0, 'internal linked skill creation failed');
+  const canonical = path.join(dir, '.agents', 'skills', 'shared-check', 'SKILL.md');
+  assert(fs.realpathSync(canonical) === fs.realpathSync(path.join(dir, '.claude', 'skills', 'shared-check', 'SKILL.md')) && fs.realpathSync(canonical) === fs.realpathSync(path.join(dir, '.cursor', 'skills', 'shared-check', 'SKILL.md')), 'skill bodies were copied into host folders');
+  const matches = JSON.parse(ctx(dir, 'rules', 'tests/anything.mjs', '--json').out).matches[0];
+  assert(matches.rules.filter((f) => f.endsWith('testing.md') || f.endsWith('testing.mdc')).length === 1, 'native aliases are treated as separate rules');
+});
+
+test('symlinks Git stages actual links as mode 120000 not copied bodies', (dir) => {
+  requireNativeLinks(dir);
+  nativeSetup(dir);
+  assert(sh('git', ['add', '-A'], dir).code === 0, 'could not stage disposable fixture');
+  const staged = sh('git', ['ls-files', '--stage'], dir).out;
+  assert(/120000 [^\n]*\tCLAUDE\.md/m.test(staged) && /120000 [^\n]*\t\.claude\/agents/m.test(staged), 'Git index stores ordinary copies rather than symlinks');
+  assert(sh('git', ['show', ':CLAUDE.md'], dir).out === 'AGENTS.md', 'Git stored the master body instead of its link target');
+  assert(sh('git', ['show', ':.claude/agents'], dir).out === '../.agents/agents', 'Git stored a non-portable directory target');
+});
+
+test('symlinks permission denial fails before project copies and never falls back', (dir) => {
+  const env = denyLinkCreation(dir);
+  const r = sh('node', [CTX_SRC, 'setup', '--root', dir], dir, env);
+  assert(r.code !== 0, 'native permission denial silently used pointer copies');
+  assert(/Developer Mode|symbolic.link privilege|EPERM/i.test(r.out), `permission error lacks the Windows prerequisite: ${r.out}`);
+  assert(!fs.existsSync(path.join(dir, 'AGENTS.md')) && !fs.existsSync(path.join(dir, 'CLAUDE.md')), 'denied preflight created duplicate project files');
+});
+
+test('symlinks existing valid layout works without new link creation permission', (dir) => {
+  requireNativeLinks(dir);
+  nativeSetup(dir);
+  const env = denyLinkCreation(dir);
+  for (const args of [['symlinks', '--check', '--json'], ['adapters', '--json'], ['new', 'agent', 'another-reader', '--json']]) {
+    const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), ...args], dir, env);
+    assert(r.code === 0, `existing linked layout incorrectly needs Developer Mode: ${args} ${r.out}`);
+  }
+});
+
+test('symlinks migration preserves conflicting custom native owners', (dir) => {
+  requireNativeLinks(dir);
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const file = path.join(dir, '.claude', 'agents', 'private-reader.md');
+  const text = '---\nname: private-reader\ndescription: Keep my owner\n---\n\nCUSTOM CONTENT KEEP\n';
+  fs.writeFileSync(file, text);
+  const r = ctx(dir, 'symlinks', '--migrate', '--json');
+  assert(r.code !== 0 && fs.readFileSync(file, 'utf8') === text, 'custom native content was erased during migration');
+  assert(!fs.lstatSync(path.join(dir, '.claude', 'agents')).isSymbolicLink(), 'conflicting native folder was replaced');
+});
+
+test('symlinks intact managed pointer folders migrate without a second body', (dir) => {
+  requireNativeLinks(dir);
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const before = fs.readFileSync(path.join(dir, '.agents', 'agents', 'context-explorer.md'), 'utf8');
+  const r = ctx(dir, 'symlinks', '--migrate', '--json');
+  assert(r.code === 0, `managed pointer migration failed: ${r.out}`);
+  assert(fs.lstatSync(path.join(dir, '.claude', 'agents')).isSymbolicLink(), 'directory stayed a copied adapter tree');
+  assert(fs.readFileSync(path.join(dir, '.agents', 'agents', 'context-explorer.md'), 'utf8') === before, 'canonical owner changed during migration');
+});
+
+test('symlinks concurrent native edits are preserved during migration validation', (dir) => {
+  requireNativeLinks(dir);
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const native = path.join(dir, '.claude', 'agents', 'context-explorer.md');
+  const hook = path.join(dir, 'edit-during-validation.cjs');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const target=${JSON.stringify(native)};const read=fs.readFileSync;let edited=false;fs.readFileSync=function(file,...args){const data=read.call(fs,file,...args);if(!edited&&String(file)===target){edited=true;fs.appendFileSync(target,'\\nCONCURRENT HUMAN CHANGE\\n');}return data;};\n`);
+  const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  assert(r.code !== 0 && fs.readFileSync(native, 'utf8').includes('CONCURRENT HUMAN CHANGE'), `concurrent native edit lost: ${r.out}`);
+});
+
+test('symlinks concurrent configuration edits survive Git setup and rollback', (dir) => {
+  requireNativeLinks(dir);
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const cfgPath = path.join(dir, 'context', '.ctx.json');
+  const hook = path.join(dir, 'edit-during-git.cjs');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const cp=require('node:child_process');const run=cp.execFileSync;let edited=false;cp.execFileSync=function(cmd,args,...rest){if(!edited&&cmd==='git'&&args.join(' ')==='config --local core.symlinks true'){edited=true;const file=${JSON.stringify(cfgPath)};const cfg=JSON.parse(fs.readFileSync(file,'utf8'));cfg.humanNote='CONCURRENT CONFIG CHANGE';fs.writeFileSync(file,JSON.stringify(cfg));}return run.call(cp,cmd,args,...rest);};require('node:module').syncBuiltinESMExports();\n`);
+  const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  assert(r.code !== 0 && cfg.humanNote === 'CONCURRENT CONFIG CHANGE' && cfg.resourceMode === 'pointer', `concurrent configuration edit lost: ${r.out}`);
+  assert(!fs.lstatSync(path.join(dir, '.claude', 'agents')).isSymbolicLink(), 'failed install did not restore native pointer folder');
+});
+
+test('symlinks portable pointer opt-out cannot overwrite an existing linked layout', (dir) => {
+  requireNativeLinks(dir);
+  nativeSetup(dir);
+  const view = path.join(dir, '.agents', 'views', 'cursor', 'rules', 'testing.mdc');
+  const before = fs.readFileSync(view, 'utf8');
+  const r = sh('node', [CTX_SRC, 'setup', '--root', dir, '--portable-pointers'], dir);
+  assert(r.code !== 0 && fs.readFileSync(view, 'utf8') === before, 'failed reverse strategy switch rewrote a linked central view');
+  assert(JSON.parse(fs.readFileSync(path.join(dir, 'context', '.ctx.json'), 'utf8')).resourceMode === 'symlink', 'installed link mode changed without reverse migration');
+});
+
+test('symlinks rollback does not overwrite a concurrent replacement at the destination', (dir) => {
+  requireNativeLinks(dir);
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const target = path.join(dir, 'CLAUDE.md');
+  const hook = path.join(dir, 'occupied-rollback.cjs');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const rename=fs.renameSync;const target=${JSON.stringify(target)};let injected=false;fs.renameSync=function(from,to){if(!injected&&String(to)===target&&String(from).endsWith('-new')){injected=true;fs.writeFileSync(target,'CONCURRENT DESTINATION CONTENT');const e=new Error('test publication failure');e.code='EACCES';throw e;}return rename.call(fs,from,to);};\n`);
+  const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  assert(r.code !== 0 && fs.readFileSync(target, 'utf8') === 'CONCURRENT DESTINATION CONTENT', `rollback overwrote a new destination: ${r.out}`);
+  const data = JSON.parse(r.out);
+  assert(data.recovery?.length > 0, 'preserved rollback backup not reported');
+});
+
+test('symlinks rollback preserves view edits made after publication', (dir) => {
+  requireNativeLinks(dir);
+  setupRepo(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
+  const viewDir = path.join(dir, '.agents', 'views', 'cursor', 'rules');
+  const target = path.join(dir, 'CLAUDE.md');
+  const hook = path.join(dir, 'published-view-edit.cjs');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const path=require('node:path');const rename=fs.renameSync;const view=${JSON.stringify(viewDir)},target=${JSON.stringify(target)};fs.renameSync=function(from,to){if(String(to)===target&&String(from).endsWith('-new'))throw new Error('test later alias failure');const result=rename.call(fs,from,to);if(String(to)===view)fs.appendFileSync(path.join(view,'testing.mdc'),'\\nPUBLISHED HUMAN VIEW EDIT\\n');return result;};\n`);
+  const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  assert(r.code !== 0 && fs.existsSync(path.join(viewDir, 'testing.mdc')) && fs.readFileSync(path.join(viewDir, 'testing.mdc'), 'utf8').includes('PUBLISHED HUMAN VIEW EDIT'), `rollback removed a published edit: ${r.out}`);
+});
+
+test('symlinks failed fresh install does not claim an installed symlink mode', (dir) => {
+  requireNativeLinks(dir);
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), 'CUSTOM CLAUDE NOTES KEEP');
+  const r = sh('node', [CTX_SRC, 'setup', '--root', dir], dir);
+  assert(r.code !== 0 && fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8') === 'CUSTOM CLAUDE NOTES KEEP', 'custom fresh entrypoint was overwritten');
+  const cfgPath = path.join(dir, 'context', '.ctx.json');
+  if (fs.existsSync(cfgPath)) assert(JSON.parse(fs.readFileSync(cfgPath, 'utf8')).resourceMode !== 'symlink', 'failed installation falsely persisted native link mode');
+  const again = sh('node', [CTX_SRC, 'setup', '--root', dir], dir, denyLinkCreation(dir));
+  assert(again.code !== 0 && /Developer Mode|EPERM/.test(again.out), 'retry silently downgraded the requested symlink strategy');
+  const adapters = ctx(dir, 'adapters', '--json');
+  assert(adapters.code !== 0 && !fs.existsSync(path.join(dir, '.claude', 'agents', 'context-explorer.md')), 'pending native setup silently generated portable adapter copies');
+});
+
 /* ----------------------------------------------------------------- summary */
-console.log(`\n${passed} passed, ${failures.length} failed`);
+console.log(`\n${passed} passed, ${failures.length} failed, ${skipped} skipped`);
 if (failures.length) {
   for (const f of failures) console.log(`  FAIL ${f.name}`);
   process.exit(1);

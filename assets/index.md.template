@@ -8,17 +8,7 @@ updated: {{TODAY}}
 
 # Context Index
 
-The router for this project's knowledge base (an LLM wiki: raw sources → wiki pages → schema in AGENTS.md).
-Read this, `memory.md`, and nothing else until you know what the task is. Every page has a one-line summary below and a `## TL;DR` at its top — **read TL;DR first, open the full page only if it is not enough**.
-
-## Orient (≈ 2–5k tokens total)
-
-1. `AGENTS.md` — rules and invariants (already loaded)
-2. this file — routing + catalog
-3. `memory.md` — current state and the exact next step
-4. `context/progress-tracker.md` — what is in progress / done (skim)
-
-Then run: `node context/ctx.mjs brief <files or keywords of the task>` — it ranks the pages worth reading, with token cost.
+Task routing and a derived page catalog. Reading-order policy lives in [AGENTS.md](../AGENTS.md); responsibility boundaries live in [File Ownership](ownership.md). Entries here locate owners, not reproduce their facts.
 
 ## Task routing (hand-maintained — edit to fit this project)
 
@@ -34,13 +24,6 @@ Then run: `node context/ctx.mjs brief <files or keywords of the task>` — it ra
 | "How does X work?" (question only) | `brief X` → answer from pages. Open code only if a page is stale/low-confidence. File a useful answer back as a page. |
 | Unknown area / first time here | `codebase/map.md` → `brief <keywords>` |
 | New raw source (PRD, notes, vendor docs) | follow INGEST in the skill (`references/operations.md`) |
-
-## Layers
-
-- **Schema** — `AGENTS.md` (+ `CLAUDE.md` wrapper): how to work and maintain this wiki.
-- **Wiki** — everything in `context/` with frontmatter: owned and updated by the agent; humans read, review and overrule.
-- **Raw** — `context/raw/`: immutable source material. Never edited; summarized into `context/sources/`.
-- **Timeline** — `context/log.md` (append-only, greppable: `grep "^## \[" context/log.md | tail -10`).
 
 ## Catalog
 

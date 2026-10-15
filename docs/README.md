@@ -1,5 +1,7 @@
 # Docs
 
+User-facing entry points: [Getting started](../README.md), [CLI flags and routing JSON](../references/ctx-cli.md), [Upgrade changes](../CHANGELOG.md). Existing project upgrades refresh the CLI but preserve user-authored instructions/settings; review and merge relevant template guidance deliberately.
+
 Human-facing documentation lives **here**. Agent-facing knowledge lives in `context/`.
 One fact, one home: a doc page explains to a person how to use or operate the thing;
 if it also constrains the agent, the rule belongs in `context/` and this page links to it.

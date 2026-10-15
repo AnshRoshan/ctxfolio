@@ -1,8 +1,8 @@
 {
   "name": "project-context-system",
   "displayName": "project-context-system — agent context that stays true",
-  "version": "3.4.0",
-  "description": "Turns any project into a self-maintaining markdown knowledge base (Karpathy-style LLM wiki: raw sources, wiki pages, schema) so coding agents read a compiled, interlinked wiki instead of re-exploring the codebase every session. Ships AGENTS.md + CLAUDE.md, memory.md handoff, a routed context/ folder (index, log, architecture, codebase map, module pages, specs, decisions, tracker, data model, API contracts, glossary, runbook) and a zero-dependency ctx CLI (init, brief, impact, stale, lint, doctor, index, coverage, log, stamp, new, status, hook) plus hooks that block a session that changed code without updating the pages that describe it.",
+  "version": "3.7.0",
+  "description": "Project-local context wikis for coding agents: safe scaffolding, budgeted routing with trust warnings, git-based review signals, decisions, task state and portable handoffs. Ships a zero-dependency ctx CLI and best-effort Claude workflow hooks; source evidence and explicit verification remain required.",
   "author": {
     "name": "Ansh"
   },

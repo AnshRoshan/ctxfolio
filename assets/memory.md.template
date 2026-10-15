@@ -1,12 +1,12 @@
 # Memory
 
-Session handoff. Updated at the end of EVERY session. This file is how any agent or human picks up with zero re-explaining. Keep it under ~60 lines — history belongs in context/log.md.
+Resume cursor, not a second wiki or task ledger. Keep under ~60 lines. Link current facts and evidence at their owners; dated history belongs in context/log.md.
 
 _Last updated: {{date, end of session N}}_
 
 ## Current state
 
-{{What works right now, concretely. E.g. "Homepage fully implemented and matches context/designs/landing-page.png. Build, lint, typecheck clean."}}
+{{Where execution paused, plus links to context/progress-tracker.md and the current spec. Do not copy task states, completed-feature lists, architecture or decisions.}}
 
 ## Next step
 
@@ -14,14 +14,14 @@ _Last updated: {{date, end of session N}}_
 
 ## Working set (for compaction / resume)
 
-- Current unit: {{Feature NN}}
-- Files modified this session: {{paths}}
-- Pages to read first: {{context/codebase/modules/x.md, context/feature-specs/NN-*.md}}
-- Commands: {{test / typecheck / build}}
+- Unit/spec pointer: {{context/feature-specs/NN-*.md}}
+- Files needed to resume: {{paths}}
+- Owner pages needed next: {{context/codebase/modules/x.md}}
+- Verification/command pointers: {{context/testing.md#verification; context/runbook.md if applicable}}
 
 ## Open questions
 
-{{Unresolved decisions carried across sessions. Never drop these. E.g. "- Rate limit for public search: 10/min or 30/min? (D-05 pending)"}}
+{{Unresolved resume questions, or pointers to F-NN/issues/spec questions already recorded elsewhere. Carry pointers forward; do not create another decision record here.}}
 
 ## Context debt
 

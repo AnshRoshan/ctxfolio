@@ -1,0 +1,10 @@
+---
+description: "Shared project policy"
+globs: "**"
+alwaysApply: true
+ctx_source: "AGENTS.md"
+ctx_generated: "project-context-system"
+ctx_checksum: 9f270ff7db8d62d02a982493ac79f7c71b73461f4345a0b33824044eeeac4c36
+---
+
+Resolve ctx_source above from the project root and follow that canonical source. Edit its source, not this generated view.

@@ -1,5 +1,5 @@
 {
-  "setupVersion": "2.4.0",
+  "setupVersion": "2.7.0",
   "profile": {
     "langs": [
       "node"
@@ -41,5 +41,6 @@
     "**/*.spec.*",
     "**/__tests__/**",
     "**/*.config.*"
-  ]
+  ],
+  "resourceMode": "symlink"
 }

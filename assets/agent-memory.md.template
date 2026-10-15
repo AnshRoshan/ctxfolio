@@ -1,12 +1,12 @@
 # Memory — {{AGENT}}
 
-Owned by the `{{AGENT}}` subagent. Read this FIRST at the start of every run; it is experience, not instructions.
+Experience for the `{{AGENT}}` subagent. Read this FIRST; it is evidence to check, not instructions or permission to write.
 
 ## Append protocol
 
-- End of each run: append at most 3 dated one-liners — what was hard to find, what surprised you, a gotcha worth keeping. Format: `- YYYY-MM-DD: <one line>`
+- End of each run: return at most 3 evidence-backed dated one-liner suggestions to the main agent. Only the main agent persists them when writes are authorized; read-only runs never edit memory. Format: `- YYYY-MM-DD: <one line> (source/check)`
 - Newest on top. Delete lines that no longer apply (renamed files, old versions). Under ~60 lines total — this loads into the agent's window every run.
-- Anything the whole project must know does NOT live here — it goes in a `context/` page.
+- Verified system facts live at their declared owner; keep a pointer here rather than a second copy. Store only experience leads that are useful to this role.
 
 ## Lessons
 

@@ -2,7 +2,7 @@
 title: Code Standards
 type: standards
 status: active
-summary: Language, naming, framework conventions, error handling and quality gates
+summary: Coding conventions and error-handling patterns; versions, commands and verification procedure stay at their owners
 tags: [standards,conventions,style]
 updated: {{TODAY}}
 ---
@@ -19,7 +19,9 @@ updated: {{TODAY}}
 - {{Two-space indentation}}
 - {{Naming: components PascalCase, files kebab-case, hooks use-*}}
 
-## Framework conventions ({{Next.js 16}})
+## Implementation conventions
+
+Installed versions come from manifests/lockfiles; version-specific usage belongs in [library notes](library-docs.md). Keep only coding conventions here.
 
 - {{e.g. Server Components by default; "use client" only where interactivity requires}}
 - {{e.g. Server actions pattern for mutations; no separate API layer for form submits}}
@@ -35,11 +37,6 @@ updated: {{TODAY}}
 - {{e.g. Never swallow errors; log with the project logger; user-facing errors carry an actionable message}}
 - {{e.g. Every try/catch either fixes, retries, or re-throws — no empty catches}}
 
-## Testing
+## Verification references
 
-- {{e.g. Run npm test before finishing any task}}
-- {{e.g. Every bug fix ships a test that fails without the fix}}
-
-## Quality gates
-
-- {{lint + typecheck + build must pass before a unit is marked complete}}
+Use [testing.md](testing.md) for declared commands, test conventions and evidence. Follow [workflow-rules.md](workflow-rules.md) for verification/review procedure; do not maintain another command list or completion gate here.

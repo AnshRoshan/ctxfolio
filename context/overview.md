@@ -4,7 +4,7 @@ type: overview
 status: active
 summary: What the project-context-system skill is, who it's for, its core flows, and the hard non-scope list
 tags: [overview,scope,product]
-updated: 2026-10-06
+updated: 2026-10-14
 verified_at: 080a7adb7826
 ---
 
@@ -14,11 +14,11 @@ verified_at: 080a7adb7826
 
 - This repo IS the `project-context-system` skill: markdown method docs + a zero-dependency Node CLI (`scripts/ctx.mjs`) that scaffolds and maintains a compiled project wiki for coding agents.
 - Product = the skill's OUTPUT (any project's `context/` wiki) as much as the code: changing templates/docs changes user behavior, so every edit is judged as "what will an agent do differently".
-- The test suite (`tests/run.mjs`, 47 cases) is the CLI's contract — a feature without a test is unfinished.
+- The test suite (`tests/run.mjs`, 72 cases) is the CLI's contract — a feature without a test is unfinished.
 
 ## What this is
 
-A drop-in engineering system: `ctx install` puts the skill into an agent tool; `ctx setup` turns any repository (any language, greenfield or brownfield) into a self-maintaining markdown knowledge base — AGENTS.md schema, `context/` wiki with frontmatter pages, task ledger, path-gated rules, subagent definitions, hooks that enforce recording. Agents then orient from files instead of re-exploring code.
+A drop-in engineering system: `ctx install` puts the skill into an agent tool; `ctx setup` turns any repository (any language, greenfield or brownfield) into a self-maintaining markdown knowledge base — AGENTS.md schema, `context/` wiki with frontmatter pages, task ledger, path-gated rules, subagent definitions and best-effort workflow hooks. Budgeted JSON routing exposes freshness/trust review needs; agents verify evidence rather than treating pages or hook success as proof.
 
 ## Who it's for
 
@@ -38,7 +38,7 @@ Solo builders and small teams (2–10 devs, each with coding agents) who want se
 
 ## In scope
 
-Everything in build-plan.md's phases. The skill's own wiki (this folder) is in scope — it dogfoods the system.
+The currently authorized feature/request only; build-plan.md contains future proposals, not blanket authorization. The skill's own wiki (this folder) is in scope for keeping this upgrade accurately documented.
 
 ## Deliberately out of scope
 
