@@ -18,10 +18,10 @@ The only file that updates constantly, and the only place a unit's state lives. 
 mutually exclusive — move lines with `ctx task` (`add` / `start` / `block` / `done`); it keeps
 the ledger honest (one unit In progress at a time, `done` requires concrete details).
 
-Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 complete. Feature 08 is complete and main/release checks are green. Active unit: Feature 09 (dogfood truth repair).
+Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 complete. Features 08 and 09 are complete and main/deployment checks are green. Active unit: Feature 10 (CLI honesty and housekeeping).
 
 ## In progress
-- Feature 09: Dogfood truth repair — started 2026-10-21
+- Feature 10: CLI honesty and housekeeping — started 2026-10-21
 ## Blocked
 
 ## Up next
@@ -41,6 +41,7 @@ Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 complete. Feature 0
 - Feature 33: Spec-queue integrity — 2026-10-21 — build-plan numeric reservations parsed; new feature/task add refuse implicit reserved IDs and accept explicit --spec; lint enforces roadmap-spec-tracker coherence, required Wave 0 sections and D-NN refs; 117 tests, lint 25 pages 0/0, stale clean, doctor 13/13
 - Feature 34: Route and relation integrity — 2026-10-21 — Router templates now use only always-created pages; lint validates router backticks, code-span paths and related targets; fixed relative related paths in map/module/API/integration templates; 119 tests, lint 26 pages 0/0, stale clean, doctor 13/13
 - Feature 08: always-green baseline: CI red, self-context gate, release hygiene — 2026-10-21 — Evidence: context/testing.md#verification-evidence; main run 39553397681 and candidate 39552815955 green across Node22/24 on three OSes; actual tag check passed; v2.7.0 published. Wave 0 safety regressions corrected.
+- Feature 09: Dogfood truth repair — 2026-10-21 — Evidence: context/testing.md#verification-evidence; 132/0/0 suite, truth/baseline/version probes, strict lint27 0/0 stale clean doctor13/13; candidate39555626175/main39556052075 green; Pages39556051956 and real deployed desktop/mobile/noJS verified.
 ## Session notes
 
 - 2026-10-06: detect() substring bug found by dogfooding — 'gin' matched "context-engineering" → backend false positive; fixed with word-boundary regex over manifest text (dep names keep substring match).

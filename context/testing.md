@@ -6,7 +6,7 @@ summary: The self-test harness — how to run it, what it covers, and the rule t
 tags: [tests, quality]
 covers: [tests/**]
 updated: 2026-10-21
-verified_at: b7e58d6586c2
+verified_at: ef2b0df59c6a
 ---
 
 # Testing
@@ -42,6 +42,11 @@ verified_at: b7e58d6586c2
 - `node tests/check-baseline.mjs` clones full history into a disposable fixture, proves strict lint rejects a real placeholder and stale rejects a committed source-only change, then verifies current-field version/mapping/tag mutations and malformed metadata fail. A correct tag on the wrong commit is rejected. The actual repository gates are unconditional; mutations derive from current declarations rather than a fixed release number.
 - `sandbox()` canonicalizes its temporary root before creating fault-injection paths. The migration/rollback tests require injection markers, preserved human bytes, configuration state and reported recovery content, not merely a nonzero exit. A directory alias run in POSIX CI exercises the macOS temporary-root path class.
 
+## Housekeeping contracts
+
+- `isSourcePath` shares extension/directory/glob policy across inventory and changed-source counts. Docs/reference examples are excluded from app sources; explicit non-context/raw coverage still creates owner review. Deleted/rename paths are classified without requiring existence.
+- Archive validates both config and flag windows before writes, accepts zero, and subtracts local calendar days across DST. Log metadata/entry use one local date and atomic locked publication; supported block-scalar metadata replacement removes its old continuation without corrupting neighbors. Machine install/lock/backup timestamps remain ISO.
+
 ## Known flaky / slow
 
 - `ctx tools` probes PATH (`where`/`which`) — tests only assert the array shape, never which tools exist on the machine.
@@ -50,7 +55,13 @@ verified_at: b7e58d6586c2
 
 ## Verification evidence
 
-- 2026-10-21, Feature 09 local candidate: full CLI suite 132 passed / 0 failed / 0 skipped on Windows; static truth guard, negative baseline fixture and release consistency passed. Strict lint reports 27 pages 0/0, stale clean, doctor 13/13. Existing Vite build passed. Chrome CDP device emulation verified actual 1440/390-pixel viewports, desktop/mobile rendering, and genuine script-disabled static fallback (`js: false`), with page scrollWidth matching viewport; deliberate horizontally scrollable nav/tables retain their incumbent behavior. Static and interactive demo labels identify illustrative/legacy content and unmeasured cost inputs. No CSS or interaction redesign. Deployment verification remains pending publication of this feature.
+- 2026-10-21, Feature 10 final local candidate: `node tests/run.mjs` passed 147 tests / 0 failures / 0 skips on Windows. Truth, negative baseline and version/tag guards passed; syntax and copied-CLI parity passed; strict lint reports 28 pages 0/0, stale clean, doctor 13/13. The test-only midnight clock correction is included in this full rerun. Remote CI verification remains the publication gate.
+
+- 2026-10-21, Feature 10 focused checks: 15 passed / 0 failed / 0 skipped after source/material classification, archive input/local-DST cutoffs, one-date log/index publication and block-scalar metadata-upsert repair. The folded-updated regression failed before the shared fix. An advancing-clock fixture initially used the wrong UTC-to-IST hour; its test-only instant was corrected and the focused suite rerun. Adjacent archive 8/0/0, impact 3/0/0, Stop-hook 3/0/0 and reliability 13/0/0 filters passed. The full integrated count comes from the actual full suite, not summed overlapping filters.
+
+- 2026-10-21, Feature 10 worktree cleanup: `git worktree list --porcelain` identified the exact registered detached legacy checkout; its status and ignored/untracked inventories were empty, and b59ed5d was reachable from origin/main. Approved `git worktree remove` left only the primary worktree and preserved the reachable commit; no forced filesystem deletion occurred. CLI housekeeping verification remains pending implementation.
+
+- 2026-10-21, Feature 09 local candidate: full CLI suite 132 passed / 0 failed / 0 skipped on Windows; static truth guard, negative baseline fixture and release consistency passed. Strict lint reports 27 pages 0/0, stale clean, doctor 13/13. Existing Vite build passed. Chrome CDP device emulation verified actual 1440/390-pixel viewports, desktop/mobile rendering, and genuine script-disabled static fallback (`js: false`), with page scrollWidth matching viewport; deliberate horizontally scrollable nav/tables retain their incumbent behavior. Static and interactive demo labels identify illustrative/legacy content and unmeasured cost inputs. No CSS or interaction redesign. Deployment verification later passed: candidate39555626175 and main39556052075 succeeded; Pages39556051956 deployed ef2b0df. The existing URL returned corrected HTML (339490 bytes, HTTP200), and real Chrome desktop/mobile/script-disabled views confirmed the deployed truth labels and unchanged layout behavior.
 
 - 2026-10-21, Feature 08 published baseline: candidate run 39552815955 and actual main run 39553397681 succeeded on all six Ubuntu/macOS/Windows Node 22/24 jobs; each full suite reported 132 passed / 0 failed / 0 skipped. POSIX alias filters reported 14/0/0. Main strict self-context and scaffold checks passed; actual tag run 39553402796 passed including release-consistency. Release v2.7.0 is published, latest-release API/badge report v2.7.0, and Pages run 39553397649 succeeded with the existing site returning HTTP 200. Source: GitHub run/job logs and release API, not local inference.
 

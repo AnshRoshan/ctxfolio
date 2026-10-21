@@ -7,7 +7,7 @@ tags: [routing,relations,lint,templates]
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/index.md.template, assets/workflow-rules.md.template, context/index.md, context/workflow-rules.md]
 related: [../build-plan.md, ../index.md, ../workflow-rules.md, ./33-spec-queue-integrity.md]
 updated: 2026-10-21
-verified_at: 6a2c96252924
+verified_at: ef2b0df59c6a
 ---
 
 # Route and Relation Integrity

@@ -8,7 +8,7 @@ covers: [scripts/ctx.mjs, tests/**]
 related: [../architecture.md]
 updated: 2026-10-21
 confidence: verified
-verified_at: b7e58d6586c2
+verified_at: ef2b0df59c6a
 ---
 
 # Codebase Map
@@ -29,7 +29,8 @@ scripts/ctx.mjs       the entire CLI: args → commands.{setup,init,task,lint,do
   install transaction              SHIP-only staged copy, symlink refusal, local manifest, recoverable two-rename backup/publication; setup CLI backup and config schema migration
   roadmapReservations()            parses build-plan numeric rows; guards new feature/task add and lint queue coherence
   scanCodeSpans()/related check    validates router backticks and page-relative related targets during lint
-  ├ pages()/sourceFiles()/staleReport()   the wiki's read model over context/ + git
+  ├ pages()/isSourcePath()/sourceFiles()/staleReport()   source inventory/counting reuses configured path filters; impact separately reviews explicit material owners
+  today()/archiveWindow()/commands.log   local calendar dates, validated no-write archive cutoffs, one-date atomic log metadata/entry
   ├ detect() + DEP_MARKERS + INTEL_TOOLS  profile detection and delegation-tool probing (setup/init read it)
   └ commands.*                            each subcommand; emit() wraps human/JSON output ({command, ok})
 references/           deep playbooks, one per operation (ctx-cli.md documents every flag)
@@ -68,4 +69,4 @@ Source review: scripts/ctx.mjs → imports, commands dispatch, SHIP/install, git
 ## Generated / do-not-edit
 
 - `context/ctx.mjs` (a copy — refresh via setup) and the catalog block between `<!-- ctx:index:* -->` markers in context/index.md are generated views.
-- `.kilo/worktrees/super-raincoat/` is a registered, gitignored, detached legacy editor worktree. Do not edit or copy from it; physical cleanup belongs to Feature 10. Observation: `git worktree list --porcelain` and `git check-ignore .kilo/worktrees/super-raincoat` on 2026-10-21; see [operational gotchas](../library-docs.md#known-operational-gotchas).
+- The former legacy editor worktree was safely removed through Git in Feature 10; its reachable commit history is retained. Cleanup evidence and recovery limits live in [operational gotchas](../library-docs.md#known-operational-gotchas).

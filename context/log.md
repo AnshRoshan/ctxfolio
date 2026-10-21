@@ -92,3 +92,15 @@ Main CI39553397681 and tag CI39553402796 success, all six supported jobs; actual
 
 ## [2026-10-21] build | Feature 09 truth repair verified locally
 132/0/0 full CLI suite; static live-claim regression fails oldcopy/passes correction; strict lint27 0/0, stale clean doctor13/13; baseline/version probes and build passed. Chrome CDP actual desktop/mobile/noJS verified, same design/classes/interactionsetup. CI/deployment pending.
+
+## [2026-10-21] build | Feature 09 complete: live truth repaired and deployed
+Candidate39555626175 and main39556052075 green; Pages39556051956 deployed correctedcopy; real desktop/mobile/noJS URL verified HTTP200. Evidence context/testing.md#verification-evidence.
+
+## [2026-10-21] decision | D-14 conservative housekeeping/cursor defaults
+Human approved nonnegative whole-day archive windows including0today, docs/reference sample count exclusion preservingexplicitcovers, advisorycommittedhistory/reliableGitstatus cursor checks, safeGit removal of cleanlegacyworktree.
+
+## [2026-10-21] fix | Feature 10 clean legacy worktree removed
+Git-managed removal after exactpath/registration/clean tracked+untracked+ignored inventory checks and b59ed5d reachability fromorigin/main. History retained; noforcefilesystemdelete.
+
+## [2026-10-21] build | Feature 10 final local verification passed
+147/0/0 complete suite,15focused, truth/baseline/version andcopiedparity; strictlint28 0/0 stale clean doctor13/13. SafeGitworktreecleanupdone; remoteCIpending.

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Feature 09: live docs/site claims use current source or dated run evidence; install examples use the SHIP-only path; synthetic legacy transcripts and token assumptions are explicitly labeled without redesigning the site.
+- Feature 10: app-source counts share configured path filters while explicit covered material still requires review; archive windows validate before writes and use local calendar cutoffs; log metadata/heading publish together; folded metadata updates preserve neighbors. The approved clean legacy worktree was removed through Git with reachable history retained.
+
 ## v2.7.0 — native relative symbolic links and substrate integrity (package/plugin 3.7.0)
 
 - Frontmatter block scalars and brace globs are checked fail-closed; contract errors remain named diagnostics rather than crashes or dropped routing metadata.

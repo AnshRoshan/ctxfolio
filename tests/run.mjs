@@ -686,7 +686,7 @@ test('setup --danger drops a nested AGENTS.md in the landmine directory', (dir) 
 test('archive rotates old log and tracker entries without deleting history', (dir) => {
   initRepo(dir);
   const lp = path.join(dir, 'context', 'log.md');
-  const fresh = new Date().toISOString().slice(0, 10);
+  const fresh = feature10LocalDate();
   fs.writeFileSync(lp, fs.readFileSync(lp, 'utf8') + `\n## [2025-01-05] build | ancient unit\nnote one\n\n## [${fresh}] build | fresh unit\n`);
   const tr = path.join(dir, 'context', 'progress-tracker.md');
   fs.writeFileSync(tr, fs.readFileSync(tr, 'utf8').replace(/\r\n/g, '\n').replace('## Completed\n', '## Completed\n\n- Feature 01: old thing — 2025-01-05 — details here\n'));
@@ -710,8 +710,8 @@ test('archive replay does not duplicate entries a crashed run already archived',
   const tr = path.join(dir, 'context', 'progress-tracker.md');
   const oldLine = '- Feature 01: old thing — 2025-01-05 — details here';
   fs.writeFileSync(tr, fs.readFileSync(tr, 'utf8').replace(/\r\n/g, '\n').replace('## Completed\n', `## Completed\n\n${oldLine}\n`));
-  const cl = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 7);
-  const ct = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 4);
+  const cl = feature10LocalDate(180).slice(0, 7);
+  const ct = feature10LocalDate(90).slice(0, 4);
   const archDir = path.join(dir, 'context', 'archive');
   fs.mkdirSync(archDir, { recursive: true });
   const logArchive = path.join(archDir, `log-${cl}.md`);
@@ -1726,8 +1726,8 @@ test('Wave0 archive dedupe compares exact blocks and lines rather than substring
   fs.appendFileSync(lp, '\n' + entry + '\n');
   fs.writeFileSync(tr, fs.readFileSync(tr, 'utf8').replace('## Completed\n', `## Completed\n${line}\n`));
   const arch = path.join(dir, 'context', 'archive');
-  const logArchive = path.join(arch, `log-${new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 7)}.md`);
-  const trackerArchive = path.join(arch, `tracker-${new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 4)}.md`);
+  const logArchive = path.join(arch, `log-${feature10LocalDate(180).slice(0, 7)}.md`);
+  const trackerArchive = path.join(arch, `tracker-${feature10LocalDate(90).slice(0, 4)}.md`);
   fs.writeFileSync(logArchive, '# Log (archived)\n\n' + entry + ' with additional detail\n');
   fs.writeFileSync(trackerArchive, '# Completed (archived)\n\n' + line + ' with additional detail\n');
   const r = ctx(dir, 'archive');
@@ -1854,6 +1854,316 @@ test('Wave0 router code spans ignore fenced examples without expanding ordinary 
   data = JSON.parse(ctx(dir, 'lint', '--json').out);
   assert(data.errors.some((e) => /workflow-rules.md.*missing-live.md/.test(e)), 'live router code-span no longer checked');
   assert(!data.errors.some((e) => /unclosed-fence/.test(e)), 'unclosed fenced example entered router scope');
+});
+
+/* -------------------------------------------------------------- Feature10 */
+function feature10LocalDate(days = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function feature10File(dir, name, text = 'fixture\n') {
+  const file = path.join(dir, name);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text);
+  return file;
+}
+function feature10Commit(dir) {
+  assert(sh('git', ['add', '-A'], dir).code === 0, 'fixture add failed');
+  assert(sh('git', ['commit', '-qm', 'Feature10 fixture'], dir).code === 0, 'fixture commit failed');
+}
+function feature10Snapshot(dir) {
+  const files = {};
+  const visit = (folder) => {
+    for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
+      const file = path.join(folder, entry.name);
+      if (entry.isDirectory()) visit(file);
+      else files[path.relative(dir, file)] = fs.readFileSync(file).toString('base64');
+    }
+  };
+  visit(path.join(dir, 'context'));
+  return JSON.stringify(files);
+}
+function feature10Clock(dir, instant, zone, extra = '', tickMs = 0) {
+  const hook = feature10File(dir, 'feature10-clock.cjs', `const RealDate = Date; let ticks = 0;
+global.Date = class extends RealDate {
+  constructor(...args) { super(...(args.length ? args : [RealDate.parse(${JSON.stringify(instant)}) + ticks++ * ${tickMs}])); }
+  static now() { return RealDate.parse(${JSON.stringify(instant)}); }
+};
+${extra}\n`);
+  return { TZ: zone, NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` };
+}
+function feature10Ctx(dir, env, ...args) {
+  return sh('node', [path.join(dir, 'context', 'ctx.mjs'), ...args], dir, env);
+}
+function feature10ArchiveFixture(dir) {
+  initRepo(dir);
+  fs.appendFileSync(path.join(dir, 'context', 'log.md'), '\n## [2025-01-05] build | old material\nretain history\n');
+  const tracker = path.join(dir, 'context', 'progress-tracker.md');
+  fs.writeFileSync(tracker, fs.readFileSync(tracker, 'utf8').replace('## Completed\n', '## Completed\n- Feature 01: old material — 2025-01-05 — preserve details\n'));
+}
+
+test('Feature10 source counts share configured extensions directories and globs', (dir) => {
+  initRepo(dir);
+  const config = path.join(dir, 'context', '.ctx.json');
+  const cfg = JSON.parse(fs.readFileSync(config, 'utf8'));
+  fs.writeFileSync(config, JSON.stringify({ ...cfg, sourceExt: ['.foo'], ignoreDirs: [...(cfg.ignoreDirs || []), 'generated'], ignoreSourceGlobs: ['**/*.skip.foo'] }));
+  feature10File(dir, 'app/live.foo');
+  feature10File(dir, 'app/generated/ignored.foo');
+  feature10File(dir, 'app/ignored.skip.foo');
+  feature10File(dir, 'docs/sample.foo');
+  feature10File(dir, 'references/nested/sample.foo');
+  feature10Commit(dir);
+  for (const name of ['app/live.foo', 'app/generated/ignored.foo', 'app/ignored.skip.foo', 'src/auth/session.ts', 'docs/sample.foo', 'references/nested/sample.foo']) fs.appendFileSync(path.join(dir, name), 'changed\n');
+  const inventory = JSON.parse(ctx(dir, 'coverage', '--json').out);
+  const impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  assert(inventory.total === 1, `inventory includes non-app source: ${JSON.stringify(inventory)}`);
+  assert(impact.changedCode === 1 && impact.uncovered.join(',') === 'app/live.foo', `impact diverges from inventory classification: ${JSON.stringify(impact)}`);
+});
+
+test('Feature10 unowned docs reference examples and manifests do not block Stop', (dir) => {
+  initRepo(dir);
+  feature10File(dir, 'docs/sample.ts');
+  feature10File(dir, 'references/example.js');
+  feature10File(dir, 'README.md');
+  feature10Commit(dir);
+  for (const name of ['docs/sample.ts', 'references/example.js', 'README.md', 'package.json']) fs.appendFileSync(path.join(dir, name), '\nchanged\n');
+  const impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  assert(impact.changedCode === 0 && !impact.uncovered.length && impact.ok, `docs/materials reported as app code: ${JSON.stringify(impact)}`);
+  assert(ctx(dir, 'impact', '--check', '--json').code === 0, 'unowned docs-only impact check blocks');
+  const stop = ctxHook(dir, 'stop', {});
+  assert(stop.code === 0, `unowned docs-only changes blocked Stop: ${stop.out}`);
+});
+
+test('Feature10 explicit covers retain docs reference and raw-material review', (dir) => {
+  initRepo(dir);
+  const materials = ['docs/sample.ts', 'references/example.js', 'context/raw/contract.md'];
+  for (const name of materials) feature10File(dir, name);
+  assert(ctx(dir, 'new', 'module', 'materials', '--covers', '{docs/**,references/**,context/raw/**}').code === 0, 'owner creation failed');
+  feature10Commit(dir);
+  for (const name of materials) fs.appendFileSync(path.join(dir, name), 'changed\n');
+  let impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  const owner = impact.pages.find((p) => p.page.endsWith('/materials.md'));
+  assert(impact.changedCode === 0 && !impact.uncovered.length, 'covered examples became app source');
+  assert(owner && !owner.updated && materials.every((name) => owner.hits.includes(name)), `excluded materials lost owner review: ${JSON.stringify(impact)}`);
+  const stop = ctxHook(dir, 'stop', {});
+  assert(stop.code === 2 && /materials.md/.test(stop.out) && !/Uncovered changed source/.test(stop.out), `covered materials did not retain review-only Stop obligation: ${stop.out}`);
+  fs.appendFileSync(path.join(dir, 'context', 'codebase', 'modules', 'materials.md'), '\nReviewed material contracts.\n');
+  fs.appendFileSync(path.join(dir, 'memory.md'), '\nReviewed materials.\n');
+  impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  assert(impact.ok && ctxHook(dir, 'stop', {}).code === 0, 'reviewed materials still block');
+});
+
+test('Feature10 deleted sources count in impact but not live inventory', (dir) => {
+  initRepo(dir);
+  feature10Commit(dir);
+  fs.unlinkSync(path.join(dir, 'src', 'auth', 'session.ts'));
+  const impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  const inventory = JSON.parse(ctx(dir, 'coverage', '--json').out);
+  assert(impact.changedCode === 1 && impact.uncovered.includes('src/auth/session.ts'), `deleted source classification requires existence: ${JSON.stringify(impact)}`);
+  assert(inventory.total === 1, 'deleted source remains in live inventory');
+});
+
+test('Feature10 renames retain both source and covered material sides', (dir) => {
+  initRepo(dir);
+  assert(ctx(dir, 'new', 'module', 'rename-owner', '--covers', '{src/auth/**,docs/**}').code === 0, 'owner creation failed');
+  feature10Commit(dir);
+  fs.mkdirSync(path.join(dir, 'docs'), { recursive: true });
+  assert(sh('git', ['mv', 'src/auth/session.ts', 'docs/example.ts'], dir).code === 0, 'fixture rename failed');
+  const impact = JSON.parse(ctx(dir, 'impact', '--json').out);
+  const owner = impact.pages.find((p) => p.page.endsWith('/rename-owner.md'));
+  assert(impact.changedCode === 1, `rename sample destination counted as app source: ${JSON.stringify(impact)}`);
+  assert(owner && owner.hits.includes('src/auth/session.ts') && owner.hits.includes('docs/example.ts'), 'rename original or material destination lost');
+  feature10Commit(dir);
+  const committed = JSON.parse(ctx(dir, 'impact', '--since', 'HEAD~1', '--json').out);
+  assert(committed.changedCode === 1 && committed.pages.some((p) => p.hits.includes('src/auth/session.ts') && p.hits.includes('docs/example.ts')), 'committed rename loses a side');
+});
+
+test('Feature10 archive rejects invalid flags before any wiki write', (dir) => {
+  feature10ArchiveFixture(dir);
+  const before = feature10Snapshot(dir);
+  for (const flag of ['--days', '--keep-days']) {
+    for (const value of ['-1', '1.5', 'NaN', 'Infinity', '', '1e309', '9007199254740992', '100000000']) {
+      const args = flag === '--days' ? ['--days', value, '--keep-days', '0'] : ['--days', '0', '--keep-days', value];
+      const r = ctx(dir, 'archive', ...args, '--json');
+      assert(r.code === 1, `invalid ${flag}=${JSON.stringify(value)} was accepted: ${r.out}`);
+      let data;
+      try { data = JSON.parse(r.out); } catch { throw new Error(`invalid archive input emitted a stack/non-JSON response: ${r.out}`); }
+      assert(data.command === 'archive' && !data.ok && data.error.includes(flag), `error must identify invalid option: ${r.out}`);
+      assert(feature10Snapshot(dir) === before, `invalid ${flag}=${value} changed source/archive/index bytes`);
+    }
+  }
+  const human = ctx(dir, 'archive', '--keep-days', '-1');
+  assert(human.code === 1 && /non-negative|whole|integer|cutoff/.test(human.out) && !/\n\s+at /.test(human.out), `human misuse not actionable: ${human.out}`);
+  assert(feature10Snapshot(dir) === before, 'human input error wrote wiki bytes');
+});
+
+test('Feature10 archive validates configuration shapes even with flag overrides', (dir) => {
+  feature10ArchiveFixture(dir);
+  const config = path.join(dir, 'context', '.ctx.json');
+  const original = JSON.parse(fs.readFileSync(config, 'utf8'));
+  for (const key of ['archiveAfterDays', 'trackerKeepDays']) {
+    for (const value of [-1, 0.5, null, true, '0', [], {}, 1e100]) {
+      fs.writeFileSync(config, JSON.stringify({ ...original, [key]: value }));
+      const before = feature10Snapshot(dir);
+      const r = ctx(dir, 'archive', '--days', '0', '--keep-days', '0', '--json');
+      assert(r.code === 1, `invalid config ${key}=${JSON.stringify(value)} was accepted: ${r.out}`);
+      const data = JSON.parse(r.out);
+      assert(!data.ok && data.error.includes(key), `config error did not identify field: ${r.out}`);
+      assert(feature10Snapshot(dir) === before, `invalid config ${key} wrote wiki bytes`);
+    }
+  }
+  fs.writeFileSync(config, '{ broken JSON');
+  const before = feature10Snapshot(dir);
+  const r = ctx(dir, 'archive', '--json');
+  assert(r.code === 1 && JSON.parse(r.out).error.includes('.ctx.json'), `malformed config was ignored: ${r.out}`);
+  assert(feature10Snapshot(dir) === before, 'malformed config wrote wiki bytes');
+});
+
+test('Feature10 archive zero means local today and preserves the cutoff boundary', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  fs.appendFileSync(lp, '\n## [2026-10-20] build | yesterday\n\n## [2026-10-21] build | today\n');
+  const tracker = path.join(dir, 'context', 'progress-tracker.md');
+  fs.writeFileSync(tracker, fs.readFileSync(tracker, 'utf8').replace('## Completed\n', '## Completed\n- Feature 01: yesterday — 2026-10-20 — old\n- Feature 02: today — 2026-10-21 — keep\n'));
+  const config = path.join(dir, 'context', '.ctx.json');
+  fs.writeFileSync(config, JSON.stringify({ ...JSON.parse(fs.readFileSync(config, 'utf8')), archiveAfterDays: 0, trackerKeepDays: 0 }));
+  const env = feature10Clock(dir, '2026-10-20T20:00:00Z', 'Asia/Kolkata');
+  const before = feature10Snapshot(dir);
+  const dry = feature10Ctx(dir, env, 'archive', '--dry-run');
+  assert(dry.code === 0 && /log: 1 entry older than 2026-10-21/.test(dry.out) && /tracker: 1 old completion/.test(dry.out), `zero/local cutoff incorrect: ${dry.out}`);
+  assert(feature10Snapshot(dir) === before, 'archive dry-run changed bytes');
+  const run = feature10Ctx(dir, env, 'archive');
+  assert(run.code === 0, `zero archive failed: ${run.out}`);
+  assert(!fs.readFileSync(lp, 'utf8').includes('| yesterday') && fs.readFileSync(lp, 'utf8').includes('| today'), 'zero log cutoff did not keep today');
+  assert(!fs.readFileSync(tracker, 'utf8').includes('yesterday —') && fs.readFileSync(tracker, 'utf8').includes('today —'), 'zero tracker cutoff did not keep today');
+  const archived = fs.readFileSync(path.join(dir, 'context', 'archive', 'log-2026-10.md'), 'utf8');
+  assertContains(archived, 'updated: 2026-10-21');
+  const again = feature10Ctx(dir, env, 'archive', '--days', '0', '--keep-days', '0');
+  assertContains(again.out, 'log: nothing older than 0 days (local cutoff 2026-10-21)');
+});
+
+test('Feature10 archive subtracts local calendar days across both DST transitions', (dir) => {
+  initRepo(dir);
+  const clocks = [
+    ['2026-03-09T04:30:00Z', '2026-03-08', '2026-03-07'],
+    ['2026-11-02T04:30:00Z', '2026-10-31', '2026-10-30'],
+  ];
+  for (const [instant, cutoff, old] of clocks) {
+    const lp = path.join(dir, 'context', 'log.md');
+    fs.writeFileSync(lp, `---\ntitle: Log\ntype: log\nstatus: active\nsummary: DST fixture\nupdated: 2026-01-01\n---\n\n# Log\n\n## [${old}] build | old\n\n## [${cutoff}] build | boundary\n`);
+    const env = feature10Clock(dir, instant, 'America/New_York');
+    const before = feature10Snapshot(dir);
+    const r = feature10Ctx(dir, env, 'archive', '--days', '1', '--keep-days', '1', '--dry-run');
+    assert(r.code === 0 && r.out.includes(`log: 1 entry older than ${cutoff}`), `DST subtraction is not calendar-based: ${r.out}`);
+    assert(feature10Snapshot(dir) === before, 'DST dry-run wrote bytes');
+  }
+});
+
+test('Feature10 log uses one local date and one locked atomic publication', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  const initial = fs.readFileSync(lp, 'utf8').replace(/^updated:.*$/m, 'updated: 2000-01-01').replace('\n---\n\n#', '\ncustom: preserve-me\n---\n\n#');
+  fs.writeFileSync(lp, initial + '\n## [2000-01-01] build | historic\nkeep this note\n');
+  const extra = `const fs = require('node:fs'); const rename = fs.renameSync; let publications = 0;
+fs.renameSync = function(from, to) {
+  if (String(to) === ${JSON.stringify(lp)}) {
+    publications++;
+    if (!fs.existsSync(${JSON.stringify(wave0Lock(dir))})) throw new Error('NO LOG WRITER LOCK');
+    if (publications > 1) throw new Error('MULTIPLE LOG PUBLICATIONS');
+    const next = fs.readFileSync(from, 'utf8');
+    if (!next.includes('updated: 2026-10-21') || !next.includes('## [2026-10-21] build | local unit')) throw new Error('INCOMPLETE LOG PUBLICATION');
+  }
+  return rename.call(fs, from, to);
+};`;
+  const env = feature10Clock(dir, '2026-10-20T20:00:00Z', 'Asia/Kolkata', extra);
+  const r = feature10Ctx(dir, env, 'log', 'build', 'local unit', '-m', 'new note');
+  assert(r.code === 0, `log failed atomic/local check: ${r.out}`);
+  const text = fs.readFileSync(lp, 'utf8');
+  assertContains(text, 'updated: 2026-10-21');
+  assertContains(text, 'custom: preserve-me');
+  assertContains(text, '## [2000-01-01] build | historic\nkeep this note');
+  assertContains(r.out, 'logged: [2026-10-21]');
+  const before = feature10Snapshot(dir);
+  const tail = feature10Ctx(dir, env, 'log', '--tail', '1');
+  assert(tail.code === 0 && tail.out.includes('new note'), `tail failed: ${tail.out}`);
+  assert(feature10Snapshot(dir) === before, 'tail changed wiki bytes');
+});
+
+test('Feature10 log creates missing frontmatter and entry in one publication', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  fs.unlinkSync(lp);
+  const extra = `const fs = require('node:fs'); const rename = fs.renameSync; let count = 0;
+fs.renameSync = function(from, to) { if (String(to) === ${JSON.stringify(lp)} && ++count > 1) throw new Error('MULTIPLE LOG PUBLICATIONS'); return rename.call(fs, from, to); };`;
+  const env = feature10Clock(dir, '2026-10-21T02:00:00Z', 'America/Los_Angeles', extra);
+  const r = feature10Ctx(dir, env, 'log', 'build', 'new log');
+  assert(r.code === 0, `missing log creation not atomic: ${r.out}`);
+  const text = fs.readFileSync(lp, 'utf8');
+  assertContains(text, 'updated: 2026-10-20');
+  assertContains(text, '## [2026-10-20] build | new log');
+});
+
+test('Feature10 date helper gives local page stamp index and task dates', (dir) => {
+  initRepo(dir);
+  const env = feature10Clock(dir, '2026-10-20T20:00:00Z', 'Asia/Kolkata');
+  const created = feature10Ctx(dir, env, 'new', 'module', 'local-day', '--covers', 'src/auth/**');
+  assert(created.code === 0, `local page creation failed: ${created.out}`);
+  const page = path.join(dir, 'context', 'codebase', 'modules', 'local-day.md');
+  assertContains(fs.readFileSync(page, 'utf8'), 'updated: 2026-10-21');
+  assert(feature10Ctx(dir, env, 'stamp', 'context/codebase/modules/local-day.md').code === 0, 'local stamp failed');
+  assert(feature10Ctx(dir, env, 'index').code === 0, 'local index failed');
+  assertContains(fs.readFileSync(path.join(dir, 'context', 'index.md'), 'utf8'), 'on 2026-10-21');
+  assert(feature10Ctx(dir, env, 'task', 'add', 'local unit').code === 0, 'task add failed');
+  const tracker = path.join(dir, 'context', 'progress-tracker.md');
+  const match = fs.readFileSync(tracker, 'utf8').match(/Feature (\d+): local unit/);
+  assert(match, 'task fixture ID absent');
+  assert(feature10Ctx(dir, env, 'task', 'start', match[1]).code === 0, 'task start failed');
+  assertContains(fs.readFileSync(tracker, 'utf8'), 'started 2026-10-21');
+  assert(feature10Ctx(dir, env, 'task', 'done', match[1], '-m', 'verified fixture').code === 0, 'task done failed');
+  assertContains(fs.readFileSync(tracker, 'utf8'), '— 2026-10-21 — verified fixture');
+});
+
+test('Feature10 legacy log without frontmatter gains metadata without losing history', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  const history = '# Historic Log\n\n## [2000-01-01] build | legacy\nold human note\n';
+  fs.writeFileSync(lp, history);
+  const env = feature10Clock(dir, '2026-10-20T20:00:00Z', 'Asia/Kolkata');
+  const r = feature10Ctx(dir, env, 'log', 'sync', 'preserved legacy');
+  assert(r.code === 0, `legacy log failed: ${r.out}`);
+  const text = fs.readFileSync(lp, 'utf8');
+  assertContains(text, 'updated: 2026-10-21');
+  assertContains(text, history);
+  assertContains(text, '## [2026-10-21] sync | preserved legacy');
+});
+
+test('Feature10 log refreshes folded updated without corrupting adjacent metadata', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  fs.writeFileSync(lp, '---\ntitle: Folded Log\ntype: log\nstatus: active\nsummary: Preserve this summary\nupdated: >\n  2000-01-01\ncustom: keep-me\n---\n\n# Log\n\n## [2000-01-01] build | old\n');
+  const env = feature10Clock(dir, '2026-10-20T20:00:00Z', 'Asia/Kolkata');
+  const r = feature10Ctx(dir, env, 'log', 'build', 'folded metadata');
+  assert(r.code === 0, `folded log update failed: ${r.out}`);
+  const text = fs.readFileSync(lp, 'utf8');
+  assertContains(text, 'updated: 2026-10-21\ncustom: keep-me');
+  assert(!text.includes('\n  2000-01-01'), 'folded date continuation survived scalar replacement');
+  assertContains(text, '## [2000-01-01] build | old');
+});
+
+test('Feature10 log and archive capture their local date across a midnight clock advance', (dir) => {
+  feature10ArchiveFixture(dir);
+  const env = feature10Clock(dir, '2026-10-20T18:29:00Z', 'Asia/Kolkata', '', 120000);
+  const log = feature10Ctx(dir, env, 'log', 'build', 'single captured date');
+  assert(log.code === 0 && log.out.includes('logged: [2026-10-21]'), `log output recaptured advancing date: ${log.out}`);
+  const lp = path.join(dir, 'context', 'log.md');
+  assertContains(fs.readFileSync(lp, 'utf8'), 'updated: 2026-10-21');
+  assertContains(fs.readFileSync(lp, 'utf8'), '## [2026-10-21] build | single captured date');
+  const archive = feature10Ctx(dir, env, 'archive', '--days', '0', '--keep-days', '0');
+  assert(archive.code === 0, `archive advancing clock failed: ${archive.out}`);
+  for (const name of ['archive/log-2026-10.md', 'archive/tracker-2026.md', 'progress-tracker.md', 'index.md']) {
+    assertContains(fs.readFileSync(path.join(dir, 'context', name), 'utf8'), 'updated: 2026-10-21', `archive field recaptured date in ${name}`);
+  }
 });
 
 /* ----------------------------------------------------------------- summary */

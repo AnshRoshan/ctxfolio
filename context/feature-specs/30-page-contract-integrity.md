@@ -7,7 +7,7 @@ tags: [frontmatter, glob, parsing, reliability]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../decisions.md, ./08-always-green-baseline.md]
 updated: 2026-10-21
-verified_at: 6a2c96252924
+verified_at: ef2b0df59c6a
 ---
 
 # Page-Contract Integrity

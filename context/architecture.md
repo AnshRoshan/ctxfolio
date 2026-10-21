@@ -7,7 +7,7 @@ tags: [architecture,components,boundaries]
 covers: [scripts/**, assets/**, references/**, tests/**, SKILL.md]
 updated: 2026-10-21
 confidence: verified
-verified_at: b7e58d6586c2
+verified_at: ef2b0df59c6a
 ---
 
 # Architecture
@@ -52,6 +52,7 @@ Runtime requirements and installed versions are declared in package.json/manifes
 - Wiki writes are atomic (temp + fsync + rename); cooperating writers serialize on an external advisory lock; archive replay is idempotent. Install publishes through staged tree swaps with recoverable backups (not a crash-atomic directory exchange); setup backs up changed CLI bytes before atomic file replacement; `.ctx.json` migrates forward under `schemaVersion` without dropping unknown keys.
 - Roadmap numeric IDs reserve the spec queue. `new feature` and `task add` only claim a reserved ID deliberately, and lint keeps roadmap, spec and tracker states coherent with required Wave 0 sections.
 - Router backticks and `related:` edges must resolve. Shipped routing templates point only at always-created pages; optional contract/UI/ops pages are discovered through the catalog.
+- App-source inventory/counting and explicitly covered materials are distinct: docs/reference examples are not app sources, but their declared owners still require review. Human dates use the local calendar; archive inputs validate before mutation and log heading/metadata publish together.
 - Code intelligence tools are optional producers of evidence, not required stores or permission boundaries.
 
 ## Evidence

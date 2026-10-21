@@ -72,7 +72,7 @@ for (let i = 1; i < argv.length; i++) {
 
 /* ------------------------------------------------------------------ utils */
 const posix = (p) => p.split(path.sep).join('/');
-const today = () => new Date().toISOString().slice(0, 10);
+const today = (date = new Date()) => `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const tokens = (s) => Math.ceil(s.length / 4);
 const fmtTok = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n));
 const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
@@ -467,7 +467,7 @@ function upsertFm(text, key, value) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!m) return text;
   const block = m[1];
-  const rx = new RegExp('^' + key + ':.*$', 'm');
+  const rx = new RegExp('^' + key + ':[ \\t]*[>|][+-]?[ \\t]*(?:\\r?\\n(?:[ \\t]+[^\\r\\n]*|(?=\\r?\\n)))*|^' + key + ':[^\\r\\n]*', 'm');
   const nb = rx.test(block) ? block.replace(rx, `${key}: ${value}`) : block + `\n${key}: ${value}`;
   return text.replace(block, nb);
 }
@@ -717,10 +717,15 @@ function staleReport() {
   return { available: true, items };
 }
 
+let sourceIgnores;
+function isSourcePath(file) {
+  const parts = file.split('/');
+  sourceIgnores ??= matchers(CONFIG.ignoreSourceGlobs);
+  return !file.startsWith('context/') && CONFIG.sourceExt.includes(path.extname(file)) && !parts.slice(0, -1).some((d) => d === 'docs' || d === 'references' || CONFIG.ignoreDirs.includes(d)) && !anyMatch(sourceIgnores, file);
+}
 function sourceFiles() {
   const files = gitFiles(['ls-files', '-z', '-co', '--exclude-standard']) ?? walk(ROOT).map(rel);
-  const ign = matchers(CONFIG.ignoreSourceGlobs);
-  return files.filter((f) => !f.startsWith('context/') && CONFIG.sourceExt.includes(path.extname(f)) && !CONFIG.ignoreDirs.some((d) => f.split('/').includes(d)) && !anyMatch(ign, f) && fs.existsSync(path.join(ROOT, f)));
+  return files.filter((f) => isSourcePath(f) && fs.existsSync(path.join(ROOT, f)));
 }
 
 /* --------------------------------------------------------------- commands */
@@ -996,7 +1001,9 @@ function impactData(workingTreeOnly = false) {
     for (const f of files) changed.add(f);
   } else if (!workingTreeOnly && !dirty.size) for (const f of changedSince('HEAD~1') || []) changed.add(f);
   const all = [...changed];
-  const code = all.filter((f) => !f.startsWith('context/') && !/^(AGENTS|CLAUDE|CLAUDE\.local|memory|GEMINI)\.md$/.test(f) && !f.startsWith('.claude/'));
+  const code = all.filter(isSourcePath);
+  // Covered materials retain review even when they are not counted as app source.
+  const materials = all.filter((f) => !f.startsWith('context/') || f.startsWith('context/raw/'));
   const touchedPages = new Set(all);
   const rows = [];
   const covered = new Set();
@@ -1004,19 +1011,19 @@ function impactData(workingTreeOnly = false) {
     if (['superseded', 'archived'].includes(p.data.status)) continue;
     const rx = matchers(p.data.covers);
     if (!rx.length) continue;
-    const hits = code.filter((f) => anyMatch(rx, f));
+    const hits = materials.filter((f) => f !== p.rel && anyMatch(rx, f));
     if (!hits.length) continue;
     hits.forEach((h) => covered.add(h));
     rows.push({ p, hits, updated: touchedPages.has(p.rel) });
   }
-  const uncovered = code.filter((f) => !covered.has(f) && CONFIG.sourceExt.includes(path.extname(f)) && !anyMatch(matchers(CONFIG.ignoreSourceGlobs), f));
+  const uncovered = code.filter((f) => !covered.has(f));
   const trackerTouched = ['context/progress-tracker.md', 'memory.md'].filter((f) => touchedPages.has(f));
   return { code, rows, uncovered, trackerTouched, all };
 }
 commands.impact = () => {
   if (!HAS_GIT()) return die('impact needs a git repository');
   const { code, rows, uncovered, trackerTouched } = impactData();
-  const clean = !rows.some((r) => !r.updated) && !uncovered.length && !!trackerTouched.length;
+  const clean = (!code.length && !rows.length) || (!rows.some((r) => !r.updated) && !uncovered.length && !!trackerTouched.length);
   emit({ command: 'impact', ok: clean, changedCode: code.length, uncovered, trackerTouched, pages: rows.map((r) => ({ page: r.p.rel, updated: r.updated, hits: r.hits })) }, () => {
     console.log(`IMPACT — ${code.length} changed code file(s)`);
     if (!rows.length) console.log('  (no page covers the changed files)');
@@ -1315,7 +1322,7 @@ function sourceFilesAll() {
 const IDX_START = '<!-- ctx:index:start -->';
 const IDX_END = '<!-- ctx:index:end -->';
 const TYPE_ORDER = ['overview', 'architecture', 'plan', 'standards', 'guide', 'module', 'entity', 'api', 'integration', 'feature', 'decision-log', 'tracker', 'ui', 'runbook', 'glossary', 'source', 'query'];
-commands.index = () => withLock(() => {
+commands.index = (date = today()) => withLock(() => {
   const ps = pages().filter((p) => p.has && !['superseded', 'archived'].includes(p.data.status));
   const groups = new Map();
   for (const p of ps) {
@@ -1324,7 +1331,7 @@ commands.index = () => withLock(() => {
     groups.get(t).push(p);
   }
   const order = [...groups.keys()].sort((a, b) => (TYPE_ORDER.indexOf(a) + 100) % 100 - (TYPE_ORDER.indexOf(b) + 100) % 100 || a.localeCompare(b));
-  let md = `${IDX_START}\n_Generated by \`ctx index\` on ${today()} — ${ps.length} pages. Do not hand-edit between the markers._\n`;
+  let md = `${IDX_START}\n_Generated by \`ctx index\` on ${date} — ${ps.length} pages. Do not hand-edit between the markers._\n`;
   for (const t of order) {
     md += `\n### ${t}\n`;
     for (const p of groups.get(t)) {
@@ -1335,10 +1342,10 @@ commands.index = () => withLock(() => {
   }
   md += `${IDX_END}`;
   const idxPath = path.join(CTX, 'index.md');
-  let cur = fs.existsSync(idxPath) ? fs.readFileSync(idxPath, 'utf8') : `---\ntitle: Context Index\ntype: overview\nstatus: active\nsummary: Router and catalog — the first context file every session reads\nupdated: ${today()}\n---\n\n# Context Index\n\n${IDX_START}\n${IDX_END}\n`;
+  let cur = fs.existsSync(idxPath) ? fs.readFileSync(idxPath, 'utf8') : `---\ntitle: Context Index\ntype: overview\nstatus: active\nsummary: Router and catalog — the first context file every session reads\nupdated: ${date}\n---\n\n# Context Index\n\n${IDX_START}\n${IDX_END}\n`;
   if (!cur.includes(IDX_START)) cur += `\n${IDX_START}\n${IDX_END}\n`;
   cur = cur.replace(new RegExp(`${IDX_START}[\\s\\S]*?${IDX_END}`), () => md);
-  cur = upsertFm(cur, 'updated', today());
+  cur = upsertFm(cur, 'updated', date);
   atomicWrite(idxPath, cur);
   console.log(`index: ${ps.length} pages catalogued in context/index.md`);
   if (flags.llms) {
@@ -1378,9 +1385,12 @@ commands.log = () => {
   }
   const [op, ...title] = pos;
   if (!op || !title.length) return die('usage: ctx log <op> <title...> [-m "note"]   ops: ingest|query|lint|build|decision|fix|sync|audit|handoff');
-  if (!fs.existsSync(lp)) atomicWrite(lp, `---\ntitle: Activity Log\ntype: log\nstatus: active\nsummary: Append-only timeline of ingests, builds, decisions and lint passes\nupdated: ${today()}\n---\n\n# Log\n`);
-  appendAtomic(lp, `\n## [${today()}] ${op} | ${title.join(' ')}\n${flags.m && flags.m !== true ? flags.m + '\n' : ''}`);
-  console.log(`logged: [${today()}] ${op} | ${title.join(' ')}`);
+  const date = today();
+  const header = `---\ntitle: Activity Log\ntype: log\nstatus: active\nsummary: Append-only timeline of ingests, builds, decisions and lint passes\nupdated: ${date}\n---\n`;
+  let current = fs.existsSync(lp) ? fs.readFileSync(lp, 'utf8') : '\n# Log\n';
+  if (!parseFrontmatter(current).has) current = header + current;
+  atomicWrite(lp, upsertFm(current, 'updated', date) + `\n## [${date}] ${op} | ${title.join(' ')}\n${flags.m && flags.m !== true ? flags.m + '\n' : ''}`);
+  console.log(`logged: [${date}] ${op} | ${title.join(' ')}`);
 };
 
 /* ---- task — the ledger lives IN progress-tracker.md; ctx keeps the states honest.
@@ -1514,12 +1524,26 @@ function archiveEntries(file, header, entries) {
   else if (fresh.length) appendAtomic(file, (current.endsWith('\n') ? '' : '\n') + fresh.join('\n') + '\n');
   return fresh.length;
 }
+function archiveWindow(value, label, now, flag = false) {
+  if ((flag ? typeof value !== 'string' || !/^\d+$/.test(value) : typeof value !== 'number') || !Number.isSafeInteger(Number(value)) || Number(value) < 0) die(`${label} must be a non-negative whole-day integer (0 means today); fix the option or context/.ctx.json`);
+  const days = Number(value);
+  const cutoff = new Date(now.getTime());
+  cutoff.setDate(cutoff.getDate() - days);
+  if (!Number.isFinite(cutoff.getTime()) || cutoff.getFullYear() < 0 || cutoff.getFullYear() > 9999) die(`${label} is too large for a representable local calendar cutoff; choose fewer days`);
+  return { days, date: today(cutoff) };
+}
 commands.archive = () => {
+  if (CONFIG_ERROR) die(CONFIG_ERROR);
   const dry = !!flags['dry-run'];
-  const logDays = Number(flags.days || CONFIG.archiveAfterDays || 180);
-  const trkDays = Number(flags['keep-days'] || CONFIG.trackerKeepDays || 90);
-  const cutoff = (d) => new Date(Date.now() - d * 864e5).toISOString().slice(0, 10);
-  const cl = cutoff(logDays), ct = cutoff(trkDays);
+  const now = new Date();
+  const date = today(now);
+  // Validate both configured windows even when command-line flags override them.
+  const logConfig = archiveWindow(CONFIG.archiveAfterDays, 'archiveAfterDays', now);
+  const trackerConfig = archiveWindow(CONFIG.trackerKeepDays, 'trackerKeepDays', now);
+  const logWindow = flags.days === undefined ? logConfig : archiveWindow(flags.days, '--days', now, true);
+  const trackerWindow = flags['keep-days'] === undefined ? trackerConfig : archiveWindow(flags['keep-days'], '--keep-days', now, true);
+  const logDays = logWindow.days;
+  const cl = logWindow.date, ct = trackerWindow.date;
   const moved = { log: 0, tracker: 0 };
   const lp = path.join(CTX, 'log.md');
   if (fs.existsSync(lp)) {
@@ -1535,11 +1559,11 @@ commands.archive = () => {
       moved.log = old.length;
       if (!dry) {
         const ap = path.join(CTX, 'archive', `log-${cl.slice(0, 7)}.md`);
-        archiveEntries(ap, `---\ntitle: Activity Log (archived before ${cl})\ntype: log\nstatus: archived\nsummary: Rotated out of context/log.md by ctx archive on ${today()} — still greppable\nupdated: ${today()}\n---\n\n# Log (archived)\n`, old.map((o) => o.text));
+        archiveEntries(ap, `---\ntitle: Activity Log (archived before ${cl})\ntype: log\nstatus: archived\nsummary: Rotated out of context/log.md by ctx archive on ${date} — still greppable\nupdated: ${date}\n---\n\n# Log (archived)\n`, old.map((o) => o.text));
         atomicWrite(lp, keep.join('\n'));
       }
       console.log(`log: ${old.length} entr${old.length === 1 ? 'y' : 'ies'} older than ${cl} → context/archive/log-${cl.slice(0, 7)}.md`);
-    } else console.log(`log: nothing older than ${cutoff(logDays)} days (${cl})`);
+    } else console.log(`log: nothing older than ${logDays} days (local cutoff ${cl})`);
   }
   const tp = path.join(CTX, 'progress-tracker.md');
   if (fs.existsSync(tp)) {
@@ -1558,11 +1582,11 @@ commands.archive = () => {
         moved.tracker = movedLines.length;
         if (!dry) {
           const ap = path.join(CTX, 'archive', `tracker-${ct.slice(0, 4)}.md`);
-          archiveEntries(ap, `---\ntitle: Completed Work (archived ${ct.slice(0, 4)})\ntype: tracker\nstatus: archived\nsummary: Completions older than ${ct}, rotated by ctx archive — concrete details preserved, greppable\nupdated: ${today()}\n---\n\n# Completed (archived)\n`, movedLines);
+          archiveEntries(ap, `---\ntitle: Completed Work (archived ${ct.slice(0, 4)})\ntype: tracker\nstatus: archived\nsummary: Completions older than ${ct}, rotated by ctx archive — concrete details preserved, greppable\nupdated: ${date}\n---\n\n# Completed (archived)\n`, movedLines);
           const pointer = `- (older completions archived: ${rel(path.join(CTX, 'archive', `tracker-${ct.slice(0, 4)}.md`))})`;
           if (!keepLines.some((l) => l.includes('older completions archived'))) keepLines.push(pointer);
           text = setSection(text, 'Completed', keepLines.join('\n'));
-          atomicWrite(tp, upsertFm(text, 'updated', today()));
+          atomicWrite(tp, upsertFm(text, 'updated', date));
         }
         console.log(`tracker: ${movedLines.length} old completion(s) → context/archive/tracker-${ct.slice(0, 4)}.md (pointer left behind)`);
       } else console.log(`tracker: nothing completed before ${ct}`);
@@ -1573,7 +1597,7 @@ commands.archive = () => {
     const n = fs.readFileSync(dec, 'utf8').split('\n').length;
     if (n > CONFIG.maxPageLines) console.log(`decisions: ${n} lines — when a page this central grows, split by year: move the oldest D-NN blocks to context/archive/decisions-<year>.md (keep IDs stable — pages link them) and leave a pointer line`);
   }
-  if (!dry && (moved.log || moved.tracker)) commands.index();
+  if (!dry && (moved.log || moved.tracker)) commands.index(date);
   console.log(moved.log || moved.tracker ? (dry ? 'dry run — nothing written' : 'archive: done (history is never deleted, only moved out of the hot path)') : 'archive: everything is within the keep window');
 };
 
@@ -2349,7 +2373,7 @@ commands.hook = () => {
     if (!validInput || input.stop_hook_active === true) return; // malformed payloads are a no-op; never loop
     if (!HAS_GIT()) return;
     const { code, rows, trackerTouched, uncovered } = impactData(true);
-    if (!code.length) return; // nothing changed -> allow stop
+    if (!code.length && !rows.length) return; // no source or covered material changed -> allow stop
     const problems = [];
     if (uncovered.length) problems.push(`Uncovered changed source files: ${uncovered.slice(0, 6).join(', ')}. Add a documenting page or update its covers before stopping.`);
     const stale = rows.filter((r) => !r.updated);

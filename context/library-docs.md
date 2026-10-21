@@ -35,7 +35,7 @@ Source review: scripts/ctx.mjs → imports, git/gitFiles/dirtyFiles and hook std
 
 ## Known operational gotchas
 
-- This repo's `.kilo/worktrees/super-raincoat/` is a registered, gitignored legacy editor worktree, detached at `b59ed5d89eea` — never edit or copy from it. Physical cleanup belongs to Feature 10. Observed with `git worktree list --porcelain` and `git check-ignore .kilo/worktrees/super-raincoat` on 2026-10-21.
+- Feature 10 removed the clean registered legacy editor worktree through `git worktree remove` on 2026-10-21, after checking exact registration/path, tracked/untracked/ignored content and reachability of its detached history from main. The old commit remains in Git history; do not recreate/copy the legacy tree as current source. Evidence: [testing](testing.md#verification-evidence).
 - `git ls-files` output is forward-slash on all platforms; keep `posix()` at the boundaries, don't "fix" it.
 
 ## Docs sources

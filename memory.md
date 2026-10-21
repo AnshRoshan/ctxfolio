@@ -1,40 +1,33 @@
 # Memory
 
-Resume cursor, not a second wiki or task ledger. Keep under ~60 lines. Link current facts and evidence at their owners; dated history belongs in context/log.md.
+Resume cursor, not a second wiki or task ledger. Keep under ~60 lines. Link facts/evidence at their owners; history belongs in context/log.md.
 
-_Last updated: 2026-10-21, during Feature 09 truth repair_
+_Last updated: 2026-10-21, during Feature 10 final verification_
 
 ## Current state
 
-Feature 08 is complete: main CI39553397681 and tag CI39553402796 are green on the supported matrix; v2.7.0 is published and Pages succeeded. Wave 0 was re-audited and its missing safety regressions corrected in preserved commits 6a2c962 and b7e58d6. Evidence: [testing](context/testing.md#verification-evidence). Feature 09 is In progress on `feat/09-dogfood-truth`: [active spec](context/feature-specs/09-dogfood-truth-repair.md). Main remains at verified b7e58d6; current feature changes are uncommitted.
+14 numbered features are complete: 01-09 and 30-34. Feature 10 is In progress on `feat/10-cli-housekeeping`; 11-29 remain queued. Main at ef2b0df is CI-green and carries the deployed truth repair. Release v2.7.0 is published. Evidence: [testing](context/testing.md#verification-evidence). [Feature 10](context/feature-specs/10-cli-honesty-housekeeping.md) source/tests are implemented, copied CLI parity is verified, 15 focused regressions passed, and the approved clean legacy worktree was safely removed through Git. Current Feature 09 closure/D-14/Feature 10 work is uncommitted.
 
-## Next step
+## Exact next step
 
-Finish Feature 09's live docs/site truth corrections, collect the two scoped writer results, add a static truth regression, run the full CLI and existing website build, then verify the deployed copy. Preserve design/layout/behavior; mark legacy demo transcripts and token assumptions explicitly. Only close after owner review, strict lint/stale, doctor and evidence pass. Feature 10 follows in roadmap order.
+Collect the existing final full-suite job `pwsh-d2e5d5a1535a4741` (do not duplicate it). The earlier full run loaded an obsolete midnight test instant and reported 146 passed/1 failed; that fixture is corrected, its targeted 15-test filter passed, and this final rerun owns the integrated result. Verify all truth/baseline/version and strict lint/stale/doctor gates; record the measured final count. Then commit/push Feature 10 on a `ci/` validation branch, verify actual CI, fast-forward main only when green, close the unit, and begin Feature 11.
 
 ## Working set
 
 - Roadmap: [build plan](context/build-plan.md); ledger: [progress tracker](context/progress-tracker.md).
-- Relevant choices: [decisions](context/decisions.md) D-08 through D-13 and F-01.
-- Feature 09 scope: live README/INSTALL/docs/wiki facts and website copy. No housekeeping/profile/provenance/eval behavior change.
-- Router internals for later precision work: scripts/ctx.mjs (`brief`, `staleReport`, `impactData`).
+- Human choices: [decisions](context/decisions.md) D-12 local calendar dates and D-14 conservative archive/count/cursor/worktree defaults.
+- Source: scripts/ctx.mjs (`isSourcePath`, `impactData`, `archiveWindow`, `today`, `commands.log`, continuation-aware `upsertFm`); public contract: references/ctx-cli.md.
+- Tests: 15 appended Feature10 regressions; no new framework or production clock backdoor. Advancing-clock fixture uses 18:29Z (23:59 IST), not the earlier 17:29Z typo.
+- Writer/reviewer finished. No remaining source-review blocker. Preserve explicit covered documentation/raw review while excluding examples from app-source counts.
 
-## Open questions
+## Upcoming Feature 11 contract
 
-- F-01: stable spec IDs vs execution numbering remains historical; already-shipped Wave 0 IDs are preserved.
-- Feature 24 needs an evidence-based host survey before adapter/destination choices.
-- Features 18-19 must produce real routing/cold-start evidence; existing token-cost inputs are assumptions, not measurements.
+Use a shared read-only advisory for status/brief/session-start based on committed memory history and reliable project-scoped Git status. Dirty/unavailable cursor state never means fresh/verified. Recognize a narrow current-state pending claim, not arbitrary history/prose. No hidden writes or provenance/self-verification; Feature 16 owns those. D-14 already records approved conservative policy. Create its spec only after Feature 10 closes.
 
-## Context debt
+## Remaining knowledge
 
-- Feature 09 repairs current unsupported live claims without rewriting dated history; Feature 13 later derives facts and Feature 16 enforces provenance/validity.
-- The legacy editor worktree is registered/ignored/detached. Feature 10 must inspect its own changes before any authorized cleanup.
-- context/sources/ has no ingested primary evidence; audit source filing remains future authorized work.
-- No eval has run; do not turn illustrative cost/transcript data into empirical product claims.
+Feature 12's minimal gate change adds cli/library eligibility only for API/env/runbook under existing full predicates, with neutral CLI/library templates. Do not broaden no-detect/full semantics or unrelated UI/DB pages; tiers belong Feature 22. Source filing, host survey and real routing/cold-start evidence remain queued.
 
-## Verification boundaries
+## Recovery and limits
 
-The install tree swap is recoverable across two sibling renames, not a crash-atomic directory exchange. Locks coordinate cooperating writers, not hostile filesystem races. Hooks/doctor check bookkeeping/wiring, not live host enforcement or semantic truth.
-## Local recovery
-
-Prior CLI bytes are retained in the ignored baseline backup; do not publish/delete them as feature output. Published main/tag history is never rewritten.
+Ignored CLI recovery files retain prior bytes; do not publish/delete them as feature output. Git retains the removed legacy worktree's reachable history. Published main/tag history is never rewritten. Install's two-rename publication is recoverable, not crash-atomic; locks coordinate cooperating writers; hooks/doctor are bookkeeping, not semantic/live-host enforcement proof.

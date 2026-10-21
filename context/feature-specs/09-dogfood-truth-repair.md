@@ -1,13 +1,13 @@
 ---
 title: Dogfood truth repair
 type: feature
-status: in-progress
+status: complete
 summary: Repair remaining live claims and pointers against current source and published evidence, without inventing evaluation results
 tags: [truth, dogfood, docs]
 covers: [README.md, INSTALL.md, docs/**, web/**, references/ctx-cli.md, tests/check-truth.mjs, package.json, .github/workflows/ci.yml]
 related: [../testing.md, ../overview.md, ../ownership.md, ./08-always-green-baseline.md]
 updated: 2026-10-21
-verified_at: b7e58d6586c2
+verified_at: ef2b0df59c6a
 ---
 
 # Dogfood Truth Repair
@@ -64,5 +64,5 @@ verified_at: b7e58d6586c2
 - [x] Website static and interactive illustrative labels agree; benchmark assumptions are explicit
 - [x] Static truth regression and website build pass
 - [x] Full CLI suite, strict lint/stale, doctor and release consistency pass
-- [ ] Existing deployed site reflects the correction without layout/behavior regression
-- [ ] Tracker, log, memory and derived catalog reflect verified closure
+- [x] Existing deployed site reflects the correction without layout/behavior regression
+- [x] Tracker, log, memory and derived catalog reflect verified closure
