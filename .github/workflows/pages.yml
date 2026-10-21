@@ -63,7 +63,7 @@ jobs:
             echo "warning: dist/assets is not empty. The site may need a Vite base path."
           fi
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v3
         with:
