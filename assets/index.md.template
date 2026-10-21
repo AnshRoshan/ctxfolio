@@ -15,7 +15,7 @@ Task routing and a derived page catalog. Reading-order policy lives in [AGENTS.m
 | Task | Read, in this order |
 |---|---|
 | Build a feature unit | `feature-specs/NN-*.md` → `build-plan.md` (position only) → `architecture.md` invariants → module pages that `brief` returns |
-| Fix a bug | `current-issues.md` → module page covering the file (`brief <file>`) → `testing.md` → `decisions.md` (grep the area) |
+| Fix a bug | `progress-tracker.md` → module page covering the file (`brief <file>`) → `testing.md` → `decisions.md` (grep the area); consult the local issue queue only when present |
 | UI work | `designs/` → `codebase/map.md` → `code-standards.md` |
 | Schema / data change | `architecture.md` invariants → `decisions.md` → `library-docs.md` (ORM) |
 | API / route change | `architecture.md` → `codebase/map.md` → `code-standards.md` |

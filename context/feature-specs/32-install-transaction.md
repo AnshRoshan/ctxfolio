@@ -7,7 +7,7 @@ tags: [install, upgrade, transaction, safety]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../decisions.md, ./31-crash-safe-writes.md, ./33-spec-queue-integrity.md]
 updated: 2026-10-21
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Install Transaction

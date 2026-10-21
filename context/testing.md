@@ -6,7 +6,7 @@ summary: The self-test harness — how to run it, what it covers, and the rule t
 tags: [tests, quality]
 covers: [tests/**]
 updated: 2026-10-21
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Testing
@@ -49,6 +49,7 @@ verified_at: 69e9f4c26c27
 ## Verification evidence
 
 - 2026-10-21, Feature 08 final local candidate: `node tests/run.mjs` on Windows Node 24.21.0 passed 132 cases, 0 failed, 0 skipped. Syntax checks and copied-CLI parity passed; strict lint reported 26 pages 0/0, stale clean, doctor 13/13. `node tests/check-baseline.mjs` and `node tests/check-versions.mjs` passed. Existing website `npm run build` passed with its declared Vite 7.3.2 and emitted one 334460-byte HTML artifact. Remote supported-matrix success is still required before main/release publication.
+- Candidate CI run 39552399951 passed both Ubuntu and both macOS Node 22/24 jobs, including aliased-temp preservation checks. Its actual self-context job correctly rejected a route to the ignored local issue page and absent fresh-checkout Git symlink transport configuration. The candidate correction removes that local-only route, configures local Git transport before read-only checks, and excludes the ignored issue page from the negative fixture. No lint bypass is introduced.
 
 - 2026-10-21, Feature 08 initial verification: `node tests/run.mjs` reproduced 119 passed / 0 failed / 0 skipped on Windows Node 24.21.0; strict lint 26 pages 0/0, stale clean, doctor 13/13. This preceded additional Wave 0 regression repairs and does not certify the final candidate.
 - Feature 08 preservation proof: the aliased-temp POSIX reproduction failed the three reported tests; the canonicalized harness passed the Windows symlink filter (14 selected, 0 failed, 0 skipped). Independent isolated POSIX checks passed three exact baselines and caught three intentionally disabled preservation defenses with the expected loss assertions. Debian Node 20.19.2 was used only for mutation/reproduction evidence, not supported-platform certification.

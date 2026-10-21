@@ -7,7 +7,7 @@ tags: [specs,roadmap,tracker,lint]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../progress-tracker.md, ../../memory.md, ./32-install-transaction.md, ./34-route-and-relation-integrity.md]
 updated: 2026-10-21
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Spec-Queue Integrity

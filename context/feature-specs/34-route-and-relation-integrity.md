@@ -7,7 +7,7 @@ tags: [routing,relations,lint,templates]
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/index.md.template, assets/workflow-rules.md.template, context/index.md, context/workflow-rules.md]
 related: [../build-plan.md, ../index.md, ../workflow-rules.md, ./33-spec-queue-integrity.md]
 updated: 2026-10-21
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Route and Relation Integrity
@@ -76,4 +76,5 @@ The 2026-10-21 audit found eight dead routes in `context/index.md` (`ui-rules.md
 - 2026-10-21 completion recheck: fenced examples (backtick/tilde and unclosed fences) are excluded from router code-span checks; path-shaped flags are excluded, while missing live routes still error. Ordinary-page prose remains out of router scope. Focused regressions are recorded at [testing](../testing.md).
 
 - 2026-10-21, Feature 34: full suite 119 passed, zero failed, zero skipped on Windows; dead router backticks, missing code-span paths and missing related: targets fail lint, while commands, globs, URLs and placeholders do not.
-- Router/template routes now use only always-created pages; .claude/module/API/integration templates resolve their relative related: targets. Strict lint reports 26 pages with zero errors/warnings, stale --strict is clean and doctor passes 13/13.
+- The completion recheck additionally removed unconditional routing to the ignored local issue page: a fresh checkout must route through tracked owners even without personal scratch.
+- Router/template routes now use only always-created tracked pages; .claude/module/API/integration templates resolve their relative related: targets. Strict lint reports 26 pages with zero errors/warnings, stale --strict is clean and doctor passes 13/13.

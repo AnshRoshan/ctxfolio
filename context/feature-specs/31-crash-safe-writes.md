@@ -7,7 +7,7 @@ tags: [crash-safety, concurrency, archive, reliability]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../decisions.md, ./30-page-contract-integrity.md, ./32-install-transaction.md]
 updated: 2026-10-21
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Crash-safe Writes

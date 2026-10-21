@@ -56,6 +56,8 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
+      - name: Configure the checked-out native link transport
+        run: git config --local core.symlinks true
       - name: Lint this repository's actual context
         run: node context/ctx.mjs lint --strict
       - name: Detect stale context in full git history

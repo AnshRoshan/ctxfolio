@@ -7,7 +7,7 @@ tags: [architecture,components,boundaries]
 covers: [scripts/**, assets/**, references/**, tests/**, SKILL.md]
 updated: 2026-10-21
 confidence: verified
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Architecture

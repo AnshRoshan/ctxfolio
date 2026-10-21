@@ -17,7 +17,7 @@ Task routes and the derived catalog live here. Follow [shared entry policy](../A
 | Agent resources, tool adapters or file separation | `ownership.md` → `../.agents/README.md` → `feature-specs/06-single-source.md` |
 | CLI/tooling changes | `codebase/map.md` → `code-standards.md` → `testing.md` |
 | Build a feature unit | `feature-specs/NN-*.md` → `build-plan.md` (position only) → `architecture.md` invariants → module pages that `brief` returns |
-| Fix a bug | `current-issues.md` → module page covering the file (`brief <file>`) → `testing.md` → `decisions.md` (grep the area) |
+| Fix a bug | `progress-tracker.md` → module page covering the file (`brief <file>`) → `testing.md` → `decisions.md` (grep the area); consult the local issue queue only when present |
 | UI work | `designs/` → `codebase/map.md` → `code-standards.md` |
 | Schema / data change | `architecture.md` invariants → `decisions.md` → `library-docs.md` (ORM) |
 | API / route change | `architecture.md` → `codebase/map.md` → `code-standards.md` |

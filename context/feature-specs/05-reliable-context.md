@@ -5,7 +5,7 @@ status: complete
 summary: Budgeted JSON context routing with explicit trust signals, lossless git paths, and non-destructive setup
 updated: 2026-10-21
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/**, references/**, SKILL.md]
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Reliable Context Routing and Safe Updates

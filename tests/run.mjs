@@ -977,7 +977,7 @@ test('lint catches dead router backticks and related targets', (dir) => {
 test('shipped routing templates name only always-created pages', () => {
   const idx = fs.readFileSync(path.join(HERE, '..', 'assets', 'index.md.template'), 'utf8');
   const flow = fs.readFileSync(path.join(HERE, '..', 'assets', 'workflow-rules.md.template'), 'utf8');
-  for (const dead of ['ui-rules.md', 'ui-tokens.md', 'ui-registry.md', 'data-model.md', 'api-contracts.md', 'integrations.md', 'runbook.md', 'env-vars.md']) {
+  for (const dead of ['ui-rules.md', 'ui-tokens.md', 'ui-registry.md', 'data-model.md', 'api-contracts.md', 'integrations.md', 'runbook.md', 'env-vars.md', 'current-issues.md']) {
     assert(!idx.includes(dead), `index template still routes to optional ${dead}`);
   }
   assert(idx.includes('`designs/`') && idx.includes('`codebase/map.md`'), 'index template lost its always-created UI route');

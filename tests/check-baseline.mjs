@@ -25,6 +25,9 @@ try {
     fs.rmSync(target, { recursive: true, force: true });
     fs.cpSync(path.join(source, entry), target, { recursive: true, verbatimSymlinks: true });
   }
+  const localIssues = path.resolve(fixture, 'context/current-issues.md');
+  assert(path.dirname(localIssues) === path.join(fixture, 'context'), 'unsafe local fixture path');
+  fs.rmSync(localIssues, { force: true }); // ignored local pages must not hide clean-checkout routing defects
   clean(run('git', ['config', 'user.name', 'Baseline Test']));
   clean(run('git', ['config', 'user.email', 'baseline@example.invalid']));
   clean(run('git', ['add', '-A']));

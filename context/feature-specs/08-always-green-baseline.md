@@ -7,7 +7,7 @@ tags: [ci, testing, release, symlinks, quality]
 covers: [scripts/ctx.mjs, tests/**, .github/**, package.json, README.md, INSTALL.md]
 related: [../testing.md, ../decisions.md, ./07-native-symlinks.md]
 updated: 2026-10-21
-verified_at: 69e9f4c26c27
+verified_at: 6a2c96252924
 ---
 
 # Always-Green Baseline

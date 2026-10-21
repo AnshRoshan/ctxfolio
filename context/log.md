@@ -83,3 +83,6 @@ Aliased POSIX TMPDIR reproduced the three macOS failures. Shared sandbox canonic
 
 ## [2026-10-21] build | Feature 08 candidate gates validated locally
 Exact placeholder/source-drift, version/mapping/metadata/tag regressions passed; final source suite and remote supported CI pending. Wave 0 safety audit corrections included.
+
+## [2026-10-21] fix | Feature 08 clean-checkout context gate
+CI caught ignored issue route and unconfigured local core.symlinks. Router/template now use tracked owners; negative clone drops personal issues; actual self-context configures Git transport before strict read-only gates. No lint relaxation.

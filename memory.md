@@ -10,7 +10,7 @@ Feature 08 is In progress. The baseline verification reproduced the previous 119
 
 ## Next step
 
-Finish **Feature 08 - Always-green baseline**: collect Wave 0 regression repairs, refresh the copied CLI, run the full Windows suite and negative baseline probes, then commit the preserved candidate on a temporary CI branch. The human approved that validation branch (D-13); update main and publish v2.7.0 only after all supported OS/Node jobs pass. Feature 09 cannot start before main is green.
+Finish **Feature 08 - Always-green baseline**: candidate branch `ci/feature-08-baseline` preserves Wave 0 and baseline work (first commit 6a2c962). Run 39552399951 passed both macOS and both Ubuntu Node 22/24 jobs; Windows jobs are finishing. Its self-context job exposed an ignored local issue route and missing fresh-checkout Git symlink configuration; publish the corrected candidate after the clean-checkout negative probe passes. D-13 authorizes the branch only; update main and publish v2.7.0 after the full corrected run is green. Feature 09 cannot start before main is green.
 
 ## Working set
 
