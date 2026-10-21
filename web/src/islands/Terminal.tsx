@@ -51,9 +51,9 @@ export default function Terminal() {
   const lines: Line[] = active.lines.slice(0, shown);
 
   return (
-    <div className="console overflow-hidden">
+    <div className="console overflow-hidden" role="group" aria-label="Illustrative legacy v2.4.x CLI transcript, not current output or measurements">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-con-line px-4 py-2.5">
-        <span className="font-mono text-[11px] text-con-fg">~/your-project</span>
+        <span className="font-mono text-[11px] text-con-fg">legacy v2.4.x demo</span>
         <span className="font-mono text-[11px] text-con-fg-2">ctx {active.id}</span>
         <span
           className="ml-auto rounded-[3px] border border-con-line px-2 py-0.5 font-mono text-[10.5px]"
@@ -67,7 +67,7 @@ export default function Terminal() {
         className="flex flex-wrap gap-1.5 border-b border-con-line px-3 py-3"
         style={{ backgroundColor: "var(--c-con-2)" }}
         role="group"
-        aria-label="ctx commands"
+        aria-label="Illustrative ctx commands"
       >
         {CLI_COMMANDS.map((c) => {
           const on = c.id === activeId;
@@ -91,7 +91,7 @@ export default function Terminal() {
       </div>
 
       <p className="border-b border-con-line px-4 py-2.5 text-[12.5px] leading-snug text-con-fg">
-        {active.note}
+        Illustrative legacy v2.4.x example, not current CLI output or measurements. {active.note}
       </p>
 
       <div
@@ -122,14 +122,15 @@ export default function Terminal() {
       {/* full output, unstreamed, for assistive tech */}
       <div className="sr-only">
         <p>
-          Command: {active.cmd}. Exit code {active.exit}. {active.note}
+          Illustrative legacy v2.4.x example, not current CLI output or measurements.
+          Command: {active.cmd}. Example exit code {active.exit}. {active.note}
         </p>
         <pre>{active.lines.map((l) => l.t).join("\n")}</pre>
       </div>
 
       <div className="border-t border-con-line px-4 py-2.5" style={{ backgroundColor: "var(--c-con-2)" }}>
         <p className="font-mono text-[10.5px] leading-relaxed text-con-fg-2">
-          read-only commands accept --json. every payload carries command and ok. CI reads ok.
+          Current <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/ctx-cli.md">CLI contract</a>: commands with --json emit command and ok. ok is a health signal, not correctness proof.
         </p>
       </div>
     </div>

@@ -86,3 +86,9 @@ Exact placeholder/source-drift, version/mapping/metadata/tag regressions passed;
 
 ## [2026-10-21] fix | Feature 08 clean-checkout context gate
 CI caught ignored issue route and unconfigured local core.symlinks. Router/template now use tracked owners; negative clone drops personal issues; actual self-context configures Git transport before strict read-only gates. No lint relaxation.
+
+## [2026-10-21] build | Feature 08 complete: main green and v2.7.0 published
+Main CI39553397681 and tag CI39553402796 success, all six supported jobs; actual tag/mapping verification, latest release/badge and Pages confirmed. Evidence context/testing.md#verification-evidence. Feature09 now active on feat/09-dogfood-truth.
+
+## [2026-10-21] build | Feature 09 truth repair verified locally
+132/0/0 full CLI suite; static live-claim regression fails oldcopy/passes correction; strict lint27 0/0, stale clean doctor13/13; baseline/version probes and build passed. Chrome CDP actual desktop/mobile/noJS verified, same design/classes/interactionsetup. CI/deployment pending.

@@ -10,7 +10,7 @@ if it also constrains the agent, the rule belongs in `context/` and this page li
 |---|---|
 | User guides, tutorials, CLI usage | module pages, contracts, invariants |
 | `runbooks/` — operator steps for humans | `context/runbook.md` — the agent's operational duties |
-| `adr/` — decision records exported for humans (copy of D-NN) | `context/decisions.md` — the decision sink |
+| `adr/` — human-facing navigation linking canonical D-NN records | `context/decisions.md` — the decision sink; do not export copies |
 | Onboarding for a new teammate | `context/overview.md`, `AGENTS.md` |
 
 Rules:

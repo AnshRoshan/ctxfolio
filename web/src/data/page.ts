@@ -1,6 +1,7 @@
-/* The compiled page the product actually produces, used as design material.
-   Front matter fields, the TL;DR rule and the covers glob are the real page
-   format from references/page-format.md and SKILL.md. */
+/* Synthetic wiki example, not this repository, captured CLI output or measured
+   token usage. Page structure follows references/page-format.md and SKILL.md;
+   authentication behavior, counts, dates and change phases are illustrative.
+   Confidence and stamps are declared metadata, not proof of review or truth. */
 
 export type FmField = { key: string; value: string; hot?: boolean };
 
@@ -52,7 +53,7 @@ export const PHASES: PagePhase[] = [
     tldr: 0,
     fm: {},
     state: "verified",
-    note: "A fresh session reads the page. It costs about 820 tokens, and it does not scan the repository.",
+    note: "An illustrative session reads the synthetic page first. No measured reading cost is claimed.",
     out: [],
   },
   {
@@ -62,7 +63,7 @@ export const PHASES: PagePhase[] = [
     tldr: 0,
     fm: {},
     state: "verified",
-    note: "The agent changes src/auth/session.ts. The page still says nothing about rotation.",
+    note: "The illustrative code changes. The page has not yet been reviewed against the rotation change.",
     out: [" M src/auth/session.ts", " A src/auth/rotate.ts"],
   },
   {
@@ -72,11 +73,11 @@ export const PHASES: PagePhase[] = [
     tldr: 0,
     fm: { updated: "2026-10-02 (stale)" },
     state: "stale",
-    note: "Git knows the page predates the commit. The covers glob src/auth/** now matches changed code.",
+    note: "The model shows a git freshness signal for covered code, not proof the page is wrong.",
     out: [
       "context/codebase/modules/auth.md",
       "  2 files: src/auth/session.ts, src/auth/rotate.ts",
-      "  page last touched 8ae5d7d, code moved past it",
+      "  page last touched 4c1f0a2, code moved past it",
     ],
   },
   {
@@ -90,18 +91,17 @@ export const PHASES: PagePhase[] = [
     out: [
       "pages that must be updated:",
       "  x context/codebase/modules/auth.md   covers src/auth/**",
-      "uncovered files (BLIND SPOT):",
-      "  ! src/auth/rotate.ts",
+      "src/auth/rotate.ts is covered by src/auth/**; review the page against the change.",
     ],
   },
   {
     id: 5,
     chip: "stamp",
-    command: "node context/ctx.mjs stamp",
+    command: "node context/ctx.mjs stamp context/codebase/modules/auth.md",
     tldr: 1,
     fm: { confidence: "verified", updated: "2026-10-06" },
     state: "verified",
-    note: "Stamped against HEAD. The page is true again, and the next session inherits the fact for free.",
+    note: "Stamp metadata records HEAD after illustrative review. A stamp alone does not prove correctness.",
     out: ["stamped 1 page(s): updated 2026-10-06, verified_at 8ae5d7d"],
   },
 ];

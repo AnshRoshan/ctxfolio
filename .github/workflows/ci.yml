@@ -68,6 +68,8 @@ jobs:
         run: node tests/check-versions.mjs
       - name: Prove baseline gates reject injected drift
         run: node tests/check-baseline.mjs
+      - name: Check current documentation and demo truth boundaries
+        run: node tests/check-truth.mjs
 
   # A scaffold has intentional placeholders, never structural errors.
   scaffold-lint:

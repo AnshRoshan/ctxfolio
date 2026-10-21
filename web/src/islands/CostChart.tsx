@@ -58,7 +58,7 @@ export default function CostChart() {
         viewBox={`0 0 ${W} ${H}`}
         className="block h-auto w-full"
         role="img"
-        aria-label={`Cumulative tokens spent across ${session} sessions. Re-exploring the repo spends between ${fmt(cold.min)} and ${fmt(cold.max)} tokens. Reading the compiled wiki spends between ${fmt(warm.min)} and ${fmt(warm.max)} tokens.`}
+        aria-label={`Illustrative token-cost assumptions, not measured performance or empirical bounds. Across ${session} sessions, the model multiplies re-exploration inputs to ${fmt(cold.min)} to ${fmt(cold.max)} tokens and wiki-reading inputs to ${fmt(warm.min)} to ${fmt(warm.max)} tokens. Quality is unmeasured.`}
       >
         {[0, 1, 2, 3, 4].map((m) => {
           const v = m * 1_000_000;
@@ -155,14 +155,14 @@ export default function CostChart() {
             <dd className="mt-1.5 font-mono text-[15px] font-semibold text-con-fg">
               {fmt(cold.min)} <span className="text-con-fg-2">to</span> {fmt(cold.max)}
             </dd>
-            <dd className="mt-0.5 font-mono text-[10.5px] text-con-fg-2">cumulative tokens</dd>
+            <dd className="mt-0.5 font-mono text-[10.5px] text-con-fg-2">modeled cumulative tokens</dd>
           </div>
           <div className="border-b border-con-line px-0 py-3 sm:border-b-0 sm:border-r sm:px-3">
             <dt className="label text-con-fg-2">reads the wiki</dt>
             <dd className="mt-1.5 font-mono text-[15px] font-semibold text-con-accent">
               {fmt(warm.min)} <span className="text-con-fg-2">to</span> {fmt(warm.max)}
             </dd>
-            <dd className="mt-0.5 font-mono text-[10.5px] text-con-fg-2">cumulative tokens</dd>
+            <dd className="mt-0.5 font-mono text-[10.5px] text-con-fg-2">modeled cumulative tokens</dd>
           </div>
           <div className="py-3 sm:pl-3">
             <dt className="label text-con-fg-2">difference</dt>
@@ -171,13 +171,15 @@ export default function CostChart() {
               <span className="text-con-fg-2"> to </span>
               {(COST.coldMax / COST.warmMax).toFixed(1)}x
             </dd>
-            <dd className="mt-0.5 font-mono text-[10.5px] text-con-fg-2">at the nearest bounds</dd>
+            <dd className="mt-0.5 font-mono text-[10.5px] text-con-fg-2">ratios of paired assumptions</dd>
           </div>
         </dl>
 
         <p className="mt-4 font-mono text-[11px] leading-relaxed text-con-fg-2">
-          One session per feature unit. Output quality degrades near {fmt(COST.degradeAt)} tokens in
-          a single window, so the cold line is not only expensive. It is also worse.
+          Illustrative assumptions, not measured usage or empirical bounds.
+          <a href="https://github.com/AnshRoshan/project-context-system/blob/main/web/src/data/transcripts.ts"> COST inputs</a>{" "}
+          follow <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/llm-wiki-pattern.md">the wiki pattern</a>; totals multiply inputs by sessions, excluding maintenance and output costs.
+          Answer quality and any degradation threshold are unmeasured.
         </p>
       </div>
     </div>

@@ -2,37 +2,34 @@
 title: Website
 type: module
 status: active
-summary: The public site in web/. Vite plus React, built to one self-contained index.html, deployed to GitHub Pages by the pages workflow.
+summary: The public Vite/React site in web/; configured single-file build and Pages deployment, with observed results owned by testing
 tags: [website, docs, deploy]
 covers: ["web/**"]
 confidence: verified
-updated: 2026-10-09
+updated: 2026-10-21
+verified_at: b7e58d6586c2
 ---
 
 # Website
 
-> Target path in your repo: `context/codebase/modules/website.md`
->
-> Create it with `ctx new module website --covers "web/**"` and paste this body,
-> or copy the file directly. It exists so that `ctx coverage` does not report
-> `web/**` as a blind spot and `ctx lint` stays at 0 errors and 0 warnings.
-
 ## TL;DR
 
 - The public site lives in `web/`. It is a Vite project. React renders islands only.
-- `npm run build` emits ONE file, `web/dist/index.html`. The CSS and the JS are inlined.
-- The page must stay readable with JavaScript disabled. All copy is static HTML.
-- Every number and transcript on the page is read from this repo. Never invent one.
+- `web/vite.config.ts` configures `vite-plugin-singlefile` to inline CSS/JS into `web/dist/index.html`; actual build output and deployment checks live in [testing evidence](../../testing.md#verification-evidence).
+- The page must stay readable with JavaScript disabled; static copy and fallbacks live in `web/index.html`.
+- Product declarations come from manifests/CLI, measured results from testing evidence. Example transcripts and token-cost inputs are illustrative fixtures/assumptions, not measured product results; label them in interactive, static and accessible output.
 
 ## Why it is built, not static
 
-The previous site was a hand written `web/index.html`. It is now a Vite build
-because the page carries five interactive parts that share typed data. The data
-lives in one module, `web/src/data/transcripts.ts`, so a CLI change is a one
-file edit, not a search through markup.
+`web/index.html` is the static document; `web/src/App.tsx` mounts React islands
+into its placeholders. Typed demo data lives in `web/src/data/transcripts.ts`.
+When a claim changes, review both that data and the static/accessibility fallbacks;
+a shared data module does not make all copy a one-file update.
 
-The build uses `vite-plugin-singlefile`. The output has no asset URLs, so the
-site works at `/project-context-system/` with no Vite `base` setting.
+`web/package.json` declares the website's dependencies separately from the
+zero-dependency CLI. `web/vite.config.ts` enables `vite-plugin-singlefile` and
+has no `base` setting. Inlining is configuration, not proof that every future
+asset is self-contained; inspect actual build output and the deployed subpath.
 
 ## Contracts
 
@@ -42,7 +39,7 @@ site works at `/project-context-system/` with no Vite `base` setting.
 | Reduced motion | `prefers-reduced-motion: reduce` stops all animation. The canvas runs no animation frame loop at all in that mode. |
 | Off screen | The canvas loop is gated by `IntersectionObserver` and cancelled when the graph leaves the viewport. |
 | Contrast | Every text pair passes WCAG AA in both themes. Non-text marks pass 3:1. |
-| Facts | Release, test count, dependency count, doctor checks and lint rules come from this repo. The page states that documented ranges are ranges. |
+| Facts | Current runtime/version/dependency declarations come from their manifests/CLI; measured test/build/deploy results link [testing evidence](../../testing.md#verification-evidence). Demo transcripts are illustrative fixtures and cost inputs are assumptions, not benchmark evidence. |
 | No em dashes | The page follows ASD-STE100, the same rule `references/prompt-craft.md` sets for specs. |
 
 ## Layout
@@ -53,7 +50,7 @@ site works at `/project-context-system/` with no Vite `base` setting.
 | `web/src/index.css` | the token contract. Light and dark themes, console tokens, utilities |
 | `web/src/lib/theme.ts` | theme choice, persistence, and canvas token reading |
 | `web/src/lib/motion.ts` | reveal observer, scroll meter, scroll spy, live badge values |
-| `web/src/data/transcripts.ts` | every CLI transcript, the graph model, the ledger, the cost bounds |
+| `web/src/data/transcripts.ts` | interactive example CLI transcripts, graph/ledger fixtures and token-cost assumptions |
 | `web/src/islands/` | the five interactive parts plus the theme control |
 | `web/src/App.tsx` | the island registry and the mount function |
 
@@ -76,11 +73,17 @@ below the page so it still reads as inset.
 - The streamed terminals are `aria-hidden`. Each one carries an unstreamed
   `sr-only` copy of the full output. Assistive tech must not receive one line
   every 22 ms.
-- `vite-plugin-singlefile` inlines everything. Do not add a large image to the
-  bundle. Prefer SVG in the markup, or a file in `web/public/`.
+- `vite-plugin-singlefile` is configured to inline CSS/JS. Do not add a large
+  image to the bundle. A file in `web/public/` can remain external; check its
+  deployed subpath instead of assuming a self-contained artifact.
 
 ## Deploy
 
-`.github/workflows/pages.yml` runs on a push to `main` that touches `web/**`.
-It installs, builds, and uploads `web/dist`. Nothing is committed from the
-build. `web/dist` and `web/node_modules` are gitignored.
+`.github/workflows/pages.yml` runs on a push to `main` that touches `web/**` or
+the workflow itself, and on manual dispatch. It uses Node 24, installs from
+`web/package-lock.json` with `npm ci` when present, runs `npm run build`, uploads
+`web/dist` and deploys the Pages artifact. Its output check requires
+`dist/index.html` but only warns for nonempty `dist/assets`; that check alone
+is not a strict single-file guarantee. Build output is not committed.
+
+Observed build shape and deployed-site success live in [testing evidence](../../testing.md#verification-evidence), not in workflow configuration. Source review: `web/package.json` scripts/dependencies, `web/vite.config.ts` plugins, `web/src/App.tsx` mount/registry, `web/src/data/transcripts.ts` fixtures and `.github/workflows/pages.yml` triggers/build/deploy, at `b7e58d6586c2` on 2026-10-21.

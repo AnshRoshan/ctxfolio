@@ -1,10 +1,10 @@
 /* ---------------------------------------------------------------------------
    transcripts.ts
-   Every string below is the real output shape of scripts/ctx.mjs at v2.4.x.
-   Command names, flags, exit codes, prefixes (`rule`, `page`, `local`, `x`,
-   `!`), the 12 doctor checks, the lint rule names and the Stop hook stderr
-   text are taken from the source and from references/ctx-cli.md.
-   The example repository is a Node web-app profile so the paths are concrete.
+   Illustrative legacy v2.4.x examples, not captured current CLI output or
+   measured results. Counts, dates, paths and exit states are synthetic fixtures
+   for a fictional Node web-app profile. Historical wiring is not a claim about
+   current installation, host loading or permissions. The current contract lives
+   in references/ctx-cli.md; measured run evidence lives in context/testing.md.
 --------------------------------------------------------------------------- */
 
 export type Tone = "dim" | "text" | "good" | "bad" | "signal" | "cmd";
@@ -59,23 +59,24 @@ export const CLI_COMMANDS: CliCommand[] = [
   {
     id: "impact",
     chip: "impact",
-    cmd: "node context/ctx.mjs impact",
+    cmd: "node context/ctx.mjs impact --check",
     note: "Code changed. Which pages must change in the same diff.",
     exit: 2,
     lines: [
       x("changed code (working tree):"),
       d("  M src/auth/session.ts"),
+      d("  A src/auth/rotate.ts"),
       d("  M src/api/routes/sessions.ts"),
       x(""),
       x("pages that must be updated:"),
-      bad("  x context/codebase/modules/auth.md     covers src/auth/**"),
+      bad("  x context/codebase/modules/auth.md     covers src/auth/session.ts"),
       bad("  x context/api-contracts.md             covers src/api/**"),
       x("already updated:"),
       ok("  v context/decisions.md"),
       x("uncovered files (BLIND SPOT):"),
       sig("  ! src/auth/rotate.ts                   add to a covers: glob or ctx new module"),
       x(""),
-      d("tracker/memory touched: no"),
+      d("tracker/memory touched: yes"),
       bad("not clean. fix the x pages, then: node context/ctx.mjs stamp <page>"),
       d("exit 2 with --check"),
     ],
@@ -127,7 +128,7 @@ export const CLI_COMMANDS: CliCommand[] = [
     id: "doctor",
     chip: "doctor",
     cmd: "node context/ctx.mjs doctor",
-    note: "The install test. Twelve wiring checks. Non-zero on any FAIL.",
+    note: "Legacy scaffold-check example. Wiring metadata does not prove loading or permissions.",
     exit: 0,
     lines: [
       x("doctor: 12 checks"),
@@ -288,7 +289,7 @@ export const CLI_COMMANDS: CliCommand[] = [
     id: "index",
     chip: "index",
     cmd: "node context/ctx.mjs index",
-    note: "Regenerate the catalog from frontmatter so it cannot drift.",
+    note: "Regenerate the catalog from frontmatter; routing and meaning still need review.",
     exit: 0,
     lines: [
       x("index: catalog regenerated in context/index.md"),
@@ -304,7 +305,7 @@ export const CLI_COMMANDS: CliCommand[] = [
 ];
 
 /* --------------------------------------------------------------------------
-   THE STOP HOOK. Six steps. The session cannot end until the docs are true.
+   STOP HOOK. Synthetic legacy six-step scenario, not an enforcement guarantee.
 -------------------------------------------------------------------------- */
 
 export type HookStep = {
@@ -357,30 +358,29 @@ export const HOOK_STEPS: HookStep[] = [
     id: 3,
     chip: "try to stop",
     prompt: "exit",
-    caption: "The Stop hook fires. It names the pages. It returns exit code 2.",
+    caption: "The legacy scenario shows an initial Stop block for missing page updates.",
     blocked: true,
     pagesFixed: 0,
-    trackerTouched: false,
+    trackerTouched: true,
     blindSpots: 1,
     lines: [
       bad("[project-context-system] Before ending the session:"),
       bad("- Context pages not updated for changed code: context/codebase/modules/auth.md,"),
       bad("  context/api-contracts.md. Update them (or confirm nothing they describe changed)"),
       bad("  then run `node context/ctx.mjs stamp <page>`."),
-      bad("- Neither context/progress-tracker.md nor memory.md was updated this session."),
       bad("exit 2"),
       x(""),
-      d("the hook is loop safe. it returns early when stop_hook_active is true."),
+      d("repeat with literal stop_hook_active: true skips the check; it is not a clean audit."),
     ],
   },
   {
     id: 4,
     chip: "run impact",
     prompt: "node context/ctx.mjs impact",
-    caption: "Now the agent sees exactly which pages the diff invalidated.",
+    caption: "Impact identifies covering pages to review, not proof their claims are invalid.",
     blocked: true,
     pagesFixed: 0,
-    trackerTouched: false,
+    trackerTouched: true,
     blindSpots: 1,
     lines: [
       x("changed code (working tree):"),
@@ -389,11 +389,11 @@ export const HOOK_STEPS: HookStep[] = [
       d("  M src/api/routes/sessions.ts"),
       x(""),
       x("pages that must be updated:"),
-      bad("  x context/codebase/modules/auth.md     covers src/auth/**"),
+      bad("  x context/codebase/modules/auth.md     covers src/auth/session.ts"),
       bad("  x context/api-contracts.md             covers src/api/**"),
       x("uncovered files (BLIND SPOT):"),
       sig("  ! src/auth/rotate.ts                   add to a covers: glob or ctx new module"),
-      d("tracker/memory touched: no"),
+      d("tracker/memory touched: yes"),
     ],
   },
   {
@@ -408,7 +408,7 @@ export const HOOK_STEPS: HookStep[] = [
     lines: [
       d("edited context/codebase/modules/auth.md"),
       d("  TL;DR now states: the refresh token rotates on every use. Rotation window 15 min."),
-      d("  covers: src/auth/**   (src/auth/rotate.ts is now inside the glob)"),
+      d("  covers: src/auth/**   (expanded from src/auth/session.ts)"),
       d("edited context/api-contracts.md"),
       d("  POST /auth/refresh returns 200 and a new refresh cookie. The old one is void."),
       x(""),
@@ -423,15 +423,15 @@ export const HOOK_STEPS: HookStep[] = [
     id: 6,
     chip: "stop again",
     prompt: "exit",
-    caption: "The hook passes. The session ends with the wiki true to the code.",
+    caption: "The illustrative bookkeeping check passes. Correctness still needs explicit review.",
     blocked: false,
     pagesFixed: 2,
     trackerTouched: true,
     blindSpots: 0,
     lines: [
       ok("hook stop: pass"),
-      d("no code change without a covering page update."),
-      d("tracker and memory.md both touched this session."),
+      d("illustrative check: covering pages and recording files were touched."),
+      d("tracker touched; memory.md records the next step."),
       x(""),
       d("memory.md: Feature 07 complete. Next step: Feature 10 step 1, write the spec."),
       d("context/log.md: ## [2026-10-07] build | Feature 07 refresh token rotation"),
@@ -577,7 +577,10 @@ export const LINT_COLLISION: Line[] = [
 ];
 
 /* --------------------------------------------------------------------------
-   COST. Documented bounds from references/llm-wiki-pattern.md.
+   COST. Existing illustrative assumptions following references/llm-wiki-pattern.md.
+   Not empirical bounds, measured usage, or an answer-quality benchmark.
+   Cumulative totals multiply these inputs by sessions; maintenance/output costs
+   are not included. No measured quality-degradation threshold is established.
 --------------------------------------------------------------------------- */
 
 export const COST = {
@@ -585,6 +588,5 @@ export const COST = {
   coldMax: 100_000,
   warmMin: 2_000,
   warmMax: 8_000,
-  degradeAt: 50_000,
   sessions: 40,
 };

@@ -4,7 +4,7 @@ type: guide
 status: active
 summary: One authoritative home per fact category; tool adapters and indexes route to owners instead of copying them
 tags: [ownership,context,drift]
-updated: 2026-10-14
+updated: 2026-10-21
 ---
 
 # File Ownership
@@ -41,11 +41,11 @@ updated: 2026-10-14
 | Verification commands, test conventions and current evidence | `context/testing.md` | AGENTS, memory and deployment command copies |
 | Setup/start/deploy/rollback procedures | `context/runbook.md` when applicable | Architecture and session memory |
 | Environment-variable names and purpose | `context/env-vars.md` when applicable | Values anywhere; repeated inventories elsewhere |
-| Entity meaning and lifecycle | `context/data-model.md`; schema code owns exact fields | Full schema copies in architecture or modules |
-| API/event contracts | `context/api-contracts.md`; handlers own implementation | Full route/contract copies in architecture |
-| External integration behavior and failure policy | `context/integrations.md` | Generic library installation notes |
+| Entity meaning and lifecycle | `context/data-model.md` when applicable and present; otherwise the relevant module; schema code owns exact fields | Full schema copies in architecture or modules |
+| API/event contracts | `context/api-contracts.md` when applicable and present; otherwise the relevant module; handlers own implementation | Full route/contract copies in architecture |
+| External integration behavior and failure policy | `context/integrations.md` when applicable and present; otherwise the relevant module | Generic library installation notes |
 | Shared terminology | `context/glossary.md` | Conflicting definitions in other pages |
-| Design values, interaction rules, component catalog | `context/ui-tokens.md`, `ui-rules.md`, `ui-registry.md`, respectively | Repeated values in instructions or modules |
+| Design values, interaction rules, component catalog | `context/ui-tokens.md`, `ui-rules.md`, `ui-registry.md`, respectively, when applicable and present; otherwise the relevant module and configured source | Repeated values in instructions or modules |
 | Active bugs | `context/current-issues.md` | Duplicated issue lists in memory |
 | Agent role definitions, rule routing, reusable project skills | `.agents/agents/`, `.agents/rules/`, `.agents/skills/`, respectively | Editable host-specific copies of these resources |
 | Native discovery aliases and Cursor-only metadata | Real relative symlinks; Cursor views once in `.agents/views/cursor/rules` with project-root `ctx_source` | Copied agent bodies or independently edited native metadata |
@@ -54,6 +54,8 @@ updated: 2026-10-14
 | User-facing explanations | `docs/`, linking normative context/code owners | Copied decision records or technical inventories |
 | Reusable question synthesis | A `type: query` page, linking underlying facts | Another authoritative copy of its cited facts |
 | Timeline and retired evidence | `context/log.md` and `context/archive/` | Current instructions or mutable state |
+
+Optional owner pages are profile/flag-gated, not guaranteed files in every project. Follow them only when applicable and present; use the relevant module/source otherwise. Source review: scripts/ctx.mjs → INIT_MAP, groupsFor/uiOn/fullOn at `b7e58d6586c2` on 2026-10-21. This repo does not currently have the data/API/integration/UI owner pages named above.
 
 ## Update protocol
 

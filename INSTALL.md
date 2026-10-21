@@ -23,27 +23,33 @@ Or do the same by hand:
 ```bash
 git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system
 node project-context-system/scripts/ctx.mjs install              # auto-detects ~/.claude / ~/.qoder
-node project-context-system/scripts/ctx.mjs install --tool claude  # or --dest <skills-dir>
+node project-context-system/scripts/ctx.mjs install --tool claude  # ~/.claude/skills/project-context-system
+node project-context-system/scripts/ctx.mjs install --tool qoder   # ~/.qoder/skills/project-context-system
+node project-context-system/scripts/ctx.mjs install --dest <skills-parent-dir>
 ```
 
-`install` copies only the shippable skill (`SKILL.md`, `references/`, `assets/`, `scripts/`) — the repo's dev history (CHANGELOG, tests, README) stays in the repo. Re-run to update; it overwrites cleanly.
+`install` copies only the shippable skill (`SKILL.md`, `references/`, `assets/`, `scripts/`) — the repo's dev history (CHANGELOG, tests, README) stays in the repo. `--dest` names the **parent skills directory**; the installer appends `project-context-system`.
+
+Re-runs stage a fresh SHIP-only tree, write `.ctx-install.json`, rename an existing install to a reported `.ctx-backup-*` sibling, then rename the stage into place. Old local edits survive in the backup; stale files do not carry into the new install. The manifest records local install time, CLI version, file paths and a checksum of `SKILL.md` only — not authenticated upstream provenance or a checksum of every shipped file.
+
+These are two renames, not a crash-atomic directory exchange: interruption can leave the install path absent. On a caught publication failure, the installer attempts to restore the backup only if that path is still absent; an occupied destination is left alone and remaining recovery paths are reported. Inspect the reported backup/stage and destination before manual recovery. Use `--dry-run` to preview without writes; see [verification evidence](context/testing.md#verification-evidence) for tested recovery paths.
 
 Claude Code (personal):
 
 ```bash
-cp -r project-context-system ~/.claude/skills/
+node project-context-system/scripts/ctx.mjs install --tool claude
 ```
 
 Qoder CLI (personal):
 
 ```bash
-cp -r project-context-system ~/.qoder/skills/
+node project-context-system/scripts/ctx.mjs install --tool qoder
 ```
 
 Project-level (any tool that reads `skills/*/SKILL.md`):
 
 ```bash
-cp -r project-context-system /path/to/your-project/.claude/skills/
+node project-context-system/scripts/ctx.mjs install --dest /path/to/your-project/.claude/skills
 ```
 
 As a plugin (bundles the skill and keeps it updatable):
@@ -102,14 +108,18 @@ node context/ctx.mjs doctor
 node context/ctx.mjs symlinks --check
 ```
 
-Checks cover the things that quietly break: that native entrypoints resolve shared
-`AGENTS.md`, that git actually ignores `context/current-issues.md`, `CLAUDE.local.md` and
-`.claude/settings.local.json`, that `.claude/settings.json` denies `.env*` reads and has
-both hooks, that the path-gated rules and subagent memory exist, and that the project is
-at the skill's current `setupVersion` (if not: re-run `setup` to upgrade). `setup` runs
-this for you as its last step. Exits non-zero when anything fails.
+`doctor` checks scaffold presence, shared-entrypoint resolution, catalog markers,
+canonical owners/adapters, expected rule/memory paths and the current `setupVersion`.
+It checks `.gitignore` text for `context/current-issues.md` and `CLAUDE.local.md`,
+settings text for an `.env`-matching deny entry, and hook event names for SessionStart
+and Stop. It does not run `git check-ignore`, check `.claude/settings.local.json`,
+validate executable hook commands, exercise deny rules or prove a host loader ran.
+`symlinks --check` audits recorded native link/Git structure, not host execution.
+`setup` runs doctor at the end; doctor exits non-zero on a failed check.
 
-A green `doctor` plus `ctx lint` is the definition of a correctly wired project.
+Green doctor, symlink and lint checks are structural wiring/bookkeeping evidence,
+not ignore, security, loader or semantic-correctness proof. Verify actual host
+restrictions and hook execution separately using the [safety contract](references/safety-permissions.md).
 
 ## Test the tool itself
 
@@ -117,9 +127,10 @@ A green `doctor` plus `ctx lint` is the definition of a correctly wired project.
 node tests/run.mjs          # or: npm test
 ```
 
-47 end-to-end cases against throwaway git repos (scaffold, profiles, setup idempotence
-and upgrades, hooks, lint, JSON contracts). If you change `scripts/ctx.mjs`,
-run it. It needs no dependencies and no network.
+The suite drives throwaway git repos (scaffold, profiles, setup idempotence and
+upgrades, hooks, lint, JSON contracts). Current case counts, supported-platform runs
+and release checks live in [verification evidence](context/testing.md#verification-evidence).
+If you change `scripts/ctx.mjs`, run it. The CLI suite needs no dependencies or network.
 
 ## Uninstall
 

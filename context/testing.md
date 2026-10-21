@@ -6,7 +6,7 @@ summary: The self-test harness — how to run it, what it covers, and the rule t
 tags: [tests, quality]
 covers: [tests/**]
 updated: 2026-10-21
-verified_at: 6a2c96252924
+verified_at: b7e58d6586c2
 ---
 
 # Testing
@@ -35,6 +35,8 @@ verified_at: 6a2c96252924
 
 ## Baseline and release gates
 
+- `node tests/check-truth.mjs` guards current live runtime/test claims, SHIP-only install examples, canonical evidence links and illustrative/unmeasured UI boundaries. It was observed failing on the old live website baseline before Feature 09 corrections and passes after them. The guard runs in self-context CI; it is not an evaluation of answer quality.
+
 - CI tests the supported tracks on explicitly named Ubuntu, macOS and Windows runners; runtime declarations stay in package.json and runner details stay in .github/workflows/ci.yml.
 - `node tests/check-versions.mjs` checks each version track and the mapping in README.md. `--require-tag` additionally checks the newest reachable release tag; `--tag=<tag>` verifies the actual release identity and its attachment to HEAD. Candidates do not claim a tag already exists.
 - `node tests/check-baseline.mjs` clones full history into a disposable fixture, proves strict lint rejects a real placeholder and stale rejects a committed source-only change, then verifies current-field version/mapping/tag mutations and malformed metadata fail. A correct tag on the wrong commit is rejected. The actual repository gates are unconditional; mutations derive from current declarations rather than a fixed release number.
@@ -47,6 +49,10 @@ verified_at: 6a2c96252924
 - `stale` still uses touched-page bookkeeping, not semantic verification; `brief.changedSources` keeps dirty claims review-required. Doctor checks hook event names, not complete executable hook contracts (deferred).
 
 ## Verification evidence
+
+- 2026-10-21, Feature 09 local candidate: full CLI suite 132 passed / 0 failed / 0 skipped on Windows; static truth guard, negative baseline fixture and release consistency passed. Strict lint reports 27 pages 0/0, stale clean, doctor 13/13. Existing Vite build passed. Chrome CDP device emulation verified actual 1440/390-pixel viewports, desktop/mobile rendering, and genuine script-disabled static fallback (`js: false`), with page scrollWidth matching viewport; deliberate horizontally scrollable nav/tables retain their incumbent behavior. Static and interactive demo labels identify illustrative/legacy content and unmeasured cost inputs. No CSS or interaction redesign. Deployment verification remains pending publication of this feature.
+
+- 2026-10-21, Feature 08 published baseline: candidate run 39552815955 and actual main run 39553397681 succeeded on all six Ubuntu/macOS/Windows Node 22/24 jobs; each full suite reported 132 passed / 0 failed / 0 skipped. POSIX alias filters reported 14/0/0. Main strict self-context and scaffold checks passed; actual tag run 39553402796 passed including release-consistency. Release v2.7.0 is published, latest-release API/badge report v2.7.0, and Pages run 39553397649 succeeded with the existing site returning HTTP 200. Source: GitHub run/job logs and release API, not local inference.
 
 - 2026-10-21, Feature 08 final local candidate: `node tests/run.mjs` on Windows Node 24.21.0 passed 132 cases, 0 failed, 0 skipped. Syntax checks and copied-CLI parity passed; strict lint reported 26 pages 0/0, stale clean, doctor 13/13. `node tests/check-baseline.mjs` and `node tests/check-versions.mjs` passed. Existing website `npm run build` passed with its declared Vite 7.3.2 and emitted one 334460-byte HTML artifact. Remote supported-matrix success is still required before main/release publication.
 - Candidate CI run 39552399951 passed both Ubuntu and both macOS Node 22/24 jobs, including aliased-temp preservation checks. Its actual self-context job correctly rejected a route to the ignored local issue page and absent fresh-checkout Git symlink transport configuration. The candidate correction removes that local-only route, configures local Git transport before read-only checks, and excludes the ignored issue page from the negative fixture. No lint bypass is introduced.

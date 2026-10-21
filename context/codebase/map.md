@@ -8,7 +8,7 @@ covers: [scripts/ctx.mjs, tests/**]
 related: [../architecture.md]
 updated: 2026-10-21
 confidence: verified
-verified_at: 6a2c96252924
+verified_at: b7e58d6586c2
 ---
 
 # Codebase Map
@@ -26,7 +26,7 @@ SKILL.md              the router agents load (mode table, bootstrap, core loop, 
 scripts/ctx.mjs       the entire CLI: args → commands.{setup,init,task,lint,doctor,impact,stale,brief,rules,index,coverage,log,stamp,new,status,detect,tools,archive,hook,install}
   ├ utils/frontmatter glob engine         parseFrontmatter (folded/literal scalars, named errors) / globToRegex (nested braces, fail-closed) / matchers — shared by every command
   ├ atomicWrite/withLock/archiveEntries   temp+fsync+rename writes, external advisory lock, idempotent archive replay
-  install transaction              SHIP-only staged copy, symlink refusal, manifest, backup+swap; setup CLI backup and config schema migration
+  install transaction              SHIP-only staged copy, symlink refusal, local manifest, recoverable two-rename backup/publication; setup CLI backup and config schema migration
   roadmapReservations()            parses build-plan numeric rows; guards new feature/task add and lint queue coherence
   scanCodeSpans()/related check    validates router backticks and page-relative related targets during lint
   ├ pages()/sourceFiles()/staleReport()   the wiki's read model over context/ + git
@@ -44,6 +44,7 @@ tests/run.mjs         self-test: sandbox() builds throwaway git repos, ctx() dri
 | CLI | `scripts/ctx.mjs` | `node scripts/ctx.mjs <command>`; help text is the file's own header comment |
 | bin | package.json `bin.ctx` | same file |
 | Test | `tests/run.mjs` | `node tests/run.mjs [filter]` |
+| Static truth guard | `tests/check-truth.mjs` | `node tests/check-truth.mjs`; current live claims, install boundary, evidence links and illustrative demo labels |
 
 ## Where is X?
 
@@ -62,8 +63,9 @@ tests/run.mjs         self-test: sandbox() builds throwaway git repos, ctx() dri
 | edit what agents are told | SKILL.md (router) or references/*.md (depth) — never both |
 | ship a new file into projects | assets/*.template + INIT_MAP entry with a profile predicate |
 
-Evidence: scripts/ctx.mjs → commands dispatch, orientationFiles, dirtyFiles, assertProjectPath; read the implementations and tests/run.mjs coverage on 2026-10-14.
+Source review: scripts/ctx.mjs → imports, commands dispatch, SHIP/install, gitFiles/dirtyFiles/staleReport, doctor/hook and INIT_MAP; tests/run.mjs → sandbox/ctx/filter and install no-leak case; package.json → bin/scripts, at `b7e58d6586c2` on 2026-10-21. Full-run results remain in [testing evidence](../testing.md#verification-evidence).
 
 ## Generated / do-not-edit
 
-- `context/ctx.mjs` (a copy — refresh via setup), the catalog block between `<!-- ctx:index:* -->` markers in context/index.md, `.kilo/worktrees/` (stale editor worktree, untracked, ignore).
+- `context/ctx.mjs` (a copy — refresh via setup) and the catalog block between `<!-- ctx:index:* -->` markers in context/index.md are generated views.
+- `.kilo/worktrees/super-raincoat/` is a registered, gitignored, detached legacy editor worktree. Do not edit or copy from it; physical cleanup belongs to Feature 10. Observation: `git worktree list --porcelain` and `git check-ignore .kilo/worktrees/super-raincoat` on 2026-10-21; see [operational gotchas](../library-docs.md#known-operational-gotchas).

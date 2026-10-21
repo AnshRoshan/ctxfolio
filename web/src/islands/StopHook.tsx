@@ -109,7 +109,7 @@ export default function StopHook() {
       onKeyDown={onKeyDown}
       tabIndex={0}
       role="group"
-      aria-label="Interactive transcript of the Stop hook. Press 1 to 6 to jump to a step."
+      aria-label="Illustrative legacy v2.4.x Stop hook transcript, not current CLI output. Press 1 to 6 to jump to a step."
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-con-line px-4 py-2.5">
         <span className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export default function StopHook() {
             }}
             aria-hidden="true"
           />
-          <span className="font-mono text-[11px] text-con-fg">~/your-project</span>
+          <span className="font-mono text-[11px] text-con-fg">legacy v2.4.x demo</span>
           <span className="font-mono text-[11px] text-con-fg-2">ctx</span>
         </span>
 
@@ -137,7 +137,7 @@ export default function StopHook() {
           }}
           role="status"
         >
-          {step === 0 ? "HOOK IDLE" : blocked ? "HOOK BLOCKED \u00b7 EXIT 2" : "HOOK PASS"}
+          {step === 0 ? "DEMO IDLE" : blocked ? "DEMO BLOCK \u00b7 EXIT 2" : "DEMO PASS"}
         </span>
       </div>
 
@@ -161,7 +161,7 @@ export default function StopHook() {
           </dd>
         </div>
         <div className="border-t border-con-line px-3 py-2.5 sm:border-t-0">
-          <dt className="label text-con-fg-2">exit code</dt>
+          <dt className="label text-con-fg-2">example exit</dt>
           <dd className="mt-1 font-mono text-[13px] font-semibold" style={warn(blocked)}>
             {blocked ? "2" : "0"}
           </dd>
@@ -178,10 +178,10 @@ export default function StopHook() {
             Pick a step from the rail below, or press Run all.
             <br />
             <br />
-            The scenario: one unit, one code change, one attempt to end the session.
+            Synthetic scenario: one unit, one code change, an initial attempt to stop.
             <br />
             <span className="text-con-fg">
-              Watch the Stop hook refuse until the covering pages agree with the diff.
+              Watch an illustrative bookkeeping check flag missing page updates, not semantic truth.
             </span>
             <span
               className="anim-blink ml-1 inline-block h-[13px] w-[7px] translate-y-[2px]"
@@ -215,7 +215,8 @@ export default function StopHook() {
       {/* full transcript up to the current step, unstreamed, for assistive tech */}
       <div className="sr-only">
         <p>
-          Step {step} of {HOOK_STEPS.length}. Hook state:{" "}
+          Illustrative legacy v2.4.x example, not current CLI output.
+          Step {step} of {HOOK_STEPS.length}. Example hook state:{" "}
           {step === 0 ? "idle" : blocked ? "blocked, exit code 2" : "pass, exit code 0"}.
           {current ? ` ${current.caption}` : ""}
         </p>
@@ -233,7 +234,7 @@ export default function StopHook() {
             </>
           ) : (
             <span className="font-mono text-[11px] text-con-fg-2">
-              ready. six steps. the last one is the only one that lets you leave.
+              illustrative legacy demo. six steps; not an enforcement guarantee.
             </span>
           )}
         </p>

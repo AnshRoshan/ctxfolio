@@ -22,7 +22,8 @@
     "check": "node tests/run.mjs",
     "selftest": "node tests/run.mjs",
     "check:versions": "node tests/check-versions.mjs",
-    "check:baseline": "node tests/check-baseline.mjs"
+    "check:baseline": "node tests/check-baseline.mjs",
+    "check:truth": "node tests/check-truth.mjs"
   },
   "engines": {
     "node": "^22.0.0 || ^24.0.0"

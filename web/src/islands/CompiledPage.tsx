@@ -4,7 +4,7 @@ import { queryReducedMotion } from "../lib/motion";
 
 /**
  * The signature moment. The product's own artifact, rendered as a document,
- * with the machinery that keeps it true acting on it in one authored sequence.
+ * with illustrative review machinery acting on it in one authored sequence.
  * There is no other animation on the page.
  */
 export default function CompiledPage() {
@@ -48,10 +48,10 @@ export default function CompiledPage() {
   const hot = phase.state === "stale";
 
   return (
-    <figure className="console overflow-hidden" aria-label="A compiled context page moving through one change">
+    <figure className="console overflow-hidden" aria-label="Synthetic wiki example moving through an illustrative change, not current CLI output">
       {/* running head */}
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-con-line px-4 py-2.5">
-        <span className="running text-con-fg-2">{PAGE.path}</span>
+        <span className="running text-con-fg-2">synthetic wiki demo: {PAGE.path}</span>
         <span
           className="ml-auto rounded-[3px] px-2 py-0.5 font-mono text-[10.5px] font-medium"
           role="status"
@@ -102,7 +102,7 @@ export default function CompiledPage() {
           <p className="mt-4 border-t border-con-line pt-3 font-mono text-[10.5px] leading-relaxed text-con-fg-2">
             Front matter is not decoration. It is the routing contract.
             <span className="text-con-fg"> covers:</span> ties this page to code.
-            <span className="text-con-fg"> confidence:</span> says whether a human checked it.
+            <span className="text-con-fg"> confidence:</span> is declared metadata. Review needs source and reviewer evidence.
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export default function CompiledPage() {
       {/* unstreamed, for assistive tech */}
       <div className="sr-only">
         <p>
-          A compiled context page at {PAGE.path}. It carries front matter with a covers glob of
+          A synthetic wiki example at {PAGE.path}, not this repository or measured CLI output. It carries front matter with a covers glob of
           src/auth/**, a TL;DR of {PAGE.tldr.length} lines, and sections for contract, invariant and
           gotcha.
         </p>

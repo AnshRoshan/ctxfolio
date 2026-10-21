@@ -6,7 +6,7 @@
     <title>project-context-system: context is compiled, not retrieved</title>
     <meta
       name="description"
-      content="An open source skill that turns any repository into a self-maintaining markdown wiki. Coding agents read the wiki instead of re-exploring the codebase. One command: ctx setup. Zero dependencies. MIT."
+      content="An open source skill that turns any repository into a self-maintaining markdown wiki. Coding agents read the wiki instead of re-exploring the codebase. One command: ctx setup. Zero-dependency CLI. MIT."
     />
     <meta name="theme-color" content="#f6f5f1" />
     <link rel="canonical" href="https://anshroshan.github.io/project-context-system/" />
@@ -72,10 +72,11 @@
         </nav>
 
         <div class="ml-auto flex items-center gap-2.5 xl:ml-6">
-          <span
+          <a
+            href="https://github.com/AnshRoshan/project-context-system/releases/latest"
             id="release-chip"
             class="hidden rounded-[3px] border border-line px-2 py-1 font-mono text-[11px] text-fg-3 sm:block"
-            >v2.4.1</span
+            >v2.7.0</a
           >
           <div data-island="theme"></div>
           <a
@@ -111,21 +112,21 @@
               </h1>
 
               <p class="mt-9 max-w-[46ch] text-[1.1875rem] leading-[1.55] text-fg-2">
-                The model is not your bottleneck. Your repository is. This skill makes the agent
-                write down what it learns, once, at change time, into a markdown wiki. Every later
-                session starts already knowing the project.
+                Repeated exploration is a workflow cost. This skill asks the agent to
+                write down what it learns, once, at change time, into a markdown wiki. Later
+                sessions can start from those files, then verify against source.
               </p>
 
               <p class="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-fg-3">
-                Same model. Same prompts. One developer gets an agent that re-explores the codebase
-                every session. The other gets one that opens three files and starts work.
+                The workflow aims to reduce repeated exploration. Token savings and answer-quality
+                improvements have not been measured in an evaluation.
               </p>
 
               <div class="mt-10 flex flex-wrap items-center gap-3">
                 <a
                   href="#install"
                   class="rounded-[3px] bg-accent-solid px-5 py-3 font-mono text-[13px] font-medium text-on-accent no-underline transition-opacity duration-150 hover:opacity-90"
-                  >Install in 60 seconds</a
+                  >Install the skill</a
                 >
                 <a
                   href="https://github.com/AnshRoshan/project-context-system"
@@ -137,14 +138,14 @@
               <dl class="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-7 sm:grid-cols-4">
                 <div>
                   <dt class="running text-fg-3">release</dt>
-                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">v2.4.1</dd>
+                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg"><a href="https://github.com/AnshRoshan/project-context-system/releases/latest">latest release</a></dd>
                 </div>
                 <div>
                   <dt class="running text-fg-3">tests</dt>
-                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">47 / 47</dd>
+                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg"><a href="https://github.com/AnshRoshan/project-context-system/blob/main/context/testing.md#verification-evidence">run evidence</a></dd>
                 </div>
                 <div>
-                  <dt class="running text-fg-3">dependencies</dt>
+                  <dt class="running text-fg-3">CLI dependencies</dt>
                   <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">0</dd>
                 </div>
                 <div>
@@ -153,7 +154,7 @@
                 </div>
               </dl>
               <p class="mt-4 font-mono text-[11.5px] text-fg-3">
-                Node 18 or newer. Passes on ubuntu, macOS and windows.
+                Node 22/24, per <a href="https://github.com/AnshRoshan/project-context-system/blob/main/package.json">runtime declarations</a>. Supported-platform results: <a href="#proof">published baseline</a>.
               </p>
             </div>
 
@@ -162,7 +163,7 @@
               <div data-island="page">
                 <div class="console overflow-hidden">
                   <div class="border-b border-con-line px-5 py-3">
-                    <span class="running text-con-fg-2">context/codebase/modules/auth.md</span>
+                    <span class="running text-con-fg-2">synthetic wiki demo: context/codebase/modules/auth.md</span>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-12">
                     <pre class="border-b border-con-line px-5 py-4 font-mono text-[11.5px] leading-[1.85] text-con-fg-2 sm:col-span-5 sm:border-b-0 sm:border-r"><code>---
@@ -193,9 +194,8 @@ updated: 2026-10-02
                     </div>
                   </div>
                   <p class="border-t border-con-line px-5 py-3 text-[12.5px] leading-snug text-con-fg-2">
-                    This is one page of the wiki. About 820 tokens. With JavaScript it moves through
-                    a real change: a commit lands, git dates the page past the code, ctx impact fires,
-                    the TL;DR gains the invariant, then the page is stamped.
+                    Synthetic wiki example, not this repository. With JavaScript it simulates a
+                    commit, a review signal, a page update and a stamp. No CLI command runs here.
                   </p>
                 </div>
               </div>
@@ -215,7 +215,7 @@ updated: 2026-10-02
 
             <div class="mt-10 space-y-6 text-[1.0625rem] leading-[1.7] text-fg-2">
               <p>
-                Every session, a coding agent re-derives the same facts about the same repository.
+                Without persistent project notes, a coding agent can re-derive the same facts.
                 It greps. It reads. It reasons from scratch. The work is thrown away when the session
                 ends, and the next session pays for it again.
               </p>
@@ -225,14 +225,14 @@ updated: 2026-10-02
                 a TL;DR, and a covers glob that ties each page to the code it describes.
               </p>
               <p>
-                A fresh session, a teammate, or a different tool orients from those files in two to
-                five thousand tokens. It never re-explores. It never has to be told anything twice.
+                A fresh session, a teammate, or a different tool starts from those files.
+                The <a href="https://github.com/AnshRoshan/project-context-system/blob/main/AGENTS.md">orientation policy</a> sets a reading target, not a measured token guarantee. Source checks still matter.
               </p>
             </div>
 
             <blockquote class="mt-12 border-l border-line-strong pl-6">
               <p class="font-display text-[clamp(1.4rem,2.4vw,1.9rem)] leading-[1.3] text-fg">
-                Synthesis happens once, at change time. The reading is then almost free.
+                Record understanding at change time. Reuse it at read time, with source checks.
               </p>
               <cite class="mt-4 block font-mono text-[11.5px] not-italic text-fg-3">
                 references/llm-wiki-pattern.md, after Andrej Karpathy&rsquo;s LLM wiki
@@ -242,7 +242,7 @@ updated: 2026-10-02
             <dl class="mt-14 overflow-x-auto">
               <table class="w-full min-w-[620px] border-collapse text-left text-[0.9375rem]">
                 <caption class="sr-only">
-                  What changes when understanding is compiled instead of re-derived.
+                  Workflow comparison, with illustrative token assumptions rather than measured savings.
                 </caption>
                 <thead>
                   <tr class="border-y border-line">
@@ -258,9 +258,9 @@ updated: 2026-10-02
                     <td class="py-3.5 font-medium text-fg">once, at change time</td>
                   </tr>
                   <tr class="border-b border-line">
-                    <th scope="row" class="py-3.5 pr-4 font-mono text-[12.5px] font-normal text-fg-3">cost per session</th>
-                    <td class="py-3.5 pr-4 text-fg-2">20k to 100k tokens of reading</td>
-                    <td class="py-3.5 font-medium text-fg">2k to 8k tokens of orientation</td>
+                    <th scope="row" class="py-3.5 pr-4 font-mono text-[12.5px] font-normal text-fg-3">assumed reading per session</th>
+                    <td class="py-3.5 pr-4 text-fg-2">20k to 100k tokens, model inputs</td>
+                    <td class="py-3.5 font-medium text-fg">2k to 8k tokens, model inputs</td>
                   </tr>
                   <tr class="border-b border-line">
                     <th scope="row" class="py-3.5 pr-4 font-mono text-[12.5px] font-normal text-fg-3">knowledge of why</th>
@@ -275,7 +275,7 @@ updated: 2026-10-02
                   <tr>
                     <th scope="row" class="py-3.5 pr-4 font-mono text-[12.5px] font-normal text-fg-3">contradictions</th>
                     <td class="py-3.5 pr-4 text-fg-2">invisible</td>
-                    <td class="py-3.5 font-medium text-fg">flagged by lint, resolved by a human</td>
+                    <td class="py-3.5 font-medium text-fg">structural issues flagged; meaning reviewed by a human</td>
                   </tr>
                 </tbody>
               </table>
@@ -294,21 +294,20 @@ updated: 2026-10-02
                 The cost of forgetting, compounded.
               </h2>
               <p class="mt-7 max-w-[42ch] text-[1.0625rem] leading-[1.65] text-fg-2">
-                Re-exploration is not one expensive session. It is the same expense, again, every
-                session, forever. Move the counter and read the total.
+                This model repeats the same assumed reading cost
+                across sessions. Move the counter and read the modeled total.
               </p>
               <p class="mt-6 border-l border-line-strong pl-5 font-mono text-[11.5px] leading-relaxed text-fg-3">
-                These are documented bounds from references/llm-wiki-pattern.md. They are ranges,
-                not a benchmark run.
+                Illustrative assumptions from the existing <a href="https://github.com/AnshRoshan/project-context-system/blob/main/web/src/data/transcripts.ts">COST model</a>, following <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/llm-wiki-pattern.md">the wiki pattern</a>. Not empirical bounds or a benchmark.
               </p>
             </div>
 
             <div class="lg:col-span-8">
-              <div data-island="cost">
+              <div data-island="cost" aria-label="Illustrative token-cost model, not measured performance">
                 <div class="console overflow-hidden">
                   <table class="w-full border-collapse font-mono text-[12px]">
                     <caption class="sr-only">
-                      Documented token cost per session, cumulative across 40 sessions.
+                      Illustrative token-cost assumptions per session, multiplied across 40 sessions. Not measured performance.
                     </caption>
                     <thead>
                       <tr class="border-b border-con-line text-left text-con-fg-2">
@@ -330,13 +329,13 @@ updated: 2026-10-02
                       </tr>
                       <tr>
                         <td class="py-3 pr-4">output quality</td>
-                        <td class="py-3 pr-4" colspan="2">degrades near 50k tokens in one window</td>
+                        <td class="py-3 pr-4" colspan="2">unmeasured; no degradation threshold established</td>
                       </tr>
                     </tbody>
                   </table>
                   <p class="border-t border-con-line px-5 py-3 text-[12.5px] leading-snug text-con-fg-2">
-                    With JavaScript this becomes a chart. Drag the session counter to 40 and read the
-                    two totals.
+                    Illustrative COST model, not measured usage or quality. Totals exclude maintenance
+                    and output costs. With JavaScript, drag the counter to compare the same assumptions.
                   </p>
                 </div>
               </div>
@@ -373,9 +372,10 @@ schema   human and agent co-evolve</pre>
                   </div>
                   <div class="sm:col-span-8">
                     <p class="text-[0.9375rem] leading-[1.65] text-fg-2">
-                      The code itself, read only, plus
+                      The code as the source of truth, plus
                       <code class="font-mono text-fg">context/raw/</code> for PRDs, meeting notes,
-                      vendor docs and exports. The agent never edits this layer. Where a source
+                      vendor docs and exports. Policy forbids editing raw evidence; implementation work
+                      still changes source code. Where a source
                       disagrees with a page, the conflict goes to the human.
                     </p>
                   </div>
@@ -413,8 +413,8 @@ schema   human and agent co-evolve</pre>
                       <code class="font-mono text-fg">AGENTS.md</code> is read first and stays at 120
                       lines or fewer. Its Lessons section turns each of your corrections into one
                       permanent line. <code class="font-mono text-fg">context/index.md</code> routes
-                      a task to the pages worth reading, and it is generated from front matter, so it
-                      cannot drift.
+                      a task to the pages worth reading. Its catalog is regenerated from front matter;
+                      routing and meaning still need review.
                     </p>
                   </div>
                 </li>
@@ -442,11 +442,11 @@ schema   human and agent co-evolve</pre>
                       </tr>
                       <tr class="border-b border-line">
                         <th scope="row" class="py-3.5 pr-4 font-mono text-[12.5px] font-medium text-fg">lint</th>
-                        <td class="py-3.5 text-fg-2">Find contradictions, stale claims, orphans, missing links. Errors exit 1.</td>
+                        <td class="py-3.5 text-fg-2">Check structure, git freshness, orphans and links. Errors exit 1. Semantic truth still needs review.</td>
                       </tr>
                       <tr>
                         <th scope="row" class="py-3.5 pr-4 font-mono text-[12.5px] font-medium text-accent">update-on-change</th>
-                        <td class="py-3.5 text-fg">Code changed, so the covering pages change in the same diff. This is what keeps month three documentation true.</td>
+                        <td class="py-3.5 text-fg">Code changed, so review the covering pages in the same diff. Bookkeeping alone cannot prove their meaning is true.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -469,8 +469,8 @@ schema   human and agent co-evolve</pre>
                 is part of the diff, and tooling checks it.
               </p>
               <p class="mt-6 border-l border-line-strong pl-5 font-mono text-[11.5px] leading-relaxed text-fg-3">
-                Step 5 is the one that keeps the documentation true. The next section shows it
-                refusing to let a session end.
+                Step 5 prompts review against changed code. The next section illustrates an
+                initial Stop block, not a guarantee that the documentation is true.
               </p>
             </div>
 
@@ -481,8 +481,8 @@ schema   human and agent co-evolve</pre>
                   <h3 class="text-[1.25rem] text-fg">Orient</h3>
                   <p class="mt-2 max-w-[62ch] text-[0.9375rem] leading-[1.65] text-fg-2">
                     Read AGENTS.md, index.md, memory.md. Skim the tracker. Run
-                    <code class="font-mono text-fg">ctx brief</code>. Do not scan the repository. Two
-                    to five thousand tokens.
+                    <code class="font-mono text-fg">ctx brief</code>. Read routed pages before exploring source.
+                    The reading target is guidance, not a measured token result.
                   </p>
                 </div>
               </li>
@@ -492,7 +492,7 @@ schema   human and agent co-evolve</pre>
                   <h3 class="text-[1.25rem] text-fg">Plan</h3>
                   <p class="mt-2 max-w-[62ch] text-[0.9375rem] leading-[1.65] text-fg-2">
                     Write the spec. Add the ledger entry. Ask five questions or fewer, one at a time.
-                    The human reviews for five to ten minutes and rejects weak plans.
+                    The human reviews the scope and rejects weak plans; review time depends on the task.
                   </p>
                 </div>
               </li>
@@ -558,64 +558,73 @@ schema   human and agent co-evolve</pre>
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-5">
               <h2 class="text-[clamp(2.2rem,4.6vw,3.6rem)] text-fg">
-                The session does not end until the docs are true.
+                The Stop hook flags missing updates.
               </h2>
               <p class="mt-8 max-w-[44ch] text-[1.0625rem] leading-[1.65] text-fg-2">
-                Change code. Try to stop. The Stop hook returns exit code 2 and refuses. It names
-                the pages that describe the code you changed. Fix them, stamp them, then stop.
+                With a configured Claude hook and Git, an initial Stop can exit 2 when working-tree
+                changes lack page or recording updates. It checks bookkeeping, not semantic truth.
               </p>
               <p class="mt-5 max-w-[44ch] text-[1.0625rem] leading-[1.65] text-fg-2">
-                This is not a policy. It is a hook in
-                <code class="font-mono text-fg">.claude/settings.json</code>. It is loop safe: it
-                honors <code class="font-mono text-fg">stop_hook_active</code>.
+                The <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/safety-permissions.md#hooks-shipped-with-this-skill-v2">hook contract</a> permits repeat passes with literal
+                <code class="font-mono text-fg">stop_hook_active: true</code>. No Git or malformed input
+                skips the audit; already committed changes are outside this working-tree check.
               </p>
 
               <div class="mt-10 frontmatter">
                 <pre class="whitespace-pre-wrap">hooks   SessionStart  re-inject orientation
-        Stop          block on silent drift
+        Stop          check working-tree bookkeeping
 
-lint    0 errors, 0 warnings on this repo
-doctor  12 wiring checks
-tests   47, on three operating systems</pre>
+lint    structural and freshness signals
+doctor  scaffold and adapter checks, not loader proof
+tests   published evidence linked below</pre>
               </div>
 
               <p class="mt-8 font-mono text-[11.5px] leading-relaxed text-fg-3">
-                The transcript is the real output shape of scripts/ctx.mjs. Step with the rail, or
-                press keys 1 to 6.
+                Illustrative legacy v2.4.x Stop transcript, not current CLI output or measurement.
+                Step with the rail, or press keys 1 to 6. <a href="#proof">Current verification evidence</a> is separate.
               </p>
             </div>
 
             <div class="lg:col-span-7">
-              <div data-island="hook">
+              <div data-island="hook" aria-label="Illustrative legacy v2.4.x Stop hook transcript, not current CLI output">
                 <div class="console p-5">
-                  <p class="running mb-4 text-con-fg-2">transcript, six steps</p>
+                  <p class="running mb-4 text-con-fg-2">illustrative legacy v2.4.x transcript, six steps</p>
                   <pre class="overflow-x-auto whitespace-pre-wrap font-mono text-[12px] leading-[1.8] text-con-fg"><code>$ node context/ctx.mjs task start 07
 tracker: Feature 07 -&gt; In progress (1 unit in progress, max 1)
 
 $ edit src/auth/session.ts    # rotate refresh tokens
+$ create src/auth/rotate.ts   # synthetic helper
+$ edit src/api/routes/sessions.ts
 
 $ exit
 [project-context-system] Before ending the session:
 - Context pages not updated for changed code: context/codebase/modules/auth.md,
   context/api-contracts.md. Update them (or confirm nothing they describe changed)
   then run `node context/ctx.mjs stamp &lt;page&gt;`.
-- Neither context/progress-tracker.md nor memory.md was updated this session.
 exit 2
 
 $ node context/ctx.mjs impact
 changed code (working tree):
   M src/auth/session.ts
+  A src/auth/rotate.ts
+  M src/api/routes/sessions.ts
 pages that must be updated:
-  x context/codebase/modules/auth.md     covers src/auth/**
+  x context/codebase/modules/auth.md     covers src/auth/session.ts
   x context/api-contracts.md             covers src/api/**
 uncovered files (BLIND SPOT):
   ! src/auth/rotate.ts                   add to a covers: glob or ctx new module
 
+$ edit context/codebase/modules/auth.md   # review; expand covers to src/auth/**
+$ edit context/api-contracts.md           # review the changed contract
 $ node context/ctx.mjs stamp context/codebase/modules/auth.md context/api-contracts.md
 stamped 2 page(s): updated 2026-10-07, verified_at 8ae5d7d
 
+$ node context/ctx.mjs task done 07 -m "rotate refresh tokens; session test"
+tracker: Feature 07 -&gt; Completed
+$ edit memory.md   # record next step
+
 $ exit
-hook stop: pass. no code change without a covering page update.</code></pre>
+hook stop: pass. illustrative bookkeeping result, not semantic verification.</code></pre>
                 </div>
               </div>
             </div>
@@ -629,33 +638,35 @@ hook stop: pass. no code change without a covering page update.</code></pre>
         <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-4">
-              <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">One file, sixteen commands.</h2>
+              <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">One file, project-local commands.</h2>
               <p class="mt-7 max-w-[42ch] text-[1.0625rem] leading-[1.65] text-fg-2">
                 <code class="font-mono text-fg">setup</code> copies
                 <code class="font-mono text-fg">scripts/ctx.mjs</code> to
                 <code class="font-mono text-fg">context/ctx.mjs</code>. Your project carries the tool
-                forever. Zero dependencies, so it never breaks a lockfile.
+                with it. The copied CLI has zero package dependencies; the website uses a separate
+                frontend toolchain. <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/ctx-cli.md">Current CLI contract</a>.
               </p>
               <p class="mt-5 max-w-[42ch] text-[1.0625rem] leading-[1.65] text-fg-2">
-                Read-only commands accept <code class="font-mono text-fg">--json</code>. Every
+                Commands documented with <code class="font-mono text-fg">--json</code> emit JSON. Every
                 payload carries <code class="font-mono text-fg">command</code> and
                 <code class="font-mono text-fg">ok</code>. Continuous integration reads
-                <code class="font-mono text-fg">ok</code>.
+                <code class="font-mono text-fg">ok</code> as a health signal, not correctness proof.
               </p>
             </div>
 
             <div class="lg:col-span-8">
-              <div data-island="cli">
+              <div data-island="cli" aria-label="Illustrative legacy v2.4.x CLI examples, not current output or measurements">
                 <div class="console overflow-hidden">
                   <pre class="overflow-x-auto px-5 py-4 font-mono text-[12px] leading-[1.9] text-con-fg"><code>setup · init · detect · tools        one-command scaffold, profile, delegation targets
 brief · rules · coverage · status    route a task to pages; what applies to THIS file
 task add|start|block|done|list       the ledger, one unit at a time
-impact · stale · stamp · lint --fix  keep pages true to code (git-based)
+impact · stale · stamp · lint --fix  git-based freshness and page-update signals
 index · log · new · archive          catalog, timeline, scaffolds, growth rotation
-doctor · install · hook              wiring checks (12), installer, Claude hooks</code></pre>
+doctor · install · hook              structural checks, installer, Claude hooks</code></pre>
                   <p class="border-t border-con-line px-5 py-3 text-[12.5px] leading-snug text-con-fg-2">
-                    With JavaScript, pick a command and read its real output: brief, impact, stale,
-                    lint, doctor, task list, coverage, status, rules, tools, archive, index.
+                    Illustrative legacy v2.4.x examples, not current CLI output or measurements. With
+                    JavaScript, pick brief, impact, stale, lint, doctor, task list, coverage, status,
+                    rules, tools, archive or index. See the current CLI contract alongside.
                   </p>
                 </div>
               </div>
@@ -712,7 +723,7 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
                     </tr>
                     <tr class="border-b border-line align-top">
                       <th scope="row" class="whitespace-nowrap py-3.5 pr-4 font-mono text-[12.5px] font-medium text-accent">.claude/agents/</th>
-                      <td class="py-3.5 text-fg-2">Explorer and reviewer subagents with their own persistent memory, under version control.</td>
+                      <td class="py-3.5 text-fg-2">Native access to canonical .agents/ roles, with project-local memory. Verify actual host loading.</td>
                     </tr>
                     <tr class="border-b border-line align-top">
                       <th scope="row" class="whitespace-nowrap py-3.5 pr-4 font-mono text-[12.5px] font-medium text-accent">docs/</th>
@@ -730,8 +741,8 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
                 </table>
               </div>
               <p class="mt-6 font-mono text-[11.5px] leading-relaxed text-fg-3">
-                Idempotent: re-run setup any time, filled content is never clobbered. Upgrade safe:
-                it bumps setupVersion, and doctor flags a stale project.
+                Setup preserves filled pages and refreshes its CLI with a reported backup when needed.
+                Doctor checks scaffold/version wiring, not actual host loading. See the <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/ctx-cli.md">setup contract</a>.
               </p>
             </div>
           </div>
@@ -758,7 +769,7 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
             <div class="lg:col-span-7">
               <div data-island="ledger">
                 <div class="console p-5">
-                  <p class="running mb-4 text-con-fg-2">context/progress-tracker.md</p>
+                  <p class="running mb-4 text-con-fg-2">synthetic legacy v2.4.x ledger</p>
                   <pre class="overflow-x-auto whitespace-pre font-mono text-[12px] leading-[1.9] text-con-fg"><code>## In progress   (max one)
 - Feature 07  refresh token rotation       @ana   branch feat/07
 
@@ -773,8 +784,8 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
 - Feature 06  login rate limit             2026-09-28
 - Feature 05  password reset flow          2026-09-21</code></pre>
                   <p class="mt-5 text-[12.5px] leading-snug text-con-fg-2">
-                    With JavaScript: merge a second branch onto Feature 07 and watch ctx lint turn
-                    the collision into an error instead of an argument.
+                    Illustrative legacy v2.4.x ledger, not this repository or a measured lint run.
+                    With JavaScript, simulate a collision and its reviewed resolution.
                   </p>
                 </div>
               </div>
@@ -798,7 +809,7 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
                     <tr class="border-b border-line">
                       <th scope="row" class="py-3 pr-4 font-medium text-fg">feature-specs/</th>
                       <td class="py-3 pr-4 text-fg-2">two specs share a number</td>
-                      <td class="py-3 font-medium text-accent">lint warn: renumber one</td>
+                      <td class="py-3 font-medium text-accent">lint flags duplicate IDs; review and renumber</td>
                     </tr>
                     <tr class="border-b border-line">
                       <th scope="row" class="py-3 pr-4 font-medium text-fg">decisions.md</th>
@@ -808,7 +819,7 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
                     <tr class="border-b border-line">
                       <th scope="row" class="py-3 pr-4 font-medium text-fg">log.md</th>
                       <td class="py-3 pr-4 text-fg-2">both appended</td>
-                      <td class="py-3 text-fg-2">no problem, append only</td>
+                      <td class="py-3 text-fg-2">append-only format; review merge conflicts</td>
                     </tr>
                     <tr>
                       <th scope="row" class="py-3 pr-4 font-medium text-fg">a module page</th>
@@ -829,8 +840,8 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
           <div class="mx-auto max-w-[68ch]">
             <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">The method in five laws.</h2>
             <p class="mt-7 text-[1.0625rem] leading-[1.65] text-fg-2">
-              Everything else in SKILL.md serves these five. The lint rules and the hooks exist to
-              make them mechanical rather than a matter of goodwill.
+              Everything else in SKILL.md serves these five. Lint rules and hooks check parts of
+              the workflow; review and host permissions remain separate.
             </p>
 
             <ol class="mt-12 border-t border-line">
@@ -852,7 +863,8 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
               <li class="border-b border-line py-7">
                 <h3 class="font-display text-[1.6rem] text-fg">Keep the state in files.</h3>
                 <p class="mt-2.5 text-[0.9375rem] leading-[1.65] text-fg-2">
-                  The agent updates them while working, every session. Tooling enforces it.
+                  The policy asks the agent to update them while working. Tooling flags missing
+                  bookkeeping; it cannot guarantee that the agent follows the policy.
                 </p>
               </li>
               <li class="border-b border-line py-7">
@@ -877,8 +889,8 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
               <h3 class="text-[1.5rem] text-fg">Prompts are products.</h3>
               <p class="mt-4 max-w-[58ch] text-[0.9375rem] leading-[1.65] text-fg-2">
                 Specs, subagent briefs, clarify questions and Lessons follow ASD-STE100, the
-                aerospace documentation standard. It exists because ambiguity kills. In prompts,
-                ambiguity ships bugs. This page follows it too.
+                aerospace documentation standard, as writing guidance rather than a certified
+                compliance claim. In prompts, clear wording helps expose assumptions.
               </p>
 
               <dl class="mt-8 overflow-x-auto">
@@ -929,11 +941,12 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
       <section id="proof" class="scroll-mt-20 border-b border-line bg-surface">
         <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-24">
           <div class="mx-auto max-w-[46rem]">
-            <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">Proven on itself.</h2>
+            <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">Tested on itself.</h2>
             <p class="mt-7 text-[1.0625rem] leading-[1.65] text-fg-2">
-              This repository runs its own context system. The wiki in
-              <code class="font-mono text-fg">context/</code> is live, lint returns 0 errors and 0
-              warnings, and 47 end-to-end tests pass on ubuntu, macOS and windows.
+              This repository runs its own context system. The 2026-10-21 published <a href="https://github.com/AnshRoshan/project-context-system/actions/runs/39553397681">main baseline run</a>
+              passed all six Ubuntu/macOS/Windows Node 22/24 test jobs. Each reported 132 passed,
+              0 failed, 0 skipped; strict self-context checks also passed.
+              <a href="https://github.com/AnshRoshan/project-context-system/blob/main/context/testing.md#verification-evidence">Testing evidence</a> owns the dated results, not the demo fixtures.
             </p>
             <p class="mt-5 text-[1.0625rem] leading-[1.65] text-fg-2">
               Development history stays here: the changelog, the tests, this README.
@@ -947,9 +960,10 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
                 <span class="h-1.5 w-1.5 rounded-full bg-accent-line" aria-hidden="true"></span>
                 <span id="ci-chip">ci live workflow</span>
               </a>
-              <a href="https://github.com/AnshRoshan/project-context-system/releases" class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2 no-underline hover:border-line-strong hover:text-fg">release v2.4.1</a>
-              <span class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2">dependencies 0</span>
-              <span class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2">node 18 or newer</span>
+              <a href="https://github.com/AnshRoshan/project-context-system/releases/latest" class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2 no-underline hover:border-line-strong hover:text-fg">latest release</a>
+              <span class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2">CLI dependencies 0</span>
+              <span class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2">Node 22/24</span>
+              <a href="https://github.com/AnshRoshan/project-context-system/actions/runs/39553402796" class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2 no-underline hover:border-line-strong hover:text-fg">published tag checks passed</a>
               <a href="https://github.com/AnshRoshan/project-context-system/blob/main/LICENSE" class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2 no-underline hover:border-line-strong hover:text-fg">MIT</a>
               <span class="inline-flex items-center rounded-[3px] border border-line px-3 py-1.5 font-mono text-[11.5px] text-fg-2">claude code, codex, cursor, copilot, gemini, qoder</span>
             </div>
@@ -967,14 +981,14 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
               </h2>
               <p class="mt-8 max-w-[42ch] text-[1.0625rem] leading-[1.65] text-fg-2">
                 Setup detects your stack, scaffolds the wiki, drafts the codebase map on existing
-                code, and self-checks with twelve doctor checks. Run it again any time. It upgrades
-                in place.
+                code, and checks structural wiring with doctor. It does not verify live host loading
+                or permissions. <a href="https://github.com/AnshRoshan/project-context-system/blob/main/INSTALL.md">Install prerequisites and recovery limits</a>.
               </p>
               <div class="mt-8 border-l border-line-strong pl-5">
                 <p class="text-[0.9375rem] leading-[1.65] text-fg-2">
                   Or paste one sentence to your agent: &ldquo;Clone
                   <code class="font-mono text-accent">https://github.com/AnshRoshan/project-context-system</code>,
-                  install it, then set up this repository.&rdquo;
+                  with core.symlinks=true, install it, then set up this repository.&rdquo;
                 </p>
               </div>
             </div>
@@ -984,11 +998,11 @@ doctor · install · hook              wiring checks (12), installer, Claude hoo
                 <li class="grid grid-cols-[2rem_1fr_auto] items-start gap-4 p-5">
                   <span class="font-mono text-[13px] text-con-accent" aria-hidden="true">1</span>
                   <div class="min-w-0">
-                    <p class="text-[13px] leading-snug text-con-fg-2">Install the skill. It auto-detects ~/.claude and ~/.qoder.</p>
-                    <pre class="mt-2 overflow-x-auto whitespace-pre font-mono text-[12.5px] leading-relaxed text-con-fg"><code>git clone https://github.com/AnshRoshan/project-context-system
+                    <p class="text-[13px] leading-snug text-con-fg-2">Install the SHIP-only skill. Auto-detects ~/.claude and ~/.qoder. Windows needs Developer Mode or symlink privilege before clone.</p>
+                    <pre class="mt-2 overflow-x-auto whitespace-pre font-mono text-[12.5px] leading-relaxed text-con-fg"><code>git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system
 node project-context-system/scripts/ctx.mjs install</code></pre>
                   </div>
-                  <div data-island="copybtn" data-copy="git clone https://github.com/AnshRoshan/project-context-system &amp;&amp; node project-context-system/scripts/ctx.mjs install">
+                  <div data-island="copybtn" data-copy="git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system &amp;&amp; node project-context-system/scripts/ctx.mjs install">
                     <button type="button" class="rounded-[3px] border border-con-line px-2 py-1 font-mono text-[10.5px] text-con-fg-2">copy</button>
                   </div>
                 </li>
@@ -1005,9 +1019,9 @@ node project-context-system/scripts/ctx.mjs install</code></pre>
                 <li class="grid grid-cols-[2rem_1fr_auto] items-start gap-4 p-5">
                   <span class="font-mono text-[13px] text-con-accent" aria-hidden="true">3</span>
                   <div class="min-w-0">
-                    <p class="text-[13px] leading-snug text-con-fg-2">Work. Everything after this is project-relative.</p>
+                    <p class="text-[13px] leading-snug text-con-fg-2">Work with your own paths and unit number. The commands below are illustrative.</p>
                     <pre class="mt-2 overflow-x-auto whitespace-pre font-mono text-[12.5px] leading-relaxed text-con-fg"><code>node context/ctx.mjs brief src/auth/login.ts
-node context/ctx.mjs task start 03</code></pre>
+node context/ctx.mjs task start &lt;your-unit&gt;</code></pre>
                   </div>
                   <div data-island="copybtn" data-copy="node context/ctx.mjs brief src/auth/login.ts">
                     <button type="button" class="rounded-[3px] border border-con-line px-2 py-1 font-mono text-[10.5px] text-con-fg-2">copy</button>

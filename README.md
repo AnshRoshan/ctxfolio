@@ -60,7 +60,7 @@ Or just paste to your agent: *"Clone `https://github.com/AnshRoshan/project-cont
 - **Git-backed review signals** — `ctx stale`/`ctx impact` map changed paths to responsible pages. Checks identify review work; they do not prove claims are true.
 - **Built for teams** — one unit = one branch = one owner; merge collisions (duplicate task/spec/decision IDs) surface as lint errors, not arguments. `ctx archive` rotates growth out of the hot files. See [references/multi-user.md](references/multi-user.md).
 - **Prompts are products** — specs and subagent briefs follow ASD-STE100 (Simplified Technical English) discipline: one action per sentence, one word one meaning. [references/prompt-craft.md](references/prompt-craft.md).
-- **Tested as a CLI** — this repo runs its own context system; `node tests/run.mjs` drives disposable git repos and the copied tool, including budgets, filenames, hook edge cases and non-destructive setup. CI configuration targets Ubuntu, macOS and Windows; local results do not imply a remote CI run.
+- **Tested as a CLI** — this repo runs its own context system; `node tests/run.mjs` drives disposable git repos and the copied tool, including budgets, filenames, hook edge cases and non-destructive setup. Supported-platform CI and published release results live in [verification evidence](context/testing.md#verification-evidence); local results alone do not certify remote CI.
 
 ## The CLI
 
@@ -75,7 +75,7 @@ adapters [--check] [--migrate]          recorded layout refresh and central meta
 symlinks [--check] [--migrate]          real relative link audit/migration and local Git configuration
 ```
 
-Read-only commands speak `--json` (`{command, ok}`) for scripts and CI. SessionStart/Stop hooks re-inject orientation (even after compaction) and block silent doc drift.
+Read-only commands speak `--json` (`{command, ok}`) for scripts and CI. Configured Claude hooks provide orientation reminders and limited working-tree bookkeeping checks; see the [hook contract and bypass limits](references/safety-permissions.md#hooks-shipped-with-this-skill-v2).
 
 ## The five laws
 

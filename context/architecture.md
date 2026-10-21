@@ -7,7 +7,7 @@ tags: [architecture,components,boundaries]
 covers: [scripts/**, assets/**, references/**, tests/**, SKILL.md]
 updated: 2026-10-21
 confidence: verified
-verified_at: 6a2c96252924
+verified_at: b7e58d6586c2
 ---
 
 # Architecture
@@ -16,7 +16,7 @@ verified_at: 6a2c96252924
 
 - The skill compiles project-local knowledge and shared agent resources into routable markdown and native host adapters.
 - Canonical instruction bodies and native discovery views are separate; configuration formats are not shared across hosts.
-- Tests exercise the installed CLI in disposable projects. Results and commands belong in [testing](testing.md), not here.
+- Tests exercise the installed CLI in disposable projects. Development-only baseline and live-truth probes guard repository claims separately. Results and commands belong in [testing](testing.md), not here.
 
 ## Components and roles
 

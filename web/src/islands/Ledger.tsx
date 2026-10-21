@@ -18,7 +18,7 @@ const TONE: Record<string, string> = {
 };
 
 const RESOLVED_LINT: Line[] = [
-  { t: "resolution, mechanical not social:", tone: "signal" },
+  { t: "illustrative manual resolution, not automated lint repair:", tone: "signal" },
   { t: '  ctx task add "refresh token expiry fix" --spec 12', tone: "dim" },
   { t: "    number 07 is taken on this branch. wrote 12 instead.", tone: "dim" },
   { t: "  decisions.md: the later merge keeps D-15. references updated.", tone: "dim" },
@@ -69,9 +69,9 @@ export default function Ledger() {
   }
 
   return (
-    <div className="console overflow-hidden">
+    <div className="console overflow-hidden" role="group" aria-label="Synthetic legacy v2.4.x ledger demo, not this repository or measured lint output">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-con-line px-4 py-2.5">
-        <span className="font-mono text-[11px] text-con-fg">context/progress-tracker.md</span>
+        <span className="font-mono text-[11px] text-con-fg">synthetic legacy v2.4.x ledger</span>
         <span
           className="ml-auto rounded-[3px] border px-2 py-0.5 font-mono text-[10.5px]"
           style={{
@@ -80,7 +80,7 @@ export default function Ledger() {
           }}
           role="status"
         >
-          {phase === "collision" ? "main after merge: 2 errors" : "main: lint clean"}
+          {phase === "collision" ? "demo merge: 2 errors" : "demo: lint clean"}
         </span>
       </div>
 
@@ -135,8 +135,8 @@ export default function Ledger() {
       >
         {lint.length === 0 ? (
           <p className="font-mono text-[11.5px] leading-relaxed text-con-fg-2">
-            lint clean. press Merge feat/07b to land a second branch on the same number and watch the
-            collision become an error.
+            Synthetic legacy demo. Press git merge feat/07b to simulate a duplicate unit ID.
+            No Git or CLI command runs here.
             <span
               className="anim-blink ml-1 inline-block h-[12px] w-[7px] translate-y-[2px]"
               style={{ backgroundColor: "var(--c-con-accent)" }}
@@ -169,7 +169,7 @@ export default function Ledger() {
           className="rounded-[3px] border px-2.5 py-1.5 font-mono text-[10.5px] transition-colors duration-150 disabled:opacity-30"
           style={{ borderColor: "var(--c-con-accent)", color: "var(--c-con-accent)" }}
         >
-          ctx lint --fix &amp;&amp; ctx index
+          Simulate manual ID repair
         </button>
         <button
           type="button"
@@ -181,10 +181,10 @@ export default function Ledger() {
         </button>
         <span className="font-mono text-[10.5px] text-con-fg-2">
           {phase === "collision"
-            ? "nobody argues in chat. the tool names the collision."
+            ? "synthetic collision; manual review and ID repair needed."
             : phase === "resolved"
-              ? "one unit, one branch, one owner. restored."
-              : "per-unit files never conflict. shared files are linted."}
+              ? "manual renumbering and review simulated; no CLI command ran."
+              : "illustrative fixtures, not this repo; shared edits still need review."}
         </span>
       </div>
     </div>

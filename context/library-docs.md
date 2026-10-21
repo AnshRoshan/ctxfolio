@@ -2,18 +2,19 @@
 title: Library Docs
 type: guide
 status: active
-summary: The only "libraries" here are node builtins and the git CLI — with the sharp edges already learned
+summary: CLI builtin/git usage and sharp edges; website dependencies stay in its manifest and module owner
 tags: [libraries,dependencies,docs]
-updated: 2026-10-14
-verified_at: 080a7adb7826
+updated: 2026-10-21
 ---
 
 # Library Docs
 
 ## TL;DR
 
-- Zero dependencies by policy (D-01): node builtins (`fs`, `path`, `os`, `child_process`, `url`) + the `git` CLI. Adding an npm dep requires a decision record and a very good reason.
+- The copied CLI has zero npm dependencies by policy (D-01): node builtins (`fs`, `path`, `os`, `child_process`, `url`, `crypto`) + the `git` CLI. Adding a CLI npm dep requires a decision record and a very good reason. The website has separate dependencies declared in [its manifest](../web/package.json); see the [website module](codebase/modules/website.md).
 - Filename lists/status/diffs use NUL-delimited git output; preserve Unicode, spaces and both sides of renames. Non-filename output is CRLF-normalized.
+
+Source review: scripts/ctx.mjs → imports, git/gitFiles/dirtyFiles and hook stdin handling; package.json → engines and dependency-free CLI, web/package.json → website dependencies, at `b7e58d6586c2` on 2026-10-21. CLI run results remain in [testing evidence](testing.md#verification-evidence).
 
 ## Installed agent skills / MCP servers
 
@@ -34,7 +35,7 @@ verified_at: 080a7adb7826
 
 ## Known operational gotchas
 
-- This repo's `.kilo/worktrees/super-raincoat/` is a stale v1 editor worktree (untracked) — never edit or copy from it.
+- This repo's `.kilo/worktrees/super-raincoat/` is a registered, gitignored legacy editor worktree, detached at `b59ed5d89eea` — never edit or copy from it. Physical cleanup belongs to Feature 10. Observed with `git worktree list --porcelain` and `git check-ignore .kilo/worktrees/super-raincoat` on 2026-10-21.
 - `git ls-files` output is forward-slash on all platforms; keep `posix()` at the boundaries, don't "fix" it.
 
 ## Docs sources

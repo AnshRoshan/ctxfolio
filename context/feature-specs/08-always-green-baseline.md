@@ -1,13 +1,13 @@
 ---
 title: Always-Green Baseline
 type: feature
-status: in-progress
+status: complete
 summary: Make main provably healthy — fix the macOS and Node 18 failures, gate this repo's own wiki in CI, and publish the unreleased v2.7
 tags: [ci, testing, release, symlinks, quality]
 covers: [scripts/ctx.mjs, tests/**, .github/**, package.json, README.md, INSTALL.md]
 related: [../testing.md, ../decisions.md, ./07-native-symlinks.md]
 updated: 2026-10-21
-verified_at: 6a2c96252924
+verified_at: b7e58d6586c2
 ---
 
 # Always-Green Baseline
@@ -70,18 +70,18 @@ A system whose job is "the docs stay true" cannot ship a red badge and an unrele
 
 - 2026-10-21: the unmodified harness reproduced all three macOS case names on Debian's POSIX filesystem when TMPDIR pointed through a symlink; 11 passed / 3 failed / 0 skipped in the symlink filter. The same path class did not reproduce on Windows junctions. Source: sandbox() and child process.cwd() path spelling, not a platform-specific rollback change.
 - The patched Windows symlink filter passed every selected case. Each injected race now writes a hit marker and asserts human content plus recovery/configuration outcomes.
-- Independent POSIX mutation checks on Node 20.19.2 (not supported-runtime evidence): all three patched cases passed individually; disabling each shared preservation defense produced its expected loss assertion. Real macOS Node 22/24 validation remains pending CI.
+- Independent POSIX mutation checks on Node 20.19.2 (not supported-runtime evidence): all three patched cases passed individually; disabling each shared preservation defense produced its expected loss assertion. Actual macOS Node 22/24 validation later passed in candidate and main CI; see ../testing.md for the run evidence.
 - Baseline probes and version-track checks live in tests/check-baseline.mjs and tests/check-versions.mjs; the production CI gates never use a test-only bypass.
 - Actions current majors were read from the official checkout and setup-node release APIs on 2026-10-21; explicit runner labels were checked against actions/runner-images. Candidate publication follows D-13.
 
 ## Verification checklist
 
 - [x] `node tests/run.mjs` passes every current case with 0 failures on Windows; 132 passed / 0 failed / 0 skipped recorded at ../testing.md
-- [ ] CI passes on ubuntu, macOS and windows for Node 22 and 24 (no FAIL line in any matrix job)
-- [ ] The three previously failing cases pass on macOS, and each still fails when its guard is deliberately broken
+- [x] CI passes on ubuntu, macOS and windows for Node 22 and 24 (no FAIL line in any matrix job)
+- [x] The three previously failing cases pass on macOS, and each still fails when its guard is deliberately broken
 - [x] The fourth macOS Node 18 case is either fixed or the Node 18 job is removed as EOL; no skip hides it
 - [x] `self-context` job exists and fails when a wiki page is left stale or a placeholder stays unfilled (exact negative fixture checks passed locally)
-- [ ] Version-consistency check fails when one file in a track is edited alone; passes when each track agrees and the mapping and tag are current
+- [x] Version-consistency check fails when one file in a track is edited alone; passes when each track agrees and the mapping and tag are current
 - [x] Workflow has read-only permissions, concurrency cancellation and a timeout
-- [ ] Tag plus release exist for the shipped version, and the README badge resolves to it
+- [x] Tag plus release exist for the shipped version, and the README badge resolves to it
 - [x] `../log.md`, `../progress-tracker.md` and `../decisions.md` are updated in the same candidate as the code; D-13 records the authorized validation branch
