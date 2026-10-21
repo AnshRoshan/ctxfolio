@@ -69,3 +69,5 @@ confidence: unverified
 - [x] Registered clean reachable legacy worktree is removed via Git with no data loss; detached commit b59ed5d remains reachable
 - [x] Focused regressions, full CLI suite, syntax, copied parity, truth/baseline/version checks pass (147/0/0 final full run)
 - [x] Strict lint/stale and doctor pass; owner pages, tracker, log and memory record evidence (28 pages 0/0, stale clean, doctor13/13)
+
+- 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.

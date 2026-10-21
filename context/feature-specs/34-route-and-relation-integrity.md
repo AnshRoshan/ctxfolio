@@ -80,3 +80,5 @@ The 2026-10-21 audit found eight dead routes in `context/index.md` (`ui-rules.md
 - 2026-10-21, Feature 34: full suite 119 passed, zero failed, zero skipped on Windows; dead router backticks, missing code-span paths and missing related: targets fail lint, while commands, globs, URLs and placeholders do not.
 - The completion recheck additionally removed unconditional routing to the ignored local issue page: a fresh checkout must route through tracked owners even without personal scratch.
 - Router/template routes now use only always-created tracked pages; .claude/module/API/integration templates resolve their relative related: targets. Strict lint reports 26 pages with zero errors/warnings, stale --strict is clean and doctor passes 13/13.
+
+- 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.

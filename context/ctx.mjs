@@ -862,7 +862,7 @@ function factsReport() {
       orientTokens: fact(orient.reduce((n, p) => n + p.tokens, 0), 'orientationFiles(); sum ceil(file characters / 4), estimate not model tokens'),
       packageVersion: fact(typeof pkg.version === 'string' ? pkg.version : null, 'package.json#version (declared, null when absent/invalid)'),
       nodeRequirement: fact(typeof pkg.engines?.node === 'string' ? pkg.engines.node : null, 'package.json#engines.node (declared, not installed runtime)'),
-      cliVersion: fact(VERSION, `${rel(SELF)}#VERSION (executing CLI declaration)`),
+      cliVersion: fact(VERSION, 'CLI#VERSION (executing portable CLI declaration)'),
     },
   };
 }

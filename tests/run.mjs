@@ -2515,6 +2515,20 @@ test('Feature13 copied live facts lint is narrow and excludes dated linked histo
   assert(warns.length === 2 && warns.some((s) => /999 tests/.test(s)) && warns.some((s) => /9.8.7/.test(s)), JSON.stringify(warns));
 });
 
+test('Feature13 source-written facts remain consistent when read and linted by the portable copy', (dir) => {
+  initRepo(dir);
+  const written = sh('node', [CTX_SRC, 'facts', '--root', dir, '--write', '--json'], dir);
+  assert(written.code === 0, `source facts write failed: ${written.out}`);
+  const owner = path.join(dir, 'context', 'facts.md');
+  const before = fs.readFileSync(owner);
+  const sourceRead = sh('node', [CTX_SRC, 'facts', '--root', dir, '--json'], dir);
+  const copyRead = ctx(dir, 'facts', '--json');
+  assert(sourceRead.code === 0 && copyRead.code === 0 && sourceRead.out === copyRead.out, 'facts depend on executing source/copy location');
+  const lint = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(!lint.errors.some((s) => /generated facts drift/.test(s)), `portable copy reports source-generated drift: ${JSON.stringify(lint.errors)}`);
+  assert(ctx(dir, 'facts', '--write', '--json').code === 0 && fs.readFileSync(owner).equals(before), 'portable refresh changes source-generated facts block');
+});
+
 test('Feature14 shared and private issue scaffolds have distinct ignore and routing owners', (dir) => {
   setupRepo(dir);
   for (const f of ['issues.md', 'issues.local.md']) assert(fs.existsSync(path.join(dir, 'context', f)), `missing ${f}`);

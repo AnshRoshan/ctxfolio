@@ -80,3 +80,5 @@ The 2026-10-21 audit found `ctx install` copies directly into the destination, f
 
 - 2026-10-21, Feature 32: full suite 114 passed, zero failed, zero skipped on Windows; unsafe-name and symlinked-destination refusal, stale-file removal, local-edit backup, `--dry-run`, setup CLI backup and schema migration are covered.
 - Strict lint reports 24 pages with zero errors/warnings, `stale --strict` is clean and doctor passes 13/13.
+
+- 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.

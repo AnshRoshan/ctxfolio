@@ -86,3 +86,5 @@ The 2026-10-21 audit found that `ctx new feature` chooses `max + 1`, so a branch
 
 - 2026-10-21, Feature 33: full suite 117 passed, zero failed, zero skipped on Windows; reserved-number refusal, explicit --spec selection, roadmap/spec/tracker coherence, required Wave 0 sections and unknown D-NN refs are covered.
 - Strict lint reports 25 pages with zero errors/warnings after indexing, stale --strict is clean and doctor passes 13/13.
+
+- 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.

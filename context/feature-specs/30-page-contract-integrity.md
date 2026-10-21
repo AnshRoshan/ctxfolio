@@ -72,3 +72,5 @@ The 2026-10-21 audit found the checker is not fail-closed. `parseFrontmatter` st
 - [x] `node tests/run.mjs` passes with the new cases and 0 failures (106 passed)
 - [x] `node context/ctx.mjs lint --strict`, `stale --strict` and `doctor` are green (22 pages 0/0; 13/13 checks)
 - [x] `../progress-tracker.md`, `../../memory.md`, `../log.md` and `../index.md` reflect the unit
+
+- 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
