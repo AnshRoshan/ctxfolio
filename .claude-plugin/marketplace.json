@@ -1,16 +1,16 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "project-context-system",
+  "name": "ctxfolio",
   "description": "Portable markdown context wikis, budgeted routing, safe setup and git-based review signals, with a zero-dependency CLI and best-effort workflow hooks.",
   "owner": {
     "name": "Ansh"
   },
   "plugins": [
     {
-      "name": "project-context-system",
+      "name": "ctxfolio",
       "source": "./",
       "description": "Scaffolds a self-maintaining context wiki (AGENTS.md, context/ pages, memory.md) and ships the ctx CLI plus SessionStart/Stop hooks so agent knowledge is compiled once and kept current instead of re-derived every session.",
-      "version": "3.7.0",
+      "version": "3.8.0",
       "category": "productivity"
     }
   ]

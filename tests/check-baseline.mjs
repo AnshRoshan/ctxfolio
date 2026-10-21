@@ -58,7 +58,7 @@ try {
   for (const file of ['SKILL.md', 'scripts/ctx.mjs', 'CHANGELOG.md', 'package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', 'README.md']) {
     const original = read(file);
     let changed;
-    if (file === 'SKILL.md') changed = original.replace(/^(# Project Context System \(v)[^)]+\)/m, '$199.99.99)');
+    if (file === 'SKILL.md') changed = original.replace(/^(# Ctxfolio \(v)[^)]+\)/m, '$199.99.99)');
     else if (file === 'scripts/ctx.mjs') changed = original.replace(/^const VERSION = '[^']+';/m, "const VERSION = '99.99.99';");
     else if (file === 'CHANGELOG.md') changed = original.replace(/^## v\d+\.\d+(?:\.\d+)?/m, '## v99.99.99');
     else if (file === 'README.md') changed = original.replace(new RegExp(`^\\|\\s*${escape(currentVersion)}\\s*\\|\\s*${escape(packageVersion)}\\s*\\|.*\\r?\\n`, 'm'), '');

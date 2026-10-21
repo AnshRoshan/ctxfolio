@@ -23,6 +23,10 @@ Source review: scripts/ctx.mjs → imports, git/gitFiles/dirtyFiles and hook std
 | `graphify` skill | installed in this machine's agent | any question about THIS repo's structure — it indexes repos; `ctx tools` detects it |
 | `skill-creator` | agent built-in | editing SKILL.md's structure/description |
 
+## Authorized distribution
+
+The user approved `ctxfolio@3.8.0`, GitHub repository `AnshRoshan/ctxfolio` and release `v2.8.0` (D-16). The CLI remains dependency-free and project copies remain supported. Publication results belong in [testing evidence](testing.md#verification-evidence); authorization alone is not proof of registry or release success.
+
 ## Per-library usage notes
 
 ### git (via execFileSync)

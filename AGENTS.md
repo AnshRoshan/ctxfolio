@@ -54,7 +54,7 @@ Page rules: frontmatter required (`title type status summary updated`, plus `cov
 ## Skills & commands
 
 - CLI invocation and verification commands: `context/testing.md`; canonical resource authoring: `.agents/README.md`.
-- `project-context-system` skill — SETUP / ADOPT / INGEST / QUERY / LINT / HANDOFF procedures
+- `ctxfolio` skill — SETUP / ADOPT / INGEST / QUERY / LINT / HANDOFF procedures
 - **Delegate, don't hand-roll:** `ctx tools` lists code-intelligence tools here (graphify, ctags, aider, …). For a code map or dependency questions, run the tool first and distill its output into the wiki — never re-explore the repo by hand when a tool already indexed it
 - **Humans read `docs/`, agents read `context/`** — one fact, one home; docs pages link into the wiki
 - `graphify` skill — any structural question about THIS repo (it indexes codebases); prefer `ctx tools` probing over manual walking

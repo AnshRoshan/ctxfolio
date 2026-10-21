@@ -1,7 +1,7 @@
 {
-  "name": "project-context-system",
-  "displayName": "project-context-system — agent context that stays true",
-  "version": "3.7.0",
+  "name": "ctxfolio",
+  "displayName": "ctxfolio — agent context that stays true",
+  "version": "3.8.0",
   "description": "Project-local context wikis for coding agents: safe scaffolding, budgeted routing with trust warnings, git-based review signals, decisions, task state and portable handoffs. Ships a zero-dependency ctx CLI and best-effort Claude workflow hooks; source evidence and explicit verification remain required.",
   "author": {
     "name": "Ansh"

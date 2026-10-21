@@ -2,7 +2,7 @@
 title: Project Overview
 type: overview
 status: active
-summary: What the project-context-system skill is, who it's for, its core flows, and the hard non-scope list
+summary: What ctxfolio is, who it serves, its core flows and the remaining non-scope list
 tags: [overview,scope,product]
 updated: 2026-10-21
 ---
@@ -11,7 +11,7 @@ updated: 2026-10-21
 
 ## TL;DR
 
-- This repo IS the `project-context-system` skill: markdown method docs + a zero-dependency Node CLI (`scripts/ctx.mjs`) that scaffolds and maintains a compiled project wiki for coding agents.
+- This repo is `ctxfolio`: markdown method docs and a zero-dependency Node CLI (`scripts/ctx.mjs`) that scaffolds and maintains a compiled project wiki for coding agents. Historical records retain their earlier product names.
 - Product = the skill's OUTPUT (any project's `context/` wiki) as much as the code: changing templates/docs changes user behavior, so every edit is judged as "what will an agent do differently".
 - The test suite (`tests/run.mjs`) is the CLI's contract — a feature without a test is unfinished. Current results and case counts live in [testing evidence](testing.md#verification-evidence).
 
@@ -41,6 +41,6 @@ The currently authorized feature/request only; build-plan.md contains future pro
 
 ## Deliberately out of scope
 
-- npm publishing of the CLI (it's copied, never installed as a package) · daemon/watch mode · databases or backends of any kind (this repo has none) · IDE plugins · personal-assistant memory trees (see CHANGELOG v2.2 rationale) · auto-filling placeholders from guesses — that's the agent's judgement job, not the tool's.
+- daemon/watch mode · databases or backends of any kind (this repo has none) · IDE plugins · personal-assistant memory trees (see CHANGELOG v2.2 rationale) · auto-filling placeholders from guesses — that's the agent's judgement job, not the tool's.
 
 Source review: package.json → engines/bin, scripts/ctx.mjs → SHIP/install/setup/hook and tests/run.mjs → CLI fixtures/no-leak cases, at `b7e58d6586c2` on 2026-10-21. Observed verification belongs to [testing evidence](testing.md#verification-evidence); this review is not a benchmark or host-loader proof.

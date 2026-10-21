@@ -4,9 +4,11 @@ This reference documents declared interfaces. Host loading and MCP interoperabil
 
 ## Setup tiers and project discovery
 
+Ctxfolio is available as the zero-dependency npm package `ctxfolio`. Run `npx ctxfolio@3.8.0 setup` from the project root, or `npm install -g ctxfolio@3.8.0` followed by `ctx setup`. The generated project-local routing skill is named `ctxfolio`; shared skill installation defaults to `~/.agents/skills/ctxfolio`.
+
 `ctx init` or `ctx setup` defaults to `--standard`. `--lite` creates a small populated routing/architecture/ownership/policy/decision/tracker wiki plus memory and shared agent resources. `--full` explicitly enables detected profile extras and template authoring. `--no-full`, `--no-ui`, `--no-detect`, `--portable-pointers` and `--symlinks` remain supported. Choose only one tier. Existing files are always preserved; selecting a smaller tier never deletes old pages. Unknown application facts remain unknown, queues blank.
 
-Every tier generates `.agents/skills/project-context/SKILL.md`. Existing adapter inventory provides Claude/Cursor views or D-7 real relative aliases. No global installation is needed. User-owned skill or native adapter conflicts are preserved for explicit reconciliation.
+Every tier generates `.agents/skills/ctxfolio/SKILL.md`. Existing adapter inventory provides Claude/Cursor views or D-7 real relative aliases. No global installation is needed. User-owned skill or native adapter conflicts are preserved for explicit reconciliation.
 
 ## Declared hosts
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ctx — the project's context-wiki tooling (installed by the project-context-system skill).
+ * ctx — the project's context-wiki tooling (installed by the ctxfolio skill).
  *
  * The context/ folder is a compiled, interlinked markdown wiki about this project:
  * raw sources -> pages -> schema. This tool does the mechanical bookkeeping so
@@ -57,7 +57,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 const SELF = fileURLToPath(import.meta.url);
 const SKILL_DIR = path.resolve(path.dirname(SELF), '..');
-const VERSION = '2.7.0';
+const VERSION = '2.8.0';
 const CONFIG_SCHEMA = 2;
 
 /* ------------------------------------------------------------------ args */
@@ -2125,7 +2125,7 @@ const ruleGlobs = (data) => {
   const value = data.paths || data.globs;
   return Array.isArray(value) ? value.map(String) : value ? splitList(value) : data.alwaysApply === true || data.alwaysApply === 'true' ? ['**'] : [];
 };
-const ADAPTER_MARK = 'project-context-system';
+const ADAPTER_MARK = 'project-context-system'; // Stable legacy metadata marker; branding must not invalidate existing user adapters.
 const hashAdapter = (text) => {
   const normalized = text.replace(/\r\n/g, '\n');
   const unsigned = normalized.replace(/^---\n[\s\S]*?\n---(?:\n|$)/, (frontmatter) => frontmatter.replace(/^ctx_checksum:[^\n]*(?:\n|$)/m, ''));
@@ -3050,7 +3050,7 @@ commands.hook = () => {
     }
   } catch { validInput = false; }
   if (which === 'session-start') {
-    if (input.source === 'compact') console.log('[project-context-system] Context was compacted — your memory of this session is lossy. Re-read the files below before continuing; trust the tracker and memory.md over recall.');
+    if (input.source === 'compact') console.log('[ctxfolio] Context was compacted — your memory of this session is lossy. Re-read the files below before continuing; trust the tracker and memory.md over recall.');
     const cursor = resumeCursor();
     const memory = cursorMemory();
     let next = '';
@@ -3059,7 +3059,7 @@ commands.hook = () => {
       if (m) next = m[1].split('\n').filter((l) => l.trim() && !/\{\{/.test(l)).slice(0, 4).join(' ').trim();
     }
     const st = staleReport();
-    console.log('[project-context-system] ORIENT: read AGENTS.md -> context/index.md -> memory.md. Do NOT scan the repo. For any task run `node context/ctx.mjs brief <files|keywords>` and read only what it returns (TL;DR first).');
+    console.log('[ctxfolio] ORIENT: read AGENTS.md -> context/index.md -> memory.md. Do NOT scan the repo. For any task run `node context/ctx.mjs brief <files|keywords>` and read only what it returns (TL;DR first).');
     printResumeCursor(cursor);
     if (next) console.log(`Next step (${cursor.warnings.length ? 'recorded; reconcile required' : 'from memory.md'}): ${next}`);
     if (st.available && st.items.length) console.log(`Context health: ${st.items.length} stale page(s) (${st.items.slice(0, 3).map((i) => i.p.relCtx).join(', ')}) — verify against code before trusting them.`);
@@ -3077,7 +3077,7 @@ commands.hook = () => {
     if (stale.length) problems.push(`Context pages not updated for changed code: ${stale.slice(0, 6).map((r) => r.p.rel).join(', ')}. Update them (or confirm nothing they describe changed) then run \`node context/ctx.mjs stamp <page>\`.`);
     if (!trackerTouched.length) problems.push('Neither context/progress-tracker.md nor memory.md was updated this session.');
     if (problems.length) {
-      process.stderr.write('[project-context-system] Before ending the session:\n- ' + problems.join('\n- ') + '\n');
+      process.stderr.write('[ctxfolio] Before ending the session:\n- ' + problems.join('\n- ') + '\n');
       process.exit(2);
     }
     return;
@@ -3554,7 +3554,7 @@ commands.init = () => {
   const have = new Set(cur.split('\n').map((l) => l.trim()));
   const newLines = add.split('\n').filter((l) => l.trim() && !l.startsWith('#') && !have.has(l.trim()));
   if (newLines.length) {
-    appendAtomic(gi, (cur && !cur.endsWith('\n') ? '\n' : '') + '\n# project-context-system\n' + newLines.join('\n') + '\n');
+    appendAtomic(gi, (cur && !cur.endsWith('\n') ? '\n' : '') + '\n# ctxfolio\n' + newLines.join('\n') + '\n');
     created.push('.gitignore (merged)');
   }
   console.log(`profile: ${d.langs.join(', ') || '?'} · kinds: ${d.kinds.join(', ') || 'generic'} · signals: ${d.signals.join(', ') || '—'}${flags['no-detect'] ? ' (detection skipped)' : ''}`);

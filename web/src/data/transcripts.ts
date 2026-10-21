@@ -364,7 +364,7 @@ export const HOOK_STEPS: HookStep[] = [
     trackerTouched: true,
     blindSpots: 1,
     lines: [
-      bad("[project-context-system] Before ending the session:"),
+      bad("[ctxfolio] Before ending the session:"),
       bad("- Context pages not updated for changed code: context/codebase/modules/auth.md,"),
       bad("  context/api-contracts.md. Update them (or confirm nothing they describe changed)"),
       bad("  then run `node context/ctx.mjs stamp <page>`."),

@@ -1,6 +1,6 @@
 # Prompt Craft — ASD-STE100 discipline for internal prompts
 
-The `project-context-system` produces prompts: specs an agent implements, subagent briefs, clarify questions, Lessons lines, page TL;DRs. A misread spec is a wrong feature. So every instruction this system writes follows **ASD-STE100** (Simplified Technical English — the aerospace documentation standard, issue 100) adapted for LLM readers: the standard exists because ambiguity kills; in prompts, ambiguity ships bugs.
+The `ctxfolio` produces prompts: specs an agent implements, subagent briefs, clarify questions, Lessons lines, page TL;DRs. A misread spec is a wrong feature. So every instruction this system writes follows **ASD-STE100** (Simplified Technical English — the aerospace documentation standard, issue 100) adapted for LLM readers: the standard exists because ambiguity kills; in prompts, ambiguity ships bugs.
 
 ## The rules (apply to "What to build", briefs, checklists, questions)
 

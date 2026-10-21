@@ -21,13 +21,14 @@ const normalize = (value) => {
   const match = String(value || '').match(/^v?(\d+)\.(\d+)(?:\.(\d+))?$/);
   return match ? `${match[1]}.${match[2]}.${match[3] || 0}` : null;
 };
-const skill = normalize(read('SKILL.md').match(/^# Project Context System \(v([^)]*)\)/m)?.[1]);
+const skill = normalize(read('SKILL.md').match(/^# Ctxfolio \(v([^)]*)\)/m)?.[1]);
 const cli = normalize(read('scripts/ctx.mjs').match(/^const VERSION = '([^']+)';/m)?.[1]);
 const changelog = normalize(read('CHANGELOG.md').match(/^## v(\d+\.\d+(?:\.\d+)?)(?:\s|$)/m)?.[1]);
-const pkg = json('package.json').version;
+const pkgData = json('package.json');
+const pkg = pkgData.version;
 const plugin = json('.claude-plugin/plugin.json').version;
 const marketplaceData = json('.claude-plugin/marketplace.json');
-const marketplace = Array.isArray(marketplaceData.plugins) ? marketplaceData.plugins.find((item) => item?.name === 'project-context-system')?.version : null;
+const marketplace = Array.isArray(marketplaceData.plugins) ? marketplaceData.plugins.find((item) => item?.name === pkgData.name)?.version : null;
 if (!Array.isArray(marketplaceData.plugins)) errors.push('marketplace.json: plugins must be an array');
 for (const [label, value] of [['SKILL.md', skill], ['scripts/ctx.mjs', cli], ['CHANGELOG.md', changelog]]) {
   if (!value || value !== cli) errors.push(`${label}: skill track ${value || 'missing'} differs from CLI ${cli || 'missing'}`);

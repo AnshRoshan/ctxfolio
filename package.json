@@ -1,17 +1,20 @@
 {
-  "name": "project-context-system",
-  "version": "3.7.0",
-  "description": "Project-local markdown context wikis with safe scaffolding, budgeted routing, git-based review signals, portable handoffs and a zero-dependency CLI.",
+  "name": "ctxfolio",
+  "version": "3.8.0",
+  "description": "Source-backed project memory for coding agents: portable context wikis, governed capture, budgeted routing, read-only MCP and a zero-dependency CLI.",
   "license": "MIT",
   "type": "module",
   "main": "scripts/ctx.mjs",
   "bin": {
-    "ctx": "scripts/ctx.mjs"
+    "ctx": "scripts/ctx.mjs",
+    "ctxfolio": "scripts/ctx.mjs"
   },
   "files": [
     "SKILL.md",
     "README.md",
+    "INSTALL.md",
     "CHANGELOG.md",
+    "LICENSE",
     "assets/",
     "references/",
     "scripts/"
@@ -31,22 +34,18 @@
     "node": "^22.0.0 || ^24.0.0"
   },
   "keywords": [
-    "ai",
-    "agent",
-    "context",
-    "llm",
-    "wiki",
-    "claude-code",
-    "codex",
-    "cursor",
-    "copilot",
-    "agents-md",
-    "documentation",
-    "knowledge-base",
-    "context-engineering"
+    "ai", "agent", "context", "llm", "wiki", "claude-code", "codex", "cursor", "copilot", "agents-md", "mcp", "documentation", "knowledge-base", "context-engineering"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/AnshRoshan/project-context-system.git"
+    "url": "https://github.com/AnshRoshan/ctxfolio.git"
+  },
+  "homepage": "https://anshroshan.github.io/ctxfolio/",
+  "bugs": {
+    "url": "https://github.com/AnshRoshan/ctxfolio/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

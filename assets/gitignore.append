@@ -1,4 +1,4 @@
-# --- project-context-system: merge these lines into the existing .gitignore ---
+# --- ctxfolio: merge these lines into the existing .gitignore ---
 
 # Secrets — values never enter git or chat
 .env

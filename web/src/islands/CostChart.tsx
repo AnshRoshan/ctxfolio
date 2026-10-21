@@ -177,8 +177,8 @@ export default function CostChart() {
 
         <p className="mt-4 font-mono text-[11px] leading-relaxed text-con-fg-2">
           Illustrative assumptions, not measured usage or empirical bounds.
-          <a href="https://github.com/AnshRoshan/project-context-system/blob/main/web/src/data/transcripts.ts"> COST inputs</a>{" "}
-          follow <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/llm-wiki-pattern.md">the wiki pattern</a>; totals multiply inputs by sessions, excluding maintenance and output costs.
+          <a href="https://github.com/AnshRoshan/ctxfolio/blob/main/web/src/data/transcripts.ts"> COST inputs</a>{" "}
+          follow <a href="https://github.com/AnshRoshan/ctxfolio/blob/main/references/llm-wiki-pattern.md">the wiki pattern</a>; totals multiply inputs by sessions, excluding maintenance and output costs.
           Answer quality and any degradation threshold are unmeasured.
         </p>
       </div>

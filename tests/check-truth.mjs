@@ -13,7 +13,7 @@ const overview = read('context/overview.md');
 for (const [file, text] of [['web/index.html', site], ['INSTALL.md', install], ['context/overview.md', overview]]) {
   assert(!/47\s*(?:\/\s*47|end-to-end|, on three)|72 cases|Node\s*18\s*(?:or newer|\+)|node\s*18\s*or newer|twelve doctor|wiring checks \(12\)/i.test(text), `${file}: obsolete live baseline claim`);
 }
-assert(!/^\s*cp\s+-r\s+project-context-system\s/m.test(install), 'INSTALL.md: whole-repository copy bypasses SHIP-only installer');
+assert(!/^\s*cp\s+-r\s+(?:project-context-system|ctxfolio)\s/m.test(install), 'INSTALL.md: whole-repository copy bypasses SHIP-only installer');
 assert(install.includes('install --tool claude') && install.includes('install --tool qoder') && install.includes('install --dest'), 'INSTALL.md: supported SHIP-only install examples missing');
 assert(/testing\.md(?:#verification-evidence)?/.test(install) && /testing\.md/.test(overview), 'current test claims must link their evidence owner');
 assert(/Node\s*22.*24/i.test(site), 'website: supported Node tracks missing');

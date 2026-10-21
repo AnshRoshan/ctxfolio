@@ -1,11 +1,11 @@
-# project-context-system
+# Ctxfolio
 
-**[Live site: anshroshan.github.io/project-context-system](https://anshroshan.github.io/project-context-system/)**
+**[Live site: anshroshan.github.io/ctxfolio](https://anshroshan.github.io/ctxfolio/)**
 
 A project-local context wiki lets a fresh coding agent recover decisions, contracts and next steps without rediscovering everything. This skill scaffolds that wiki, routes tasks to relevant pages, and flags context that needs review.
 
-[![release](https://img.shields.io/github/v/release/AnshRoshan/project-context-system?color=blue)](https://github.com/AnshRoshan/project-context-system/releases)
-[![ci](https://github.com/AnshRoshan/project-context-system/actions/workflows/ci.yml/badge.svg)](https://github.com/AnshRoshan/project-context-system/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/AnshRoshan/ctxfolio?color=blue)](https://github.com/AnshRoshan/ctxfolio/releases)
+[![ci](https://github.com/AnshRoshan/ctxfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/AnshRoshan/ctxfolio/actions/workflows/ci.yml)
 [![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](scripts/ctx.mjs)
 ![node](https://img.shields.io/badge/node-22%20%7C%2024-brightgreen)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -24,10 +24,26 @@ Hooks and lint check context bookkeeping alongside the code diff. In configured 
 
 **Windows:** enable Developer Mode (or obtain the symbolic-link privilege) before creating/cloning real links. `Start-Process 'ms-settings:developers'` opens the setting; the skill never toggles it automatically. You may turn it off after verified creation, but future clones/checkouts/link repairs can require it again. New setup uses real relative symlinks and local Git `core.symlinks=true`; unsupported permissions fail clearly, not as copied files. `--portable-pointers` is an explicit legacy opt-out.
 
+Recommended from your project root:
+
 ```bash
-# 1 — install the skill (auto-detects ~/.claude / ~/.qoder; --tool|--dest to steer)
-git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system
-node project-context-system/scripts/ctx.mjs install
+npx ctxfolio@3.8.0 setup
+```
+
+Or install the zero-dependency CLI globally:
+
+```bash
+npm install -g ctxfolio@3.8.0
+ctx setup
+```
+
+The [npm package](https://www.npmjs.com/package/ctxfolio) installs the `ctx` command. Setup creates the project-local CLI and routing skill; no separate global skill install is required.
+
+```bash
+# Alternative: clone and install the skill into ~/.agents/skills/ctxfolio
+# Use --tool claude|qoder or --dest to steer discovery
+git -c core.symlinks=true clone https://github.com/AnshRoshan/ctxfolio
+node ctxfolio/scripts/ctx.mjs install
 
 # 2 — set up any repo: greenfield or brownfield, any language (run from its root)
 cd your-project && node <skill-dir>/scripts/ctx.mjs setup
@@ -37,7 +53,7 @@ node context/ctx.mjs brief src/auth/login.ts   # what to read for this task
 node context/ctx.mjs task start 03             # one unit at a time, enforced
 ```
 
-Or just paste to your agent: *"Clone `https://github.com/AnshRoshan/project-context-system`, install it, then set up this repository."* Setup is **idempotent and upgrade-safe** — re-run `setup` any time; filled content is never clobbered, and after updating the skill it upgrades the project in place.
+Or tell your agent: *"Run `npx ctxfolio@3.8.0 setup` from this repository's root."* For a skill-only install, clone `https://github.com/AnshRoshan/ctxfolio` and run its installer. Setup is **idempotent and upgrade-safe** — re-run `setup` any time; filled content is never clobbered, and after updating the skill it upgrades the project in place.
 
 ## What lands in your repo
 
@@ -96,11 +112,11 @@ The frozen ten-question routing fixture is measured by `ctx eval`, not an LLM ju
 
 ## Release tracks
 
-The skill/CLI and package/plugin versions have separate identities. Tags follow the skill track; `node tests/check-versions.mjs --require-tag` checks each track, this mapping and the newest reachable release tag.
+The skill/CLI and npm/package/plugin versions have separate identities. Tags follow the skill track; `node tests/check-versions.mjs --require-tag` checks each track, this mapping and the newest reachable release tag.
 
 | Skill / CLI | Package / plugin | Release tag |
 |---|---|---|
-| 2.7.0 | 3.7.0 | v2.7.0 |
+| 2.8.0 | 3.8.0 | v2.8.0 |
 
 ## Docs
 

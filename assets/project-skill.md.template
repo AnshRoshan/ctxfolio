@@ -1,9 +1,9 @@
 ---
-name: project-context
+name: ctxfolio
 description: Route this project's tasks through its local context wiki, session cursor and evidence-backed owner pages before reading source.
 ---
 
-# Project Context
+# Ctxfolio
 
 Resolve paths from the project root, not from this skill folder. Read `AGENTS.md`, `context/index.md`, then `memory.md` and `context/progress-tracker.md`. Run `node context/ctx.mjs brief <task files or keywords> --budget 6000` and read returned TL;DR sections first. Verify stale or inferred claims against their named sources.
 

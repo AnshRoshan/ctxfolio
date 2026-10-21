@@ -155,7 +155,7 @@ export function startLiveFacts(): void {
   const release = document.getElementById("release-chip");
   const ci = document.getElementById("ci-chip");
   const base = "https://img.shields.io/github";
-  const repo = "AnshRoshan/project-context-system";
+  const repo = "AnshRoshan/ctxfolio";
 
   if (release) {
     fetch(`${base}/v/release/${repo}.json`)

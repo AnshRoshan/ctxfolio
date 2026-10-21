@@ -794,7 +794,7 @@ test('install ships the skill files and keeps repo dev history behind', (dir) =>
   const dest = path.join(dir, 'skillhome');
   const r = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
   assert(r.code === 0, `install failed: ${r.out}`);
-  const root = path.join(dest, 'project-context-system');
+  const root = path.join(dest, 'ctxfolio');
   for (const f of ['SKILL.md', 'scripts/ctx.mjs', 'references/operations.md', 'assets/AGENTS.md.template']) {
     assert(fs.existsSync(path.join(root, f)), `${f} not installed`);
   }
@@ -823,7 +823,7 @@ test('install refuses a symlinked destination', (dir) => {
   fs.mkdirSync(dest, { recursive: true });
   fs.mkdirSync(outside, { recursive: true });
   try {
-    fs.symlinkSync(outside, path.join(dest, 'project-context-system'), process.platform === 'win32' ? 'junction' : 'dir');
+    fs.symlinkSync(outside, path.join(dest, 'ctxfolio'), process.platform === 'win32' ? 'junction' : 'dir');
   } catch (e) {
     const skip = new Error(`native link privilege unavailable (${e.code}); no success simulated`);
     skip.nativeSkip = true;
@@ -836,7 +836,7 @@ test('install refuses a symlinked destination', (dir) => {
 
 test('install stages a full tree, removes stale files and backs up local edits', (dir) => {
   const dest = path.join(dir, 'skillhome');
-  const root = path.join(dest, 'project-context-system');
+  const root = path.join(dest, 'ctxfolio');
   const first = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
   assert(first.code === 0, `install failed: ${first.out}`);
   fs.writeFileSync(path.join(root, 'obsolete.txt'), 'old copy\n');
@@ -844,19 +844,19 @@ test('install stages a full tree, removes stale files and backs up local edits',
   const again = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
   assert(again.code === 0 && again.out.includes('backup:'), `re-install failed:\n${again.out}`);
   assert(!fs.existsSync(path.join(root, 'obsolete.txt')), 'a file dropped from SHIP survived reinstall');
-  assert(fs.readFileSync(path.join(root, 'SKILL.md'), 'utf8').includes('project-context-system'), 'new tree was not published');
+  assert(fs.readFileSync(path.join(root, 'SKILL.md'), 'utf8').includes('ctxfolio'), 'new tree was not published');
   const backups = fs.readdirSync(dest).filter((f) => f.includes('.ctx-backup-'));
   assert(backups.length === 1, `expected one install backup, got ${backups.join(', ')}`);
   assert(fs.readFileSync(path.join(dest, backups[0], 'SKILL.md'), 'utf8') === 'LOCAL EDIT\n', 'local edit was not preserved in the backup');
   const manifest = JSON.parse(fs.readFileSync(path.join(root, '.ctx-install.json'), 'utf8'));
-  assert(manifest.name === 'project-context-system' && manifest.version && manifest.checksum && manifest.files.includes('SKILL.md'), 'install manifest is incomplete');
+  assert(manifest.name === 'ctxfolio' && manifest.version && manifest.checksum && manifest.files.includes('SKILL.md'), 'install manifest is incomplete');
 });
 
 test('install --dry-run writes nothing', (dir) => {
   const dest = path.join(dir, 'dry-home');
   const r = sh('node', [CTX_SRC, 'install', '--dest', dest, '--dry-run'], dir);
   assert(r.code === 0 && /would install/.test(r.out), `dry-run failed:\n${r.out}`);
-  assert(!fs.existsSync(path.join(dest, 'project-context-system')), 'dry-run created the target');
+  assert(!fs.existsSync(path.join(dest, 'ctxfolio')), 'dry-run created the target');
 });
 
 test('setup backs up a changed CLI and migrates the config schema', (dir) => {

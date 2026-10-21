@@ -1,4 +1,4 @@
-# Install
+# Install Ctxfolio
 
 The skill is three things you can install independently:
 
@@ -12,23 +12,40 @@ Enable Developer Mode or obtain the create-symbolic-link privilege before clonin
 
 New setup enables local Git `core.symlinks=true` and fails clearly if native creation is denied. It never silently substitutes junctions or regular files. `--portable-pointers` explicitly opts out for a fresh/legacy project; it is not a reverse migration for an installed/pending symlink layout.
 
+## Recommended: npm
+
+From your project root, run the pinned release:
+
+```bash
+npx ctxfolio@3.8.0 setup
+```
+
+For a global CLI:
+
+```bash
+npm install -g ctxfolio@3.8.0
+ctx setup
+```
+
+The [ctxfolio npm package](https://www.npmjs.com/package/ctxfolio) provides `ctx` and the scaffold assets with zero npm runtime dependencies. Setup creates a project-local routing skill; global skill installation is optional. npm package 3.8.0 maps to skill/CLI 2.8.0.
+
 ## 1. The skill
 
-**From a GitHub link (recommended):** paste this to your agent —
+**From a GitHub link:** paste this to your agent —
 
-> Clone `https://github.com/AnshRoshan/project-context-system`, run `node <clone>/scripts/ctx.mjs install` to install it as a skill for my agent tool, then use it to set up this repository.
+> Clone `https://github.com/AnshRoshan/ctxfolio`, run `node <clone>/scripts/ctx.mjs install` to install it as a skill for my agent tool, then use it to set up this repository.
 
 Or do the same by hand:
 
 ```bash
-git -c core.symlinks=true clone https://github.com/AnshRoshan/project-context-system
-node project-context-system/scripts/ctx.mjs install              # auto-detects ~/.claude / ~/.qoder
-node project-context-system/scripts/ctx.mjs install --tool claude  # ~/.claude/skills/project-context-system
-node project-context-system/scripts/ctx.mjs install --tool qoder   # ~/.qoder/skills/project-context-system
-node project-context-system/scripts/ctx.mjs install --dest <skills-parent-dir>
+git -c core.symlinks=true clone https://github.com/AnshRoshan/ctxfolio
+node ctxfolio/scripts/ctx.mjs install              # ~/.agents/skills/ctxfolio
+node ctxfolio/scripts/ctx.mjs install --tool claude  # ~/.claude/skills/ctxfolio
+node ctxfolio/scripts/ctx.mjs install --tool qoder   # ~/.qoder/skills/ctxfolio
+node ctxfolio/scripts/ctx.mjs install --dest <skills-parent-dir>
 ```
 
-`install` copies only the shippable skill (`SKILL.md`, `references/`, `assets/`, `scripts/`) — the repo's dev history (CHANGELOG, tests, README) stays in the repo. `--dest` names the **parent skills directory**; the installer appends `project-context-system`.
+`install` copies only the shippable skill (`SKILL.md`, `references/`, `assets/`, `scripts/`) — the repo's dev history (CHANGELOG, tests, README) stays in the repo. `--dest` names the **parent skills directory**; the installer appends `ctxfolio`.
 
 Re-runs stage a fresh SHIP-only tree, write `.ctx-install.json`, rename an existing install to a reported `.ctx-backup-*` sibling, then rename the stage into place. Old local edits survive in the backup; stale files do not carry into the new install. The manifest records local install time, CLI version, file paths and a checksum of `SKILL.md` only — not authenticated upstream provenance or a checksum of every shipped file.
 
@@ -37,26 +54,26 @@ These are two renames, not a crash-atomic directory exchange: interruption can l
 Claude Code (personal):
 
 ```bash
-node project-context-system/scripts/ctx.mjs install --tool claude
+node ctxfolio/scripts/ctx.mjs install --tool claude
 ```
 
 Qoder CLI (personal):
 
 ```bash
-node project-context-system/scripts/ctx.mjs install --tool qoder
+node ctxfolio/scripts/ctx.mjs install --tool qoder
 ```
 
 Project-level (any tool that reads `skills/*/SKILL.md`):
 
 ```bash
-node project-context-system/scripts/ctx.mjs install --dest /path/to/your-project/.claude/skills
+node ctxfolio/scripts/ctx.mjs install --dest /path/to/your-project/.claude/skills
 ```
 
 As a plugin (bundles the skill and keeps it updatable):
 
 ```bash
-/plugin marketplace add AnshRoshan/project-context-system
-/plugin install project-context-system
+/plugin marketplace add AnshRoshan/ctxfolio
+/plugin install ctxfolio
 ```
 
 ## 2. The CLI
@@ -64,13 +81,13 @@ As a plugin (bundles the skill and keeps it updatable):
 Run it straight from the skill — no install step, no dependencies:
 
 ```bash
-node /path/to/project-context-system/scripts/ctx.mjs --help
+node /path/to/ctxfolio/scripts/ctx.mjs --help
 ```
 
 Or put it on your PATH by copying it somewhere in it and marking it executable:
 
 ```bash
-install -m 755 /path/to/project-context-system/scripts/ctx.mjs ~/.local/bin/ctx
+install -m 755 /path/to/ctxfolio/scripts/ctx.mjs ~/.local/bin/ctx
 ctx --help
 ```
 
@@ -80,7 +97,7 @@ ctx --help
 
 ```bash
 cd /path/to/your-project
-node /path/to/project-context-system/scripts/ctx.mjs setup
+node /path/to/ctxfolio/scripts/ctx.mjs setup
 ```
 
 Setup defaults to a populated standard scaffold; `--lite` reduces the wiki and `--full` adds detected profile extras and a source-census map draft. It creates canonical .agents resources, real native links, central Cursor views and a project-local routing skill, then runs catalog/doctor wiring checks. Existing authored files are preserved. Tier and host commands: [reference](references/scale-and-hosts.md). Optional:
@@ -138,7 +155,7 @@ want to stop maintaining — there is no registry, no daemon, no hidden state:
 rm -rf context/ AGENTS.md CLAUDE.md CLAUDE.local.md memory.md
 ```
 
-The `.gitignore` entries added by `init` are marked `# project-context-system` and
+The `.gitignore` entries added by `init` are marked `# ctxfolio` and
 are safe to delete by hand. Removing the plugin does not touch projects already
 scaffolded; that is deliberate — your project's wiki is yours, not the skill's.
 

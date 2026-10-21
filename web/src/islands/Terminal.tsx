@@ -130,7 +130,7 @@ export default function Terminal() {
 
       <div className="border-t border-con-line px-4 py-2.5" style={{ backgroundColor: "var(--c-con-2)" }}>
         <p className="font-mono text-[10.5px] leading-relaxed text-con-fg-2">
-          Current <a href="https://github.com/AnshRoshan/project-context-system/blob/main/references/ctx-cli.md">CLI contract</a>: commands with --json emit command and ok. ok is a health signal, not correctness proof.
+          Current <a href="https://github.com/AnshRoshan/ctxfolio/blob/main/references/ctx-cli.md">CLI contract</a>: commands with --json emit command and ok. ok is a health signal, not correctness proof.
         </p>
       </div>
     </div>
