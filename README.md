@@ -73,9 +73,18 @@ index · log · new · archive           catalog, timeline, page scaffolds, grow
 doctor · install · hook               wiring checks, skill installer, Claude hooks
 adapters [--check] [--migrate]          recorded layout refresh and central metadata views
 symlinks [--check] [--migrate]          real relative link audit/migration and local Git configuration
+facts [--write] · quarantine · ingest  derived metadata and hash-bound raw-source governance
+eval · evalpack · query file · adr     routing measurements, evidence packets, filed answers, decision lifecycle
+capture digest|approve|promote         metadata-only digest and explicit draft promotion
+hosts · check · symbols · search       declared compatibility, portable checks and derived tooling
+mcp · team · cursor --agent ID          read-only protocol tools and explicit team cursor ownership
 ```
 
 Read-only commands speak `--json` (`{command, ok}`) for scripts and CI. Configured Claude hooks provide orientation reminders and limited working-tree bookkeeping checks; see the [hook contract and bypass limits](references/safety-permissions.md#hooks-shipped-with-this-skill-v2).
+
+## Measured evidence and limits
+
+The frozen ten-question routing fixture is measured by `ctx eval`, not an LLM judge. Its current result is **hit@8 1.0, precision 0.15**; see [routing output](context/evals/routing-result.json). These measure whether expected pages were retrieved, not answer correctness, billed tokens or savings. The actual ten-question cold-start run was independently graded **8 correct and 2 partial**; see [raw answers](context/evals/cold-start-reader.json), [grades](context/evals/cold-start-grades.json), and [testing evidence](context/testing.md#verification-evidence). This is one reader/grader pair with concurrent-checkout limits; unavailable token/cost fields remain unknown. No matched with/without-wiki baseline was run, so this project does not claim measured token savings or generalized task-success improvements.
 
 ## The five laws
 

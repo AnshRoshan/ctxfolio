@@ -1,0 +1,24 @@
+---
+title: Shared Issues
+type: tracker
+status: active
+summary: Sanitized actionable issues with source and verification pointers; private diagnostics stay local
+tags: [issues]
+updated: {{TODAY}}
+---
+
+# Shared Issues
+
+## TL;DR
+
+- Record only sanitized actionable summaries here; never paste raw logs, tokens, accounts or private paths.
+- Keep private reproduction details in ignored context/issues.local.md; legacy context/current-issues.md stays local.
+- Link reproduction and verification evidence; unknowns are not conclusions.
+
+## Open issues
+
+No recorded shared issues.
+
+## Record format
+
+For each issue name its status (open, analyzing, approved, fixing, pending verification, resolved), sanitized symptom, suspected project-relative path, fix direction, definition of success, and source/check evidence pointer. Preserve unresolved issues at handoff; do not duplicate this queue in memory.

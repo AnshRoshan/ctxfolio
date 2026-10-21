@@ -10,9 +10,8 @@ updated: {{TODAY}}
 # Environment Variables
 
 ## TL;DR
-Names and meaning only. Humans create and manage `.env*`; secrets never enter chat or this file. Reuse existing names — never invent a parallel one.
+Names and meaning only. Humans create and manage `.env*`; never read those files or put secrets in chat or this page. Reuse names verified in source or non-secret documentation; never invent a parallel one. Record verified none/N/A with its source when no variables apply.
 
-| Name | Purpose | Scope | Required | Where read |
+| Existing name | Purpose | Scope | Required / default behavior | Where read |
 |---|---|---|---|---|
-| {{DATABASE_URL}} | {{Postgres connection}} | {{server}} | {{yes}} | {{src/db/index.ts}} |
-| {{NEXT_PUBLIC_APP_URL}} | {{public base URL}} | {{client+server}} | {{no}} | {{...}} |
+| {{Existing variable name or verified none/N/A}} | {{Purpose}} | {{CLI process / library caller / client / server, as applicable}} | {{Requirement and non-secret fallback behavior}} | {{Source path and symbol or evidence for none}} |

@@ -25,7 +25,7 @@ Test deny rules with a dummy `.env` containing no secrets, not a production file
 ## Secrets
 - Humans create and manage `.env` / `.env.local`. "We don't want the agent to handle our environment variables."
 - "You don't want to paste the secret into the chat... we'll never tell it to Claude." Reference env var *names* in context files, never values.
-- `context/current-issues.md` gitignored: a pasted stack trace once exposed a JWT on GitHub and got flagged by the code reviewer. Cleared before merges.
+- Private diagnostics belong in gitignored context/issues.local.md; legacy context/current-issues.md stays ignored. Shared context/issues.md contains explicitly sanitized summaries only. Never auto-copy private queues into tracked pages; ignore rules cannot erase already tracked history.
 - Production keys swapped only at deploy time; never in any committed file.
 
 ## Skills, plugins, MCPs

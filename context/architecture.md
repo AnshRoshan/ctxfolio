@@ -6,13 +6,14 @@ summary: Component roles, compilation flow and system invariants; file policy, r
 tags: [architecture,components,boundaries]
 covers: [scripts/**, assets/**, references/**, tests/**, SKILL.md]
 updated: 2026-10-21
-confidence: verified
-verified_at: ef2b0df59c6a
+confidence: inferred
 ---
 
 # Architecture
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Current claims remain inferred, not finally verified. Source: scripts/ctx.mjs profile/scaffold flow; existing Evidence section.
 
 - The skill compiles project-local knowledge and shared agent resources into routable markdown and native host adapters.
 - Canonical instruction bodies and native discovery views are separate; configuration formats are not shared across hosts.
@@ -36,7 +37,7 @@ Runtime requirements and installed versions are declared in package.json/manifes
 ## Compilation and lookup flow
 
 1. Project manifests feed profile detection and select applicable scaffold inputs.
-2. Setup creates missing owner pages and canonical resources; human/source-derived content stays in its selected owner.
+2. Setup creates missing owner pages and canonical resources under lite/standard/full tier selection; existing human content stays at its owner. Only explicit full setup drafts a source census map; standard keeps a populated starter map.
 3. Compatible native entrypoints/resource folders become real relative symlinks to canonical owners. Cursor metadata is generated once in a central view directory and directory-linked; checks compare both physical link targets and generated metadata.
 4. Page frontmatter generates the catalog; task routing selects relevant pages and evidence review needs.
 5. Git paths and covers globs identify affected owner pages. The main writer updates those owners; the next session resumes through pointers.
@@ -53,6 +54,7 @@ Runtime requirements and installed versions are declared in package.json/manifes
 - Roadmap numeric IDs reserve the spec queue. `new feature` and `task add` only claim a reserved ID deliberately, and lint keeps roadmap, spec and tracker states coherent with required Wave 0 sections.
 - Router backticks and `related:` edges must resolve. Shipped routing templates point only at always-created pages; optional contract/UI/ops pages are discovered through the catalog.
 - App-source inventory/counting and explicitly covered materials are distinct: docs/reference examples are not app sources, but their declared owners still require review. Human dates use the local calendar; archive inputs validate before mutation and log heading/metadata publish together.
+- Resume-cursor liveness is a read-only advisory, separate from code-page staleness and provenance. Repository history or reliable pending paths can flag a recorded claim; local edits and lack of warnings never grant verification.
 - Code intelligence tools are optional producers of evidence, not required stores or permission boundaries.
 
 ## Evidence

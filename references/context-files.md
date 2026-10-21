@@ -1,6 +1,6 @@
 # Context Files - per-file content spec
 
-> v2: every file under `context/` (except raw/, designs/, screenshots/, archive/, index.md, log.md, current-issues.md) is a **page** with frontmatter and a `## TL;DR` — see `page-format.md`. New files are listed in the "v2 files" section at the bottom. The folder is entered through `context/index.md`, not read wholesale.
+> v2: every file under `context/` (except raw/, designs/, screenshots/, archive/, index.md, log.md, issues.local.md, current-issues.md) is a **page** with frontmatter and a `## TL;DR` — see `page-format.md`. New files are listed in the "v2 files" section at the bottom. The folder is entered through `context/index.md`, not read wholesale.
 
 Read routed pages, not the entire folder. The scaffold's authoritative responsibility map is `context/ownership.md`, generated from [ownership.md.template](../assets/ownership.md.template); this reference explains page shape without creating another project fact inventory. Every substantive fact belongs at one owner; other files link to it.
 
@@ -37,8 +37,8 @@ The decision log. One entry per hard technical decision, format in recording-wor
 ## progress-tracker.md
 The sole current task ledger: **In progress · Blocked · Up next · Completed**. Store task identity, state, blockers and dated verification/decision pointers; do not copy permanent version/configuration inventories or session narratives. `ctx task add|start|block|done` moves states; completion details should identify the verified outcome and link its evidence. The roadmap owns order; memory owns only the resume cursor.
 
-## current-issues.md
-The bug queue. Gitignored - pasted errors have leaked JWTs into public repos. Numbered issues: symptom + suspected file + fix direction + definition of success. Cleared/archived before merges.
+## issues.md and issues.local.md
+Shared issues.md holds sanitized actionable symptoms, suspected project paths, fix direction, success conditions and evidence pointers. It survives handoff. Private diagnostic details belong in ignored issues.local.md; legacy current-issues.md remains ignored and preserved in place. Never auto-copy either private queue into tracked pages.
 
 ## feature-specs/
 One file per unit of work, `NN-kebab-case.md`, zero-padded sequence = build order. ~20-30 specs for a full production app is normal. Each spec contains: goal (concrete, measurable), files it touches, exclusions ("do NOT add X, Y, or Z yet - that's the keyword right here"), and a verification checklist ("all components import without errors, no default light styling, build passes, no hardcoded colors"). Backend and UI are separate specs; big features split into 2-3 independent specs that together complete the experience.

@@ -4,22 +4,17 @@ type: decision-log
 status: active
 summary: Every hard technical decision with options, lost alternative, cost and reversibility; plus flagged assumptions
 tags: [decisions,adr,tradeoffs]
-updated: 2026-10-20
-verified_at: 47d649bcfa8c
+updated: 2026-10-21
+confidence: unverified
 ---
-
 # Decisions Log
-
 ## TL;DR
-
+- 2026-10-21 provenance review: legacy checkpoint `47d649bcfa8c` (recorded 2026-10-20) is explicitly unverified; no declared verifier or validity interval is established. Authored records are retained, not reverified. Source: dated decision records below.
 - D-01–D-05 retain the baseline policies. D-06 records the user's single-source ownership requirement and the portable adapter tradeoff.
 - D-07 supersedes the transport part of D-06 with real relative aliases. D-08 orders the Phase 4 spec queue with provenance before capture; D-09 keeps evals deterministic and zero-dependency; D-10 requires a measurement source for every committed number. D-11 records the two version tracks; D-12 fixes human-facing dates to the local calendar day. F-01 flags the appended Wave 0 numbering.
 - Reversibility: D-01/D-03/D-04 are painful-to-easy policy anchors — changing one needs a new D entry that supersedes it, not an edit.
-
 One entry per hard technical decision, written the moment it is made. Not buried in code, not lost in chat — written down where the human can see it and overrule it.
-
 Current working policy lives in AGENTS.md; system structure lives in architecture.md. Entries below record rationale and dated decisions, not a parallel settings/architecture file.
-
 ## Record format
 
 Decisions use `## D-NN: <title> — <date>` and all seven fields shown in D-11. Undecided assumptions use `## F-NN: <title> — <date> (attached to Feature NN)` and name the pending human choice, as in F-01.
@@ -149,6 +144,15 @@ Lost alternative: hard-failing cursor checks or silently discarding covered docu
 Cost paid: advisory signals need human reconciliation; local calendar days require timezone/DST checks; cleanup rechecks registration, reachability and tracked/untracked/ignored content before removal.
 Reversibility: easy — archived/worktree history remains in Git; guards can change through a superseding decision rather than a hidden default.
 Correctness policy: bad archive inputs fail before writes; cursor uncertainty never becomes verified/fresh. No automatic cursor update, hidden recording, source-only pending filter or self-verification.
+
+## D-15: Build the remaining queue, then verify the batch — 2026-10-21
+Trigger: the human rejected repeated feature reviews and CI waits as too slow.
+Options considered: continue per-feature review / skip checks entirely / targeted checks while building, one consolidated final review and fix pass.
+Chosen: finish Feature 11, implement 12-29 in dependency order, fix encountered defects during building, and run the full suite/review/corrective pass once at the end.
+Lost alternative: repeated review/CI per unit — excessive overhead prevents timely delivery of the requested complete system.
+Cost paid: implemented units remain awaiting final verification; they stay off main until the batch passes. The tracker separates implementation readiness from verified completion.
+Reversibility: easy — targeted tests and persisted specs remain available; no main history is rewritten.
+Correctness policy: do not skip trust-boundary validation or targeted checks, claim unrun verification, or publish an unverified batch. This supersedes per-unit full-suite/review timing, not safety or dependency ordering.
 
 ## F-01: Appended Wave 0 IDs vs execution order — 2026-10-21 (attached to Features 30-34)
 

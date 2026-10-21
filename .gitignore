@@ -4,6 +4,8 @@
 .env.*
 !.env.example
 context/current-issues.md
+context/issues.local.md
+!context/issues.md
 CLAUDE.local.md
 .claude/settings.local.json
 node_modules/

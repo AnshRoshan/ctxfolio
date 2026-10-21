@@ -7,12 +7,14 @@ tags: [frontmatter, glob, parsing, reliability]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../decisions.md, ./08-always-green-baseline.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Page-Contract Integrity
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: every page contract either parses into exactly the values the author wrote or reports a named error; a `covers:` glob never crashes a command.
 - Boundary: `parseFrontmatter`, `globToRegex`, and the `pages()` / `lint` / `brief` paths that consume them. No new frontmatter types, no route lint, no retrieval scoring.

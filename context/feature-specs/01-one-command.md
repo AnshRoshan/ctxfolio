@@ -5,13 +5,15 @@ status: complete
 summary: v2.2 — ctx setup as the single idempotent, upgrade-safe entry point with rules, agent memory and Lessons
 tags: [one-command, setup, v2.2]
 covers: []
-updated: 2026-10-06
-verified_at: 080a7adb7826
+updated: 2026-10-21
+confidence: unverified
 ---
 
 # One-Command Setup (v2.2)
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `080a7adb7826` (recorded 2026-10-06) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: historical checklist and ../testing.md#verification-evidence.
 - Goal: one command does everything mechanical, greenfield or brownfield; re-running never harms, upgrading is just re-running.
 
 ## What to build

@@ -70,6 +70,10 @@ jobs:
         run: node tests/check-baseline.mjs
       - name: Check current documentation and demo truth boundaries
         run: node tests/check-truth.mjs
+      - name: Gate frozen deterministic routing evaluation
+        run: node context/ctx.mjs eval --json
+      - name: Verify scaffold host index MCP and team flows
+        run: node tests/features22-29.mjs
 
   # A scaffold has intentional placeholders, never structural errors.
   scaffold-lint:

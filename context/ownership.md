@@ -46,7 +46,7 @@ updated: 2026-10-21
 | External integration behavior and failure policy | `context/integrations.md` when applicable and present; otherwise the relevant module | Generic library installation notes |
 | Shared terminology | `context/glossary.md` | Conflicting definitions in other pages |
 | Design values, interaction rules, component catalog | `context/ui-tokens.md`, `ui-rules.md`, `ui-registry.md`, respectively, when applicable and present; otherwise the relevant module and configured source | Repeated values in instructions or modules |
-| Active bugs | `context/current-issues.md` | Duplicated issue lists in memory |
+| Active sanitized bugs | `context/issues.md`; private diagnostics stay in ignored `context/issues.local.md`, legacy `current-issues.md` remains local | Raw private logs in shared wiki; duplicated issue lists in memory |
 | Agent role definitions, rule routing, reusable project skills | `.agents/agents/`, `.agents/rules/`, `.agents/skills/`, respectively | Editable host-specific copies of these resources |
 | Native discovery aliases and Cursor-only metadata | Real relative symlinks; Cursor views once in `.agents/views/cursor/rules` with project-root `ctx_source` | Copied agent bodies or independently edited native metadata |
 | Subagent experience leads | `context/agents/<name>/MEMORY.md`, linking verified owner pages | A second store of system contracts |

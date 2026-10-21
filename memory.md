@@ -1,33 +1,22 @@
 # Memory
 
-Resume cursor, not a second wiki or task ledger. Keep under ~60 lines. Link facts/evidence at their owners; history belongs in context/log.md.
-
-_Last updated: 2026-10-21, during Feature 10 final verification_
+_Last updated: 2026-10-21, all roadmap units locally verified; final batch publication gate_
 
 ## Current state
 
-14 numbered features are complete: 01-09 and 30-34. Feature 10 is In progress on `feat/10-cli-housekeeping`; 11-29 remain queued. Main at ef2b0df is CI-green and carries the deployed truth repair. Release v2.7.0 is published. Evidence: [testing](context/testing.md#verification-evidence). [Feature 10](context/feature-specs/10-cli-honesty-housekeeping.md) source/tests are implemented, copied CLI parity is verified, 15 focused regressions passed, and the approved clean legacy worktree was safely removed through Git. Current Feature 09 closure/D-14/Feature 10 work is uncommitted.
+All 34 numbered features are implemented and locally verified. [Tracker](context/progress-tracker.md) records individual completion/evidence. Prior main commit 369acde is published and green; the remaining integrated batch is not yet remotely published. Local full CLI suite: 192 passed, 0 failed, 0 skipped. Scale/host/MCP/team checks: 18 passed. Syntax, copied-CLI parity, strict lint/stale, coverage, doctor, truth/baseline/version guards passed. Actual cold-start evaluation: 8 correct and 2 partial out of 10, one independent reader/grader pair, with unavailable usage and concurrent-checkout limits. Evidence: [testing](context/testing.md#verification-evidence).
 
 ## Exact next step
 
-Collect the existing final full-suite job `pwsh-d2e5d5a1535a4741` (do not duplicate it). The earlier full run loaded an obsolete midnight test instant and reported 146 passed/1 failed; that fixture is corrected, its targeted 15-test filter passed, and this final rerun owns the integrated result. Verify all truth/baseline/version and strict lint/stale/doctor gates; record the measured final count. Then commit/push Feature 10 on a `ci/` validation branch, verify actual CI, fast-forward main only when green, close the unit, and begin Feature 11.
+Regenerate the final catalog and explicit facts block after this cursor is written. Commit the integrated batch once on a candidate branch, push `ci/final-roadmap-batch`, collect the actual supported-matrix/scale/routing/self-context CI run, and promote to main only after successful checks. No additional review round or per-feature full-suite cycle: D-15's consolidated review/fix pass is complete. Fix actual CI failures if they appear; do not claim remote success from local results.
 
-## Working set
+## Evidence and limits
 
-- Roadmap: [build plan](context/build-plan.md); ledger: [progress tracker](context/progress-tracker.md).
-- Human choices: [decisions](context/decisions.md) D-12 local calendar dates and D-14 conservative archive/count/cursor/worktree defaults.
-- Source: scripts/ctx.mjs (`isSourcePath`, `impactData`, `archiveWindow`, `today`, `commands.log`, continuation-aware `upsertFm`); public contract: references/ctx-cli.md.
-- Tests: 15 appended Feature10 regressions; no new framework or production clock backdoor. Advancing-clock fixture uses 18:29Z (23:59 IST), not the earlier 17:29Z typo.
-- Writer/reviewer finished. No remaining source-review blocker. Preserve explicit covered documentation/raw review while excluding examples from app-source counts.
+- [Routing result](context/evals/routing-result.json): hit@8 1.0, precision 0.15; character/4 estimates, not measured model usage.
+- [Cold-reader answers](context/evals/cold-start-reader.json) and [independent grades](context/evals/cold-start-grades.json): 8 correct, 2 partial, no wrong/not-found. No measured token savings, matched baseline or generalized task-success claim.
+- [Derived facts](context/facts.md) is a generated source-backed owner. Refresh only explicitly; local authorship/verifier labels are declarations, not authentication.
+- MCP evidence is bounded local initialized stdio exchange, not every native host live loader. Locks remain advisory; install's two-rename swap is recoverable, not crash-atomic exchange.
 
-## Upcoming Feature 11 contract
+## Recovery
 
-Use a shared read-only advisory for status/brief/session-start based on committed memory history and reliable project-scoped Git status. Dirty/unavailable cursor state never means fresh/verified. Recognize a narrow current-state pending claim, not arbitrary history/prose. No hidden writes or provenance/self-verification; Feature 16 owns those. D-14 already records approved conservative policy. Create its spec only after Feature 10 closes.
-
-## Remaining knowledge
-
-Feature 12's minimal gate change adds cli/library eligibility only for API/env/runbook under existing full predicates, with neutral CLI/library templates. Do not broaden no-detect/full semantics or unrelated UI/DB pages; tiers belong Feature 22. Source filing, host survey and real routing/cold-start evidence remain queued.
-
-## Recovery and limits
-
-Ignored CLI recovery files retain prior bytes; do not publish/delete them as feature output. Git retains the removed legacy worktree's reachable history. Published main/tag history is never rewritten. Install's two-rename publication is recoverable, not crash-atomic; locks coordinate cooperating writers; hooks/doctor are bookkeeping, not semantic/live-host enforcement proof.
+Ignored CLI backup files retain prior bytes. The safely removed legacy worktree's reachable history remains in Git. Published main/tag history is never rewritten. Release v2.7.0 remains unchanged; post-release capabilities are recorded under Unreleased until a separately authorized release.

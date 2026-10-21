@@ -1,0 +1,166 @@
+{
+  "results": {
+    "where-cli": {
+      "answer": {
+        "observed": "The portable CLI implementation is scripts/ctx.mjs; package main/bin point there. context/ctx.mjs is the project-local generated copy. Setup invokes init, which backs up differing project CLI bytes and atomically replaces them with its own source bytes. The copies differed at my inspection; the parent subsequently reported refreshing parity.",
+        "approvedIntent": "Change the implementation source, refresh project copies using the skill's setup command from the project root, and verify parity.",
+        "unknowns": "I did not run setup or independently verify the parent's subsequent refresh."
+      },
+      "citations": [
+        "[Code map](<context/codebase/map.md#L18-L20>)",
+        "[Copy refresh implementation](<scripts/ctx.mjs#L3541-L3549>)",
+        "[Package entrypoints](<package.json#L7-L10>)"
+      ],
+      "filesOpened": ["context/codebase/map.md", "scripts/ctx.mjs", "context/ctx.mjs", "package.json"]
+    },
+    "where-tests": {
+      "answer": {
+        "observed": "Executable behavior checks are in tests/run.mjs, using disposable Git projects and their copied CLI. Its substring filter supports focused checks; it imports batch17-21.mjs. features22-29.mjs is a separate functional suite. CI declares CLI/harness syntax checks, the full suite, strict wiki lint/stale, doctor, version/baseline/truth checks, deterministic evaluation, and the separate functional suite.",
+        "approvedIntent": "Run node tests/run.mjs <filter> for focused behavior checks. D-15 consolidates the remaining batch's full verification/review/correction once. Testing owns commands and evidence. The CLI has no build/typecheck step.",
+        "unknowns": "No tests or evaluation were executed by this reader. Declared CI commands and historical passing results do not certify this integrated batch."
+      },
+      "citations": [
+        "[Testing commands and conventions](<context/testing.md#L14-L34>)",
+        "[Harness](<tests/run.mjs#L20-L83>)",
+        "[Batch registration](<tests/run.mjs#L2678-L2679>)",
+        "[Functional suite](<tests/features22-29.mjs#L8-L26>)",
+        "[CI gates](<.github/workflows/ci.yml#L32-L76>)",
+        "[D-15](<context/decisions.md#L153-L160>)"
+      ],
+      "filesOpened": ["AGENTS.md", "context/testing.md", "context/decisions.md", "tests/run.mjs", "tests/batch17-21.mjs", "tests/features22-29.mjs", "package.json", ".github/workflows/ci.yml", "web/package.json"]
+    },
+    "where-owners": {
+      "answer": {
+        "observed": "Ownership routes project facts to distinct homes: overview for scope, build-plan for sequence, specs for feature intent/acceptance, tracker for task state, memory for resume instructions, decisions for rationale, architecture for boundaries, modules for area contracts, map for navigation, testing for checks/evidence, manifests for versions. AGENTS.md owns shared instructions. .agents/agents, rules and skills own editable resource bodies; native adapters alias them. Cursor metadata has one generated central view; native settings remain host-owned.",
+        "approvedIntent": "One fact, one owner; other artifacts link rather than independently duplicate it.",
+        "unknowns": "The ownership page still names current-issues.md as active-bug owner, whereas newer operations/current scaffold use shared issues.md and ignored private issues.local.md, retaining current-issues locally. This is a documentation conflict. Live host discovery was not tested."
+      },
+      "citations": [
+        "[Ownership contract](<context/ownership.md#L18-L58>)",
+        "[Canonical resources](<.agents/README.md#L3-L11>)",
+        "[Native aliases](<scripts/ctx.mjs#L2210-L2227>)",
+        "[New issue policy](<references/operations.md#L27>)",
+        "[Current scaffold ownership](<scripts/ctx.mjs#L3109>)"
+      ],
+      "filesOpened": ["AGENTS.md", "context/ownership.md", ".agents/README.md", "scripts/ctx.mjs", "references/operations.md"]
+    },
+    "flow-setup": {
+      "answer": {
+        "observed": "Run the skill's own setup command from the existing project root because it needs assets. Setup calls init, index and doctor. Init preflights lexical/real containment, creates missing tier/profile-selected owners/resources, preserves existing authored files and legacy conflicts, merges missing ignore lines, and refreshes the copied CLI with backup. Current default is standard tier; only full tier drafts the brownfield map, and only over a pristine template, not partially authored content. Unknown config keys survive migration.",
+        "approvedIntent": "The agent then establishes approved goals, verifies source/tool evidence, fills owners and routing, and keeps unsupported claims inferred. Mechanical setup is not application verification or permission to invent facts.",
+        "unknowns": "No setup was executed here. Older setup descriptions omit the new full-tier map gate; final integrated tier verification remains pending."
+      },
+      "citations": [
+        "[Setup and map preservation](<scripts/ctx.mjs#L3209-L3297>)",
+        "[Preflight and existing-file preservation](<scripts/ctx.mjs#L3353-L3435>)",
+        "[Tier defaults](<scripts/ctx.mjs#L3098-L3118>)",
+        "[Config migration](<scripts/ctx.mjs#L3439-L3477>)",
+        "[Preservation regression definitions](<tests/run.mjs#L629-L656>)"
+      ],
+      "filesOpened": ["context/architecture.md", "scripts/ctx.mjs", "tests/run.mjs", "tests/features22-29.mjs", "references/operations.md"]
+    },
+    "flow-routing": {
+      "answer": {
+        "observed": "Orient AGENTS → index → memory → tracker skim; route with brief <files-or-keywords> --code-task --budget 6000 --json, then read returned TL;DRs first. rules <files> adds path routes and nested AGENTS. Current routing combines covers matches, Unicode/IDF relevance, code-task historical discount and bounded one-hop relations. Default limit is eight, but no finite budget exists unless specified. Mandatory orientation counts against the budget. Inspect skipped, blindSpots, routingErrors and verificationRequired. Dirty/stale/inferred/unfilled claims, missing confidence/provenance, invalid checkpoints and raw-propagation warnings require source verification.",
+        "approvedIntent": "Stop at the first sufficient disclosure level. Trust warnings trigger verification, not automatic hiding or automatic trust. Respect scope; read workflow/standards before edits; read-only suppresses recording.",
+        "unknowns": "Routing token costs are character/4 estimates, not measured model usage. The older routing reference omits current IDF/history changes. My routing output was not clean, so relevant source was checked."
+      },
+      "citations": [
+        "[Orientation policy](<AGENTS.md#L7-L35>)",
+        "[Disclosure and budget guidance](<references/context-routing.md#L5-L43>)",
+        "[Current routing](<scripts/ctx.mjs#L1225-L1352>)",
+        "[Provenance warnings](<scripts/ctx.mjs#L922-L942>)",
+        "[Path routes](<scripts/ctx.mjs#L3300-L3333>)"
+      ],
+      "filesOpened": ["AGENTS.md", "context/index.md", "memory.md", "context/progress-tracker.md", "references/context-routing.md", "scripts/ctx.mjs", "context/workflow-rules.md"]
+    },
+    "invariant-writes": {
+      "answer": {
+        "observed": "Atomic writes use exclusive same-directory temporary files, write/fsync/close, then rename; caught failures clean temporary files. Cooperating core read-modify-write commands serialize with a real-root-keyed external advisory lock, including internally called index operations and reentrant calls. Stale recovery preserves live/permission-protected owners; release checks ownership. Archive retries deduplicate exact normalized blocks/lines.",
+        "approvedIntent": "Each published file is complete old or complete new bytes; cooperating locked writers avoid lost updates; archive replay avoids exact duplicate history.",
+        "unknowns": "This is not a multi-file snapshot, power-loss guarantee, or protection against human/non-cooperating writers. Readers remain lock-free. Hard kills can leave recovery artifacts. I inspected implementation and regression definitions but did not run crash/race experiments."
+      },
+      "citations": [
+        "[Atomic writes and locking](<scripts/ctx.mjs#L114-L219>)",
+        "[Internal index lock](<scripts/ctx.mjs#L1795>)",
+        "[Archive deduplication](<scripts/ctx.mjs#L1987-L2000>)",
+        "[Locked dispatch](<scripts/ctx.mjs#L3985-L3990>)",
+        "[Declared limits](<context/feature-specs/31-crash-safe-writes.md#L46-L51>)"
+      ],
+      "filesOpened": ["context/architecture.md", "context/feature-specs/31-crash-safe-writes.md", "context/testing.md", "scripts/ctx.mjs", "tests/run.mjs"]
+    },
+    "invariant-install": {
+      "answer": {
+        "observed": "Install validates the SKILL name, rejects final-component destination symlinks and lexical/real source overlap or ancestors, and copies only SKILL.md/references/assets/scripts through a symlink-refusing walker. Current default/auto destination is shared ~/.agents/skills/<name>; explicit tool/destination choices are supported. It stages a complete sibling tree plus local manifest, backs up the prior tree, then publishes. Caught failure restores only an unoccupied target or reports recovery. Replacement removes stale files; dry-run validates without writes. Setup backs up changed project CLI bytes; config migrations preserve unknown keys.",
+        "approvedIntent": "Separate development repo, installed skill and project output; no development history leaks; preserve local edits and concurrent rollback occupants.",
+        "unknowns": "Two renames are recoverable publication, not crash-atomic directory exchange: a kill can leave the target absent with backup available. The manifest is local provenance, not remote authentication. This is not network fetching/package management or universal installer-race protection."
+      },
+      "citations": [
+        "[Install implementation](<scripts/ctx.mjs#L1113-L1222>)",
+        "[Transaction limits](<context/feature-specs/32-install-transaction.md#L38-L53>)",
+        "[Boundary rationale](<context/decisions.md#L54-L61>)",
+        "[Install/schema regression definitions](<tests/run.mjs#L809-L878>)"
+      ],
+      "filesOpened": ["context/feature-specs/32-install-transaction.md", "context/decisions.md", "context/testing.md", "scripts/ctx.mjs", "tests/run.mjs", "tests/features22-29.mjs"]
+    },
+    "why-no-deps": {
+      "answer": {
+        "observed": "The CLI imports only Node builtins; its root manifest has no npm dependencies and declares Node 22/24. Git supports optional history features. The separate website manifest declares React and Vite/Tailwind-related dependencies and a build script.",
+        "approvedIntent": "D-01 chose self-contained copied tooling to avoid install/node_modules/supply-chain/rot fragility on arbitrary projects and operating systems. This policy concerns the CLI, not a website dependency ban or absence of a website build.",
+        "unknowns": "Old parser/file-size figures in the decision are historical, not current measurements. Website installed versions and build success were not checked."
+      },
+      "citations": [
+        "[D-01](<context/decisions.md#L27-L34>)",
+        "[CLI imports/runtime](<scripts/ctx.mjs#L48-L56>)",
+        "[Library policy boundary](<context/library-docs.md#L12-L17>)",
+        "[Website dependencies/build](<web/package.json#L6-L26>)"
+      ],
+      "filesOpened": ["context/decisions.md", "context/library-docs.md", "scripts/ctx.mjs", "package.json", "web/package.json"]
+    },
+    "next-unit": {
+      "answer": {
+        "observed": "Memory records all 11–29 implementation/preparation integrated on feat/11-resume-cursor, with one consolidated verification/review/fix pass active. Next actions are collecting existing jobs/reviews once, fixing concrete integration failures, refreshing copied tooling, reconciling owners and completing final gates. Tracker lists 11–29 as implemented/prepared awaiting verification; Feature 19 still needs actual reader/grading evidence. Its In progress section is empty, conflicting with the active-work narrative. Observed HEAD was 369acde.",
+        "approvedIntent": "D-15 closes the implemented batch through consolidated verification; units stay incomplete/off main until genuinely verified. Do not choose a new capability instead.",
+        "unknowns": "This reader did not collect parent jobs or establish final suite/CI/grading success. These answers provide reader evidence, not independent grading or Feature 19 completion."
+      },
+      "citations": [
+        "[Resume cursor](<memory.md#L3-L36>)",
+        "[Tracker state](<context/progress-tracker.md#L21-L45>)",
+        "[D-15](<context/decisions.md#L153-L160>)",
+        "[Verification versus checkpoints](<context/testing.md#L58-L60>)"
+      ],
+      "filesOpened": ["memory.md", "context/progress-tracker.md", "context/decisions.md", "context/testing.md", "context/workflow-rules.md", "tests/run.mjs", "tests/batch17-21.mjs", "tests/features22-29.mjs", ".github/workflows/ci.yml"]
+    },
+    "non-scope": {
+      "answer": {
+        "observed": "Explicit exclusions are npm publishing of the copied CLI, daemon/watch mode, databases/backends, IDE plugins, personal-assistant memory trees and automatic placeholder filling from guesses. Roadmap proposals are not blanket authorization. Canonical implementation/resources are source CLI, assets and reusable skill references; owned context pages hold project knowledge, AGENTS shared policy and .agents resource bodies. Copied CLI, catalogs/search indexes/hierarchy and native adapters are derived views. Human docs link owners; logs/archive are history; raw/source material is evidence, not instructions.",
+        "approvedIntent": "Work only on authorized scope and preserve one owner per fact. This experiment permits answers only, with no recording, implementation or network.",
+        "unknowns": "Source inspection does not prove every excluded capability is absent. Issue ownership has the documented conflict noted above; generated or historical success is not current semantic proof."
+      },
+      "citations": [
+        "[Explicit scope and exclusions](<context/overview.md#L38-L46>)",
+        "[Canonical owners and views](<context/ownership.md#L18-L70>)",
+        "[Architecture boundaries](<context/architecture.md#L44-L57>)",
+        "[Read-only override](<AGENTS.md#L35>)",
+        "[Generated project artifacts](<context/codebase/map.md#L70-L72>)"
+      ],
+      "filesOpened": ["AGENTS.md", "context/overview.md", "context/ownership.md", "context/architecture.md", "context/codebase/map.md", "context/feature-specs/32-install-transaction.md", "references/operations.md", "scripts/ctx.mjs", ".agents/README.md"]
+    }
+  },
+  "filesOpenedTotals": {
+    "total": 25,
+    "source": 12,
+    "wiki": 13,
+    "basis": "Unique explicitly inspected project files; repeated reads count once. Source includes code, tests, manifests, CI and canonical instructions/reference resources. Wiki includes context Markdown owners and memory.md. Additional internal filesystem reads by routing commands were not instrumented.",
+    "allInternalFilesystemOpens": null,
+    "sourceFiles": ["AGENTS.md", ".agents/README.md", "package.json", "web/package.json", "references/context-routing.md", "references/operations.md", "scripts/ctx.mjs", "context/ctx.mjs", "tests/run.mjs", "tests/batch17-21.mjs", "tests/features22-29.mjs", ".github/workflows/ci.yml"],
+    "wikiFiles": ["context/index.md", "memory.md", "context/progress-tracker.md", "context/codebase/map.md", "context/ownership.md", "context/architecture.md", "context/testing.md", "context/overview.md", "context/decisions.md", "context/feature-specs/31-crash-safe-writes.md", "context/feature-specs/32-install-transaction.md", "context/workflow-rules.md", "context/library-docs.md"]
+  },
+  "actualHostUsage": {
+    "inputTokens": null,
+    "outputTokens": null,
+    "costUsd": null,
+    "elapsedSeconds": null
+  },
+  "limits": "No project files modified, tests/setup/eval executed, external network used, or actual evaluator question/rubric/expected-path file/TEMP preparation snapshot opened. Current source was checked where wiki claims were stale or lacked verification evidence. The checkout was not frozen against concurrent parent changes. Full self-contained results were sent to the parent agent."
+}

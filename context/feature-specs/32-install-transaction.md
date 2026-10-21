@@ -7,12 +7,14 @@ tags: [install, upgrade, transaction, safety]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../decisions.md, ./31-crash-safe-writes.md, ./33-spec-queue-integrity.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Install Transaction
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: `ctx install` either publishes a complete, validated skill tree or leaves the previous install untouched; `setup` backs up a changed `context/ctx.mjs` before replacing it; `.ctx.json` upgrades migrate forward without dropping unknown keys.
 - Boundary: `install`, the scaffold writes that replace existing files, and `.ctx.json` migration. Core wiki writes already use Feature 31's atomic primitive.

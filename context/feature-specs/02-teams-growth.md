@@ -5,13 +5,15 @@ status: complete
 summary: v2.3 — multi-user ownership model, merge-collision lint, ctx archive rotation, no-leak boundary
 tags: [multi-user, archive, v2.3]
 covers: []
-updated: 2026-10-06
-verified_at: 080a7adb7826
+updated: 2026-10-21
+confidence: unverified
 ---
 
 # Teams and Growth (v2.3)
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `080a7adb7826` (recorded 2026-10-06) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: historical checklist and ../testing.md#verification-evidence.
 - Goal: ten people on ten branches share one wiki without negotiation; hot files stay small forever.
 
 ## What to build

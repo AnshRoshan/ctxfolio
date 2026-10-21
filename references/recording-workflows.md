@@ -32,7 +32,9 @@ Assumed acceptable to ship Feature 12. Nobody has decided this. Needs a real cal
 
 Write the full assumption once as F-NN in decisions.md. The feature and task reference that entry; neither repeats its undecided value or rationale.
 
-## 3. Issue entry (context/current-issues.md)
+## 3. Shared issue entry (context/issues.md)
+
+Sanitize summaries before recording. Raw local diagnostics belong in ignored context/issues.local.md; preserve legacy context/current-issues.md as private scratch, never copy it automatically.
 
 ```markdown
 ## Issue 3 - pending verification
@@ -76,7 +78,7 @@ Run at phase boundaries, before handing off to another agent or human, or when d
 - [ ] Preserve human-written edits; only fill gaps and remove lines no longer true.
 - [ ] Verify progress-tracker states are mutually exclusive (reviewers have caught features listed as both current and complete).
 - [ ] Verify meaningful technical choices link their D-NN records; manifests/library notes own current dependency facts, not a duplicated stack inventory in decisions.
-- [ ] Clear/archive current-issues.md before a merge.
+- [ ] Shared issues.md retains sanitized unresolved issues; issues.local.md and legacy current-issues.md remain ignored and never auto-promoted.
 - [ ] Keep shared behavioral policy in AGENTS.md; link technical choices at their decision owner even when frequently used.
 - [ ] Confirm every context file's claims are still checkable (paths exist, commands run).
 

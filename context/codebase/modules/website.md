@@ -5,14 +5,15 @@ status: active
 summary: The public Vite/React site in web/; configured single-file build and Pages deployment, with observed results owned by testing
 tags: [website, docs, deploy]
 covers: ["web/**"]
-confidence: verified
+confidence: inferred
 updated: 2026-10-21
-verified_at: b7e58d6586c2
 ---
 
 # Website
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `b7e58d6586c2` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Current claims remain inferred, not finally verified. Source: web/package.json, web/vite.config.ts and existing source pointers below.
 
 - The public site lives in `web/`. It is a Vite project. React renders islands only.
 - `web/vite.config.ts` configures `vite-plugin-singlefile` to inline CSS/JS into `web/dist/index.html`; actual build output and deployment checks live in [testing evidence](../../testing.md#verification-evidence).

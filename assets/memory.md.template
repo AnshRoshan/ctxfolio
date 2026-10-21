@@ -8,6 +8,8 @@ _Last updated: {{date, end of session N}}_
 
 {{Where execution paused, plus links to context/progress-tracker.md and the current spec. Do not copy task states, completed-feature lists, architecture or decisions.}}
 
+If you state that Git has no pending changes, use the exact standalone line `Working tree: nothing pending.` only after checking the project working tree. This means no tracked or nonignored untracked changes, not no remaining tasks. Cursor-liveness checks are advisory; local edits, a stamp or a clean check do not prove correctness.
+
 ## Next step
 
 {{The exact unit to start with. E.g. "Feature 02 of Phase 1: authentication — see context/feature-specs/02-auth.md. Begin in plan mode; DB schema change is involved."}}

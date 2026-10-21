@@ -4,13 +4,15 @@ type: glossary
 status: active
 summary: The skill's own vocabulary — one meaning per term across code, templates and docs
 tags: [terminology, domain]
-updated: 2026-10-06
-verified_at: 080a7adb7826
+updated: 2026-10-21
+confidence: unverified
 ---
 
 # Glossary
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `080a7adb7826` (recorded 2026-10-06) is explicitly unverified; no declared verifier or validity interval is established. Authored records are retained, not reverified. Source: authored terminology and code-name pointers below.
 One meaning per term. These words appear in the CLI, the templates and the references — they must stay consistent across all three, or scaffolded projects inherit ambiguity.
 
 | Term | Meaning in this project | Not to be confused with | Code name |

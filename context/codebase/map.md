@@ -7,13 +7,14 @@ tags: [map, structure, entry-points]
 covers: [scripts/ctx.mjs, tests/**]
 related: [../architecture.md]
 updated: 2026-10-21
-confidence: verified
-verified_at: ef2b0df59c6a
+confidence: inferred
 ---
 
 # Codebase Map
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Current claims remain inferred, not finally verified. Source: scripts/ctx.mjs dispatch and source pointers below.
 
 - CLI entrypoint: `scripts/ctx.mjs`; behavior checks: `tests/run.mjs`; development-only baseline/release gates: tests/check-baseline.mjs and tests/check-versions.mjs.
 - Use the symbol routing table below for changes. Component roles and invariants live in [architecture](../architecture.md), not this navigation map.
@@ -31,7 +32,11 @@ scripts/ctx.mjs       the entire CLI: args → commands.{setup,init,task,lint,do
   scanCodeSpans()/related check    validates router backticks and page-relative related targets during lint
   ├ pages()/isSourcePath()/sourceFiles()/staleReport()   source inventory/counting reuses configured path filters; impact separately reviews explicit material owners
   today()/archiveWindow()/commands.log   local calendar dates, validated no-write archive cutoffs, one-date atomic log metadata/entry
+  resumeCursor observation             advisory committed-memory/HEAD/pending claims for status, brief and SessionStart; no hidden recording
   ├ detect() + DEP_MARKERS + INTEL_TOOLS  profile detection and delegation-tool probing (setup/init read it)
+  facts/quarantine/ingest/pageProvenance   derived owner metrics, explicit raw acknowledgements, temporal/actor trust
+  briefData/eval/evalpack/query/adr/capture Unicode routing, frozen evidence, lifecycle and draft inbox
+  scaffoldTier/hosts/check/symbols/search/mcp/team/cursor  tiers, discovery, delegated/derived reads and scoped cursors
   └ commands.*                            each subcommand; emit() wraps human/JSON output ({command, ok})
 references/           deep playbooks, one per operation (ctx-cli.md documents every flag)
 assets/               templates for every scaffolded file; *.template suffix stripped on copy

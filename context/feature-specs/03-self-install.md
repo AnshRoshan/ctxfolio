@@ -5,13 +5,15 @@ status: complete
 summary: v2.4 — ctx install + GitHub-link flow; explicit repo/skill/project boundary with tests
 tags: [install, github, v2.4]
 covers: []
-updated: 2026-10-06
-verified_at: 080a7adb7826
+updated: 2026-10-21
+confidence: unverified
 ---
 
 # Self-Install from a Link (v2.4)
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `080a7adb7826` (recorded 2026-10-06) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: historical checklist and ../testing.md#verification-evidence.
 - Goal: paste the repo URL to any agent and it installs the skill and sets up its repo; dev history never leaves this repo.
 
 ## What to build

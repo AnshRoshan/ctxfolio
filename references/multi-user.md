@@ -6,7 +6,7 @@ The wiki is a shared, committed artifact, so treat it like code: **branches own 
 
 - **One unit = one branch = one owner.** `ctx task add` on the branch, `ctx task start NN` there too. The branch's diff touches: its own spec file, its tracker line, its decisions, its module pages for the area it changed.
 - **Per-unit files are the concurrency trick** — `feature-specs/NN-*.md`, `codebase/modules/<area>.md`, `sources/<slug>.md` are one-file-per-thing, so two people building two features edit two different files and never conflict.
-- **Per-person files are gitignored** — `CLAUDE.local.md`, `.claude/settings.local.json`, `context/current-issues.md`. Nobody's scratch leaks into anyone's checkout.
+- **Per-person files are gitignored** — `CLAUDE.local.md`, `.claude/settings.local.json`, `context/issues.local.md`, legacy `context/current-issues.md`. Shared sanitized issues live in context/issues.md; never auto-promote private diagnostic bytes.
 - `context/index.md`'s catalog block is **generated**: on conflict, don't merge it by hand — take either side and run `ctx index`.
 - Agent `MEMORY.md` files append newest-on-top: on conflict keep both sides' lines (they're dated one-liners), `ctx archive` trims later.
 

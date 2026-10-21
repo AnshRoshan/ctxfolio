@@ -23,7 +23,9 @@
     "selftest": "node tests/run.mjs",
     "check:versions": "node tests/check-versions.mjs",
     "check:baseline": "node tests/check-baseline.mjs",
-    "check:truth": "node tests/check-truth.mjs"
+    "check:truth": "node tests/check-truth.mjs",
+    "test:scale": "node tests/features22-29.mjs",
+    "eval:routing": "node context/ctx.mjs eval --json"
   },
   "engines": {
     "node": "^22.0.0 || ^24.0.0"

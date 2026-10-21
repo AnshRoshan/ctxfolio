@@ -5,12 +5,14 @@ status: complete
 summary: Budgeted JSON context routing with explicit trust signals, lossless git paths, and non-destructive setup
 updated: 2026-10-21
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/**, references/**, SKILL.md]
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Reliable Context Routing and Safe Updates
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: historical checklist and ../testing.md#verification-evidence.
 
 - Upgrade the existing zero-dependency skill, not add another service or index.
 - Route within an explicit budget, surface verification needs, and preserve user work.

@@ -4,13 +4,15 @@ type: standards
 status: active
 summary: How ctx.mjs, templates, docs and tests are written here — style rules with reasons, not preferences
 tags: [standards,conventions,style]
-updated: 2026-10-06
-verified_at: 080a7adb7826
+updated: 2026-10-21
+confidence: unverified
 ---
 
 # Code Standards
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `080a7adb7826` (recorded 2026-10-06) is explicitly unverified; no declared verifier or validity interval is established. Authored records are retained, not reverified. Source: authored conventions and source symbols below.
 
 - One-file zero-dep CLI, node builtins only; ESM; two-space indent; semicolons.
 - Every command output goes through `emit(payload, humanFn)` — JSON contract `{command, ok}` or human text, never raw prints in JSON mode.

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Features 11–16: read-only resume cursor advisories, CLI/library contract/env/runbook profiles, source-backed facts, sanitized shared/private issue queues, hash-bound raw quarantine and declared provenance/validity guards.
+- Features 17–21: Unicode/IDF/history-aware routing and one-hop relations, frozen deterministic routing eval, actual cold-start evidence (8 correct/2 partial for one pair; usage unavailable), security/quality/risk/debt and ADR/query owners, metadata-only governed capture with explicit approval/promotion.
+- Features 22–29: populated scaffold tiers, generated project-local skill, declared host destinations, portable checks, delegated symbol import/routing, derived search/hierarchy, bounded read-only MCP stdio and explicit team cursor/federation scopes.
+- Final integrated local checks: 192 CLI tests and 18 scale/host functional checks pass; concrete integration defects corrected in one consolidated review/fix batch. Remote final publication remains CI-gated; no generalized savings or live-host claim is implied.
+
 - Feature 09: live docs/site claims use current source or dated run evidence; install examples use the SHIP-only path; synthetic legacy transcripts and token assumptions are explicitly labeled without redesigning the site.
 - Feature 10: app-source counts share configured path filters while explicit covered material still requires review; archive windows validate before writes and use local calendar cutoffs; log metadata/heading publish together; folded metadata updates preserve neighbors. The approved clean legacy worktree was removed through Git with reachable history retained.
 

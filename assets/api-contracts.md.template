@@ -2,9 +2,9 @@
 title: API Contracts
 type: api
 status: draft
-summary: Every HTTP route / server action / event: inputs, outputs, auth, errors — the contract, not the implementation
-tags: [api, routes, contracts]
-covers: [{{src/app/api/**}}]
+summary: Public CLI, library or HTTP surfaces — inputs, outputs, errors and compatibility, not implementation
+tags: [api, contracts]
+covers: [{{Paths or globs for this project's public entrypoints}}]
 related: [architecture.md, decisions.md]
 updated: {{TODAY}}
 confidence: inferred
@@ -13,17 +13,19 @@ confidence: inferred
 # API Contracts
 
 ## TL;DR
-- Style: {{REST route handlers / server actions / tRPC}}. Errors shaped as: {{{ error: string, code: string }}}. Auth: {{how}}.
-- Public routes (explicit list, everything else protected): {{...}}
+- Public surfaces: {{CLI commands / library exports / HTTP routes, as applicable}}.
+- Compatibility and error conventions: {{Verified behavior and source}}. Record verified none/N/A for inapplicable surfaces.
 
 ## Conventions
-- Validation: {{zod at the boundary}} · Pagination: {{cursor|offset, default limit}} · Rate limit: {{policy}}
+{{Document applicable validation, defaults, authorization and compatibility guarantees from source; do not assume a transport, framework or error shape}}
 
-## Endpoints
-| Method + path | Auth | Request | Response | Errors | Handler |
-|---|---|---|---|---|---|
-| {{GET /api/health}} | {{public}} | {{—}} | {{{ ok: true }}} | {{—}} | {{src/app/api/health/route.ts}} |
+## Public surfaces
+| Command / export / method + path | Inputs / flags / auth | Outputs / returns / streams | Errors / exit codes | Source |
+|---|---|---|---|---|
+| {{Existing public entrypoint}} | {{Arguments, flags, request or N/A}} | {{Return value, stdout/stderr or response}} | {{Throws, exit codes or HTTP errors}} | {{Source path and symbol}} |
 
 ## Events / webhooks / jobs
+Record only existing asynchronous contracts, or verified none/N/A with source.
+
 | Name | Trigger | Payload | Consumer |
 |---|---|---|---|

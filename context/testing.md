@@ -6,7 +6,6 @@ summary: The self-test harness — how to run it, what it covers, and the rule t
 tags: [tests, quality]
 covers: [tests/**]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
 ---
 
 # Testing
@@ -55,7 +54,13 @@ verified_at: ef2b0df59c6a
 
 ## Verification evidence
 
-- 2026-10-21, Feature 10 final local candidate: `node tests/run.mjs` passed 147 tests / 0 failures / 0 skips on Windows. Truth, negative baseline and version/tag guards passed; syntax and copied-CLI parity passed; strict lint reports 28 pages 0/0, stale clean, doctor 13/13. The test-only midnight clock correction is included in this full rerun. Remote CI verification remains the publication gate.
+- 2026-10-21, final integrated batch: `node tests/run.mjs` passed **192 tests, 0 failed, 0 skipped**. `node tests/features22-29.mjs` passed **18 functional checks, 0 failed**, including MCP read-only refusal, scoped shared-write refusal, and no hidden index writes in read/dry-run flows. The consolidated review's concrete integration findings were fixed with regressions; legacy full-scaffold fixtures now explicitly select full without reverting standard defaults. Syntax, copied-CLI parity, truth/baseline/version guards passed. Source strict lint: **48 pages, 0 errors/warnings**; stale clean; doctor **13/13**. Actual remote final batch CI remains pending publication.
+- Deterministic routing fixture `context/evals/questions.json`: actual hit@8 **1.0**, precision **0.15** in the first integrated measurement; values are macro routing metrics, not answer success or token savings. Final routing output is persisted in `context/evals/routing-result.json`; character/4 cost estimates are not measured model usage.
+- Actual fresh reader answered all ten questions; raw answers/citations and file accounting are persisted in `context/evals/cold-start-reader.json`. Independent one-pass grading is recorded in `context/evals/cold-start-grades.json`: **8 correct, 2 partial, 0 wrong, 0 not-found**. The two partial answers omitted routing hard-cap/history details and the dependency-free maintenance tradeoff; raw answers were not expanded after grading. The 8/10 correctness target was reached for this one pair only, not generalized task success. Observed explicit reads: 25 unique project files; actual token/cost/time fields remain null because unavailable. The checkout changed during reading, which limits reproducibility; no general savings or task-success claim follows.
+
+- 2026-10-21, batch implementation (D-15): Feature 11 implemented with 11 targeted checks passing; Feature12 profile gates 4/0/0, Feature13 facts 4/0/0, Feature14 shared/local issue split 3/0/0 and Feature15 quarantine 3/0/0 were reported passing targeted checks by their implementation writers. These are implementation checkpoints, not final consolidated suite results; original unsafe-orientation1/0/0, symlink14/0/0 and Stop3/0/0 checks passed. No final full-suite/review/CI is implied. Remaining slices are built in dependency order with targeted checks and encountered fixes; one consolidated verification/corrective pass closes the batch.
+
+- 2026-10-21, Feature 10 final local candidate: `node tests/run.mjs` passed 147 tests / 0 failures / 0 skips on Windows. Truth, negative baseline and version/tag guards passed; syntax and copied-CLI parity passed; strict lint reports 28 pages 0/0, stale clean, doctor 13/13. The test-only midnight clock correction is included in this full rerun. Actual candidate39559173759 and main39559766799 later passed all six supported OS/Node jobs plus self-context/scaffold, and commit369acde was promoted without rewriting main history.
 
 - 2026-10-21, Feature 10 focused checks: 15 passed / 0 failed / 0 skipped after source/material classification, archive input/local-DST cutoffs, one-date log/index publication and block-scalar metadata-upsert repair. The folded-updated regression failed before the shared fix. An advancing-clock fixture initially used the wrong UTC-to-IST hour; its test-only instant was corrected and the focused suite rerun. Adjacent archive 8/0/0, impact 3/0/0, Stop-hook 3/0/0 and reliability 13/0/0 filters passed. The full integrated count comes from the actual full suite, not summed overlapping filters.
 

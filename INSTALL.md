@@ -83,10 +83,7 @@ cd /path/to/your-project
 node /path/to/project-context-system/scripts/ctx.mjs setup
 ```
 
-It detects the project profile (languages, kinds, UI/DB/API signals, installed agent tools)
-and creates the owner pages, canonical .agents resources, real native resource links,
-central Cursor metadata views, agent experience files and a codebase draft where applicable,
-then runs the catalog and doctor checks. Optional:
+Setup defaults to a populated standard scaffold; `--lite` reduces the wiki and `--full` adds detected profile extras and a source-census map draft. It creates canonical .agents resources, real native links, central Cursor views and a project-local routing skill, then runs catalog/doctor wiring checks. Existing authored files are preserved. Tier and host commands: [reference](references/scale-and-hosts.md). Optional:
 `--danger "src/auth,src/payments"` for nested landmine warnings; `--ui/--no-ui`,
 `--full`, `--pointers`, `--no-detect` to override detection.
 

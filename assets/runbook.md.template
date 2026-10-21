@@ -10,18 +10,19 @@ updated: {{TODAY}}
 # Runbook
 
 ## TL;DR
-- Local: `{{npm run dev}}` on {{port}}. Deploy: {{how/where}}. Rollback: {{how}}.
+- Invocation / usage: {{Verified CLI command, library import/call or service start command}}.
+- Release / deploy and recovery: {{Applicable procedure or verified N/A, with source}}.
 
-## Local setup
-{{Prereqs, first-run steps, seed data}}
+## Local setup and invocation
+{{Verified prerequisites, install/build steps and invocation; ports or seed data only if applicable}}
 
-## Deploy
-{{Pipeline, environments, who approves (agents ask before deploying)}}
+## Release / deploy
+{{Applicable package publication or deployment pipeline, target and approval; agents ask before publishing/deploying. Record verified N/A with source when absent}}
 
-## Rollback
-{{Exact steps and what data implications exist}}
+## Rollback / recovery
+{{Exact version restore or rollback steps and any data implications; verified N/A with source if inapplicable}}
 
 ## Debugging playbook
 | Symptom | Likely cause | Check |
 |---|---|---|
-| {{500 on /api/x}} | {{missing env}} | {{logs: …}} |
+| {{Observed CLI exit, library error or service failure}} | {{Evidence-backed cause}} | {{Verified command, stream or log location}} |

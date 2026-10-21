@@ -5,12 +5,14 @@ status: complete
 summary: Canonical agent resources with portable host adapters and explicit non-overlapping markdown ownership
 updated: 2026-10-21
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/**, references/**, SKILL.md]
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Single-Source Agent Resources and File Ownership
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: historical acceptance record and ../testing.md#verification-evidence.
 
 - Direct follow-up request: include memory, decisions, rules, skills and internally created agent folders; eliminate repeated facts and unclear ownership.
 - Canonical resources live in `.agents/`; host adapters point there and never own reusable instruction bodies.

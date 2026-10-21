@@ -7,12 +7,14 @@ tags: [ci, testing, release, symlinks, quality]
 covers: [scripts/ctx.mjs, tests/**, .github/**, package.json, README.md, INSTALL.md]
 related: [../testing.md, ../decisions.md, ./07-native-symlinks.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Always-Green Baseline
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: every commit on `main` proves three things in CI — the CLI suite passes on all three OSes, this repo's own wiki passes `ctx lint --strict` and `ctx stale --strict`, and the published release matches the documented version mapping.
 - Boundary: test harness, workflow files, and release/tag state. No CLI behavior change except where a test proves the CLI is wrong.

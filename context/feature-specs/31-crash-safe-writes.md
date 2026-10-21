@@ -7,12 +7,14 @@ tags: [crash-safety, concurrency, archive, reliability]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../decisions.md, ./30-page-contract-integrity.md, ./32-install-transaction.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Crash-safe Writes
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: a process kill during `index`, `log`, `task`, `stamp`, `new`, `rules` or `archive` leaves either the old file or the complete new file, never a truncated ledger; two agents cannot lose each other's updates; rerunning `archive` after a crash never duplicates entries.
 - Boundary: a single write primitive, one advisory lock, and the core wiki-mutating commands. `setup`/`install` transactions belong to Feature 32; symlink publication already has staging and rollback.

@@ -6,6 +6,7 @@
 !.env.example
 
 # Agent scratch files that can leak tokens/errors
+context/issues.local.md
 context/current-issues.md
 
 # Personal agent overrides (per-developer, never committed)

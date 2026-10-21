@@ -54,7 +54,7 @@ Present important options with a recommendation and concrete cost. Record the ap
 - Use the applicable commands in testing.md and any operational page the catalog lists; report missing/unavailable checks instead of inventing them.
 - Drive actual changed behavior against acceptance criteria: CLI, library test, document review or browser flow as appropriate.
 - If implementation already exists, prove the check detects the regression; process ordering alone is not a reason to redo correct work.
-- Review separately from implementation when risk warrants it. Triage findings; record deferred issues at their owner.
+- D-15 batches the remaining implementation: run targeted checks while building, fix encountered issues, and consolidate full review/verification once. Implemented slices remain awaiting final verification; do not mark them complete or publish to main early.
 - User-facing documentation links normative contracts and decisions instead of reproducing them.
 
 ## Close and resume

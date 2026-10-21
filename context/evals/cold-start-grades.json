@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "experiment": "Feature19 actual independent cold-start semantic grading, one reader/grader pair",
+  "status": "actual-grading-completed",
+  "graderIdentity": {
+    "declaration": "This agent independently assigned these grades from the actual reader JSON, frozen rubric and cited owners/source; this is grading, not code review.",
+    "agentId": "3c5cabd3-f05d-4d0f-ae7c-a073f85631a1",
+    "identityBasis": "DSH_SESSION_ID observed in this agent's environment",
+    "model": "gpt-6.1-sol",
+    "parentAgentId": "session-dd0c996a-fd63-43d2-961e-1fef4fc22638",
+    "independentFromReader": true,
+    "gradingPasses": 1
+  },
+  "actualReaderID": "0b021e35",
+  "actualReaderFullID": "0b021e35-3aa9-423e-80b1-bb09b5e24148",
+  "inputs": {
+    "actualReaderJSON": "C:/Users/anshr/AppData/Local/Temp/ctx-actual-cold-reader-95e63434-85a1-435b-9e64-9151d922238e.json",
+    "actualReaderSHA256": "2a4063994c6ff9e73fb5f79d38df7f35a0234398c7ddc977cc36cc8e77058162",
+    "rubricJSON": "C:/Users/anshr/AppData/Local/Temp/ctx-cold-start-evaluation-prep-20261021-1315/rubric.json",
+    "rubricSHA256": "7ebc6ce1332ccdbefb5d0881ecc46bd5a6875815386c5bbbfda2ca3a1f3b0db5",
+    "questionsJSON": "C:/Users/anshr/AppData/Local/Temp/ctx-cold-start-evaluation-prep-20261021-1315/questions.json",
+    "questionsSHA256": "be9d0a6b02ce7a993ef5ad1d50ba6ed0bed3a3133311c9ecf774b3e39b2a1c45",
+    "projectQuestionsSHA256": "be9d0a6b02ce7a993ef5ad1d50ba6ed0bed3a3133311c9ecf774b3e39b2a1c45",
+    "questionHashMatch": true,
+    "hashObservationTime": "2026-10-21T13:58:41.9120066+05:30"
+  },
+  "gradingPolicy": {
+    "labels": ["correct", "partially", "wrong", "not-found"],
+    "basis": "Frozen rubric correctnessRubric.required, supportingFactsPolicy and unchanged question meaning; cited owner/source material supports answers but does not silently supply materially omitted explanations.",
+    "timestampPolicy": "Reader-qualified collection observations are not retroactively judged against later parent edits. Current owners can confirm stable contracts but cannot reconstruct a frozen collection snapshot.",
+    "noRetrospectiveAnswerExpansion": "The parent suggested expanded routing/maintenance-tradeoff wording. A second direct read of the requested actual JSON confirmed that wording was absent; only this artifact's actual answers were graded."
+  },
+  "questionGrades": [
+    {
+      "id": "where-cli",
+      "grade": "correct",
+      "rationale": "Names source and generated project copy, setup/init refresh with prior-byte backup and atomic replacement. Correctly qualifies observed copy mismatch and unverified later refresh; no release claim.",
+      "sources": ["context/codebase/map.md:19-40,74-76", "package.json:7-10", "scripts/ctx.mjs:3278-3291,3541-3549"]
+    },
+    {
+      "id": "where-tests",
+      "grade": "correct",
+      "rationale": "Locates disposable-project copied-CLI behavior checks and focused filter, distinguishes declared full syntax/wiki/doctor/other CI gates and D-15 consolidated timing from actual execution. Commands are adequately anchored by testing and CI citations; no fabricated results.",
+      "sources": ["tests/run.mjs:20-83", "context/testing.md:15-26,35-42", ".github/workflows/ci.yml:32-76", "context/decisions.md:148-155"]
+    },
+    {
+      "id": "where-owners",
+      "grade": "correct",
+      "rationale": "Separates wiki fact owners, shared AGENTS policy, editable .agents bodies, native aliases/generated Cursor metadata and host-specific settings. Reports rather than hides the observed issue-owner conflict; later documentation repair is not reader error.",
+      "sources": ["context/ownership.md:18-58,68-70", ".agents/README.md:3-11", "context/architecture.md:39-51"],
+      "qualification": "Current ownership now names shared issues.md and local diagnostics; reader explicitly described the older discrepancy."
+    },
+    {
+      "id": "flow-setup",
+      "grade": "correct",
+      "rationale": "Gives init/scaffolding, index/doctor flow, path preflight, authored/partial-map preservation, backed-up generated CLI refresh and remaining human judgement. Standard/full tier qualification matches current source. No unconditional web scaffolding or semantic-verification promise; optional CLI/library detail is not demanded.",
+      "sources": ["scripts/ctx.mjs:3209-3217,3278-3297,3353-3437,3439-3549", "context/architecture.md:39-43"]
+    },
+    {
+      "id": "flow-routing",
+      "grade": "partially",
+      "rationale": "Correct orientation, brief/TL;DR/covers routing, explicit budget/default limit, character/4 estimate and dirty/stale/provenance source checks. However, 'mandatory orientation counts against the budget' does not explain required overflow selecting no task pages or skip/fit cap mechanics; completed-feature discount does not state retired exclusion/--history semantics. These required routing facts are materially omitted, not contradicted.",
+      "missingRequiredFacts": ["Mandatory orientation overflow selects no task pages; oversized candidates are skipped while smaller fitting candidates may still be selected.", "Retired guidance is excluded by default and explicitly historical under --history."],
+      "sources": ["AGENTS.md:7-15,35", "references/context-routing.md:25,31-43", "scripts/ctx.mjs:1233-1352"],
+      "supportingFactsPolicyApplied": "No deduction for omitted low-level lossless Git filename parsing."
+    },
+    {
+      "id": "invariant-writes",
+      "grade": "correct",
+      "rationale": "Explains old-or-complete file publication, same-directory fsynced temporary writes, cooperating reentrant advisory serialization and safe ownership recovery, exact archive replay deduplication, lock-free readers and explicit non-cooperating/multi-file/power-loss limits. Makes no unrun crash/race proof claim.",
+      "sources": ["scripts/ctx.mjs:114-219,1987-2000,2033-2039,2056-2064", "context/feature-specs/31-crash-safe-writes.md:29-35,46-51"]
+    },
+    {
+      "id": "invariant-install",
+      "grade": "correct",
+      "rationale": "Gives safe name/lexical-real destination and symlink checks, SHIP-only staged tree/manifest, preserved backup, occupied-target-safe rollback, dry-run and hard-kill publication limits. Local provenance is explicitly not remote authentication; no permission grant is asserted. Minor unenumerated target-type detail does not materially misstate the broad install boundary.",
+      "sources": ["scripts/ctx.mjs:1113-1222", "context/feature-specs/32-install-transaction.md:29-35,46-52", "AGENTS.md:35"]
+    },
+    {
+      "id": "why-no-deps",
+      "grade": "partially",
+      "rationale": "Correct copied-tool/no-install portability, supply-chain/rot rationale, builtins/runtime observation, optional Git and separate website dependency/build boundary. Required maintenance tradeoff is not explained: historical parser-size uncertainty is not an explanation that parsers/helpers must be maintained/tested without package conveniences.",
+      "missingRequiredFacts": ["Dependency-free convenience is traded for maintaining test-covered parsers/helpers and foregoing ecosystem niceties."],
+      "sources": ["context/decisions.md:22-29", "context/library-docs.md:12-17", "package.json:7-10,19-29", "web/package.json:6-26"]
+    },
+    {
+      "id": "next-unit",
+      "grade": "correct",
+      "rationale": "Accurately qualifies observed integrated 11-29 implementation/preparation, consolidated verification/fixes as active next work and actual Feature19 reader/grading evidence as pending. Reports observed empty In progress versus memory conflict and applies D-15 without certifying completion. Later Feature19 tracker repair or new suite evidence is not a reader error.",
+      "sources": ["memory.md:7-23", "context/progress-tracker.md:20-44", "context/decisions.md:148-155", "context/testing.md:55-61"],
+      "qualification": "Current owners have changed since reader collection; exact earlier HEAD, empty tracker and job state remain qualified reader/direct-human observations, not independently frozen facts."
+    },
+    {
+      "id": "non-scope",
+      "grade": "correct",
+      "rationale": "Cites explicit exclusions and authorized-request rather than roadmap scope; distinguishes canonical implementation/resources/wiki/policy from generated copies/catalogs/native views and historical/raw evidence. Makes no unsupported absence, new-capability authorization or semantic-success claim.",
+      "sources": ["context/overview.md:38-46", "context/ownership.md:18-58,68-70", "context/architecture.md:22-58", "context/codebase/map.md:74-76", "AGENTS.md:35"]
+    }
+  ],
+  "correctCount": 8,
+  "total": 10,
+  "gradeCounts": {"correct": 8, "partially": 2, "wrong": 0, "not-found": 0},
+  "answerCorrectnessTarget": {"minimumCorrectQuestions": 8, "observedCorrectQuestions": 8, "metForThisPair": true},
+  "actualHostUsage": {"inputTokens": null, "outputTokens": null, "costUsd": null, "elapsedSeconds": null},
+  "actualTotalTokens": null,
+  "actualGraderHostUsage": {"inputTokens": null, "outputTokens": null, "costUsd": null, "elapsedSeconds": null},
+  "readerFileAccounting": {
+    "totalExplicitUniqueProjectFiles": 25,
+    "readerReportedSourceOrCanonicalResources": 12,
+    "readerReportedWiki": 13,
+    "allInternalFilesystemOpens": null,
+    "readerSourceBucketPreserved": ["AGENTS.md", ".agents/README.md", "package.json", "web/package.json", "references/context-routing.md", "references/operations.md", "scripts/ctx.mjs", "context/ctx.mjs", "tests/run.mjs", "tests/batch17-21.mjs", "tests/features22-29.mjs", ".github/workflows/ci.yml"],
+    "rubricCoreImplementationManifestsTests": ["scripts/ctx.mjs", "context/ctx.mjs", "package.json", "web/package.json", "tests/run.mjs", "tests/batch17-21.mjs", "tests/features22-29.mjs"],
+    "rubricCoreUniqueCount": 7,
+    "executableCISourceTrackedSeparately": [".github/workflows/ci.yml"],
+    "verificationSourcesIncludingCIUniqueCount": 8,
+    "canonicalPolicyReferencesTrackedSeparately": ["AGENTS.md", ".agents/README.md", "references/context-routing.md", "references/operations.md"],
+    "classificationPolicy": "The reader truthfully labeled a broader source/canonical-resource bucket. Rubric implementation/manifests/tests accounting separates four policy/reference resources and CI. No correctness deduction for this declared classification, no duplicate addition of shared reads, and no inference of hidden opens.",
+    "perQuestionCoreSourcePathAttributionCountsNotAdditionalOpens": {"where-cli": 3, "where-tests": 5, "where-owners": 1, "flow-setup": 3, "flow-routing": 1, "invariant-writes": 2, "invariant-install": 3, "why-no-deps": 3, "next-unit": 3, "non-scope": 1},
+    "attributionPolicy": "These counts derive from reader filesOpened associations. Shared paths are attributed to multiple answers but count only once in run totals; this is not a repeated-open measurement."
+  },
+  "efficiencyTargets": {
+    "maximumActualTokensTarget": 15000,
+    "actualTokenTargetStatus": "unknown: actual model usage unavailable",
+    "maximumAverageSourceFilesOpenedTarget": 2,
+    "actualSourceOpenTargetStatus": "not asserted: explicit unique-path accounting and per-answer attribution are available, but hidden reads and repeated-open timing are uninstrumented; classification reported separately",
+    "costBenefitConclusion": null
+  },
+  "limits": [
+    "One actual reader/grader pair only; eight correct answers is not benchmark generalization, pipeline-wide quality success, task execution success or measured cost benefit.",
+    "No tests, setup, deterministic evaluator, crash/race experiments, network calls or review agents were run by this grader. Declared commands and parent-recorded execution evidence are not grader execution proof.",
+    "No canonical/project file was edited. The sole output write is this JSON in OS TEMP.",
+    "The checkout changed concurrently during reader and grader observations; exact collection snapshots and source hashes for all reader reads are unavailable. Timestamp-qualified observations, later copy parity refresh, issue-owner repair and Feature19 tracker repair are not penalized as hindsight errors.",
+    "Actual reader input/output tokens, cost, elapsed time and internal filesystem opens remain null. No estimates substitute for actual usage.",
+    "Parent identity and full reader identity derive from direct task/owner context; the raw reader JSON itself does not embed reader ID. Grader session identity is declared from its observed environment.",
+    "Line citations were evaluated for owner/source adequacy and meaning, not exact stability after concurrent edits. No independent live native host discovery or cross-platform safety certification is supplied.",
+    "The graphify skill was loaded because the catalog broadly matches source-content questions; no graph rebuild/query/extraction was executed because this bounded grading request forbids canonical writes, network and additional agents."
+  ],
+  "sourcesRead": {
+    "actualInputs": ["C:/Users/anshr/AppData/Local/Temp/ctx-actual-cold-reader-95e63434-85a1-435b-9e64-9151d922238e.json", "C:/Users/anshr/AppData/Local/Temp/ctx-cold-start-evaluation-prep-20261021-1315/rubric.json", "C:/Users/anshr/AppData/Local/Temp/ctx-cold-start-evaluation-prep-20261021-1315/questions.json"],
+    "projectOwnersResourcesSource": ["AGENTS.md", ".agents/README.md", "context/index.md", "memory.md", "context/progress-tracker.md", "context/codebase/map.md", "context/testing.md", "context/decisions.md", "context/ownership.md", "context/overview.md", "context/library-docs.md", "context/architecture.md", "references/context-routing.md", "context/feature-specs/31-crash-safe-writes.md", "context/feature-specs/32-install-transaction.md", "scripts/ctx.mjs", "tests/run.mjs", "package.json", "web/package.json", ".github/workflows/ci.yml"],
+    "hashOnly": ["context/evals/questions.json"],
+    "readMethod": "read tool; bounded source ranges, not full repository exploration",
+    "projectRoot": "D:/SKILLS/project-context-system"
+  }
+}

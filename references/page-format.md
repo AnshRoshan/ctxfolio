@@ -1,6 +1,6 @@
 # Page Format — the spec every wiki page follows
 
-A page is a markdown file under `context/` (excluding `raw/ designs/ screenshots/ archive/`, `index.md`, `log.md`, `current-issues.md`). The format is a **spec, not a convention**: tooling (`ctx lint/index/brief/stale/impact`) depends on it, which is why the wiki stays machine-routable and doesn't decay into a per-project dialect.
+A page is a markdown file under `context/` (excluding `raw/ designs/ screenshots/ archive/`, `index.md`, `log.md`, `issues.local.md`, `current-issues.md`). The format is a **spec, not a convention**: tooling (`ctx lint/index/brief/stale/impact`) depends on it, which is why the wiki stays machine-routable and doesn't decay into a per-project dialect.
 
 ## Frontmatter
 
@@ -15,7 +15,13 @@ tags: [auth, security]                # strongly recommended — routing keyword
 covers: [src/auth/**, src/middleware.ts]   # REQUIRED for any page describing code — globs it is responsible for
 related: [decisions.md, data-model.md]     # optional — hand-picked neighbours
 confidence: verified                  # verified (checked against code/human) | inferred (read from code, plausible) | unverified (guess/hearsay)
-verified_at: 3fa9c21d0b44             # optional — git sha when last re-verified with no edit needed (set by `ctx stamp`)
+authored_by: agent-label               # optional declared author, not authenticated identity
+verified_by: independent-label        # declared verifier; an agent cannot verify its own authored page
+verified_by_type: human               # declared human | agent, not authentication
+verified_at: 3fa9c21d0b44             # commit reachable from main; HEAD fallback is explicitly main-unknown
+valid_from: 2026-10-01               # actual calendar date, inclusive
+review_by: 2026-12-01                # actual calendar date, inclusive; earlier than today warns expired
+unverified_snapshot: sha256          # dirty/unknown stamp observation, never clean commit proof
 superseded_by: decisions.md#D-09      # required when status: superseded
 ---
 ```

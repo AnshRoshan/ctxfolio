@@ -5,12 +5,14 @@ status: complete
 summary: Real relative symbolic links for shared agent files and resource folders, with local Git configuration and preservation-first migration
 updated: 2026-10-21
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/**, references/**, SKILL.md]
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Native Git-Compatible Symlink Layout
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: historical acceptance record and ../testing.md#verification-evidence.
 
 - The human clarified that native host entries must be real filesystem symlinks, not regular pointer copies.
 - Canonical content remains under AGENTS.md and .agents/. Native host settings remain independent; incompatible Cursor .mdc views are stored centrally and linked.

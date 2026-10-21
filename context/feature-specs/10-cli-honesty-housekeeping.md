@@ -1,18 +1,20 @@
 ---
 title: CLI honesty and housekeeping
 type: feature
-status: in-progress
+status: complete
 summary: Count source impact honestly, validate archive windows before writes, use local calendar dates and refresh log metadata
 tags: [cli, impact, archive, dates]
 covers: [scripts/ctx.mjs, tests/run.mjs, references/ctx-cli.md]
 related: [../testing.md, ../decisions.md, ./09-dogfood-truth-repair.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # CLI Honesty and Housekeeping
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: source counts and archive/log dates describe what the CLI actually operates on, without crashes or partial writes.
 - Boundary: shared source classification, impact/Stop consumers, archive input/cutoff formatting, log metadata and local legacy-worktree cleanup.

@@ -7,12 +7,14 @@ tags: [routing,relations,lint,templates]
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/index.md.template, assets/workflow-rules.md.template, context/index.md, context/workflow-rules.md]
 related: [../build-plan.md, ../index.md, ../workflow-rules.md, ./33-spec-queue-integrity.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Route and Relation Integrity
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: every hand-maintained route and every `related:` edge resolves to a real page, and a scaffolded router never points at optional pages the project did not create.
 - Boundary: the task-routing block in `context/index.md`, `context/workflow-rules.md`, all `related:` frontmatter, and inline code paths in the two router pages. Ordinary-page illustrative code spans are outside this numbered scope.

@@ -1,0 +1,5 @@
+# Local Issue Diagnostics
+
+Private scratch, gitignored. Never copy this file or legacy context/current-issues.md into a shared page automatically.
+
+Keep raw local diagnostics here only when authorized. Do not read .env files or store secret values. Explicitly write a sanitized actionable summary at context/issues.md with safe evidence pointers.

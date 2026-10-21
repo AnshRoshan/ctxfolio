@@ -104,3 +104,12 @@ Git-managed removal after exactpath/registration/clean tracked+untracked+ignored
 
 ## [2026-10-21] build | Feature 10 final local verification passed
 147/0/0 complete suite,15focused, truth/baseline/version andcopiedparity; strictlint28 0/0 stale clean doctor13/13. SafeGitworktreecleanupdone; remoteCIpending.
+
+## [2026-10-21] build | Feature 10 complete: local and main CI green
+Full147/0/0 and15focused, candidate39559173759/main39559766799 success acrossallsupportedjobs; source/materialcounts, localdates/logmetadata, no-writearchiveguards; safeGitworktreeremovalretainedhistory. Feature11 nowactive withD14advisorypolicy.
+
+## [2026-10-21] build | Feature 11 implemented: batch verification deferred
+11targetedpass; original unsafeorientation/symlink/Stop checks pass; readerGitstate guarded with nooptionalindex/fsmonitor; sharedsafeadvisory. D15humanrequested build12-29 thenonefullreview/fixbatch.
+
+## [2026-10-21] build | Remaining roadmap batch locally verified end to end
+Full CLI192/0/0,scale18/0,syntax/parity/truth/baseline/version,strictlint48 0/0/staleclean/doctor13/13. Oneconsolidatedreview/fixpassdone; actualcoldstartindependentgrade8correct2partial,unknownusage preserved; remoteCIpublicationpending.

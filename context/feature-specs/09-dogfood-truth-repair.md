@@ -7,12 +7,14 @@ tags: [truth, dogfood, docs]
 covers: [README.md, INSTALL.md, docs/**, web/**, references/ctx-cli.md, tests/check-truth.mjs, package.json, .github/workflows/ci.yml]
 related: [../testing.md, ../overview.md, ../ownership.md, ./08-always-green-baseline.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Dogfood Truth Repair
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: every current user-facing count, runtime, release, verification statement and example label has a truthful owner or measured source.
 - Boundary: live documentation and website copy. Preserve the incumbent visual design and behavior; distinguish illustrative fixtures from measured product evidence.

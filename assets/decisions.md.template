@@ -21,6 +21,9 @@ Record choices actually made for this project, not a copied stack or generic inf
 
 ```markdown
 ## D-NN: <title> — <date>
+Lifecycle: proposed | accepted | deprecated | superseded
+Supersedes: D-ID (only when replacing another record; add its reciprocal Superseded by)
+Superseded by: D-ID (required for superseded; add replacement's reciprocal Supersedes)
 Trigger: what forced this decision
 Options considered: A / B / C
 Chosen: <option>, because <reason>

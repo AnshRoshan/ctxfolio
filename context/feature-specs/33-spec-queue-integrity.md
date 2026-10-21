@@ -7,12 +7,14 @@ tags: [specs,roadmap,tracker,lint]
 covers: [scripts/ctx.mjs, tests/run.mjs]
 related: [../build-plan.md, ../progress-tracker.md, ../../memory.md, ./32-install-transaction.md, ./34-route-and-relation-integrity.md]
 updated: 2026-10-21
-verified_at: ef2b0df59c6a
+confidence: unverified
 ---
 
 # Spec-Queue Integrity
 
 ## TL;DR
+
+- 2026-10-21 provenance review: legacy checkpoint `ef2b0df59c6a` (recorded 2026-10-21) is explicitly unverified; no declared verifier or validity interval is established. Historical completion dates/evidence/checks are retained, not reverified. Source: dated evidence/checklist below and ../testing.md#verification-evidence.
 
 - Goal: a new spec can only take a number the roadmap reserved for that unit, and lint proves the roadmap, spec files and tracker agree on every active number.
 - Boundary: `ctx new feature`, `ctx task add`, and the feature-spec section of `ctx lint`.
