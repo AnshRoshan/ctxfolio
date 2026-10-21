@@ -17,21 +17,21 @@ The only file that updates constantly, and the only place a unit's state lives. 
 mutually exclusive — move lines with `ctx task` (`add` / `start` / `block` / `done`); it keeps
 the ledger honest (one unit In progress at a time, `done` requires concrete details).
 
-Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 and Features 11–29 are locally complete. Features 01–10/30–34 retain their historical completion/publication records below unchanged. Features 11–29 passed the single consolidated local verification/fix pass (D-15); Feature 19 now has actual reader and independent grade artifacts, not only preparation. Local completion is not final remote batch CI success or main publication.
+Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 and Features 11–29 are locally complete. Features 01–10/30–34 retain their historical completion/publication records below unchanged. Features 11–29 passed the single consolidated local verification/fix pass (D-15); Feature 19 now has actual reader and independent grade artifacts, not only preparation. Final roadmap candidate CI39572599110 succeeded across all six jobs and self-context/scale/eval; main was fast-forwarded to 2263e5e. The separately approved ctxfolio publication follows D-16.
 
 ## In progress
 
 ## Blocked
 
 ## Up next
-- Final batch remote CI/publication gate — publish the locally verified candidate only after actual supported-matrix, scale, routing and self-context CI succeeds; no new capability or review loop is pending.
+- Authorized publication task: ctxfolio@3.8.0 / AnshRoshan/ctxfolio / v2.8.0 (D-16). This is not a new numbered feature; registry/release verification remains pending.
 
 ## Local completion and publication gate
 
 - Actual local commands/results are owned by [testing](testing.md#verification-evidence): `node tests/run.mjs` **192 passed / 0 failed / 0 skipped**; `node tests/features22-29.mjs` **18 passed / 0 failed**; syntax, copied-CLI parity and truth/baseline/version passed; strict lint **48 pages, 0 errors/warnings**, stale clean and doctor **13/13**. These are the recorded final integrated local run, not inferred remote results.
 - Feature 19: [actual reader answers](evals/cold-start-reader.json) and [independent grades](evals/cold-start-grades.json) establish **8 correct, 2 partial, 0 wrong, 0 not-found out of 10** for one reader/grader pair only. Actual tokens/cost/time remain null; hidden opens and repeated-open timing are uninstrumented, and concurrent checkout changes limit reproducibility. No efficiency target, generalized savings or task-success improvement is established.
 - Host rows remain declared capabilities; MCP proof is bounded local initialized stdio functional exchange, not live native-host discovery. Human/agent actor labels are declared attribution, not authenticated external identity.
-- Parent-owned final log/catalog/facts and commit bookkeeping, actual remote batch CI and main publication remain explicit gates. Do not reuse historical green runs below as proof that this new batch is remotely green.
+- Final roadmap CI39572599110 succeeded and main now includes 2263e5e. Parent-owned naming/version publication checks and final catalog/facts refresh remain separate; do not treat approval as registry/release success.
 
 ## Completed
 - Feature 11: Resume-cursor liveness — 2026-10-21 — locally complete; [spec](feature-specs/11-resume-cursor-liveness.md); [CLI](../scripts/ctx.mjs) status/brief/SessionStart advisory, exact project-scoped Git paths and unknown/dirty qualification; [behavior evidence](testing.md#verification-evidence), including focused advisory and read-only regressions.

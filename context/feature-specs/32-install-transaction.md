@@ -82,3 +82,5 @@ The 2026-10-21 audit found `ctx install` copies directly into the destination, f
 - Strict lint reports 24 pages with zero errors/warnings, `stale --strict` is clean and doctor passes 13/13.
 
 - 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (32): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

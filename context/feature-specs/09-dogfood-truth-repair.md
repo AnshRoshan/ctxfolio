@@ -68,3 +68,5 @@ confidence: unverified
 - [x] Full CLI suite, strict lint/stale, doctor and release consistency pass
 - [x] Existing deployed site reflects the correction without layout/behavior regression
 - [x] Tracker, log, memory and derived catalog reflect verified closure
+
+- 2026-10-21 publication checkpoint (09): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

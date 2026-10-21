@@ -16,9 +16,7 @@ confidence: unverified
 One entry per hard technical decision, written the moment it is made. Not buried in code, not lost in chat — written down where the human can see it and overrule it.
 Current working policy lives in AGENTS.md; system structure lives in architecture.md. Entries below record rationale and dated decisions, not a parallel settings/architecture file.
 ## Record format
-
 Decisions use `## D-NN: <title> — <date>` and all seven fields shown in D-11. Undecided assumptions use `## F-NN: <title> — <date> (attached to Feature NN)` and name the pending human choice, as in F-01.
-
 ## D-01: Zero-dependency single-file CLI — 2026-10-06
 Trigger: the CLI is copied into every user's repo and run on unknown machines; every dep is a future supply-chain, install and rot problem.
 Options considered: single file, node builtins only / small npm package (commander, fast-glob, gray-matter) / hybrid (deps optional).
@@ -27,7 +25,6 @@ Lost alternative: npm package — honest reason: `init` copies the tool into `co
 Cost paid: hand-rolled glob + frontmatter parsers (test-covered), no ecosystem niceties, ~800-line file instead of ~300.
 Reversibility: painful — every user's context/ctx.mjs assumes self-containment.
 Correctness policy: glob matching may miss exotic patterns (users can fix `covers:` by hand); file walking and git parsing must never be wrong.
-
 ## D-02: Delegate code intelligence, keep the wiki authoritative — 2026-10-06
 Trigger: hand-building repo maps/module pages re-derives what graphify/ctags/aider/dependency-cruiser already index better.
 Options considered: keep doing it by hand / require external tools / detect tools, distill their output, keep ctx as the bookkeeper.
@@ -36,7 +33,6 @@ Lost alternative: hard dependency on graphify — honest reason: it isn't everyw
 Cost paid: one more reference doc + probe code; output quality now depends on tools we don't own (mitigated by `confidence: inferred` + staleness policing).
 Reversibility: easy — probes and doc only; no schema change.
 Correctness policy: distilled tool output may be slightly wrong until verified (inferred); covers-globs and staleness checks must never lie.
-
 ## D-03: Everything project-relative — 2026-10-06
 Trigger: absolute paths (`C:\Users\…`) in committed context break every other machine and make docs painful to port; user rule: "always use relative paths".
 Options considered: allow absolute paths with lint silence / document the convention only / convention + CLI messages + lint check + test.
@@ -45,7 +41,6 @@ Lost alternative: absolute-with-rewrite — honest reason: rewriting paths on re
 Cost paid: one heuristic lint WARN that can't tell a quoted example from a real path (accepted: warnings are cheap).
 Reversibility: painful — it's a user-facing contract now.
 Correctness policy: the lint heuristic may miss exotic absolute forms; the CLI itself must never EMIT one.
-
 ## D-04: Three-boundary no-leak model (dev repo / installed skill / scaffolded project) — 2026-10-06
 Trigger: skill dev history (version chatter, CHANGELOG, lineage notes) must not appear in users' repos or installs.
 Options considered: one repo, careful copying / separate docs repo / single repo + explicit SHIP list + boundary tests.
@@ -54,7 +49,6 @@ Lost alternative: separate repos — honest reason: two places to keep in sync, 
 Cost paid: the SHIP list must be remembered when adding shippable files; three extra tests.
 Reversibility: easy.
 Correctness policy: README/CHANGELOG may lag a release by hours; shipped files must never carry dev history at all.
-
 ## D-05: ASD-STE100 discipline for emitted prompts — 2026-10-06
 Trigger: specs, subagent briefs and clarify questions ARE prompts; misread instructions ship wrong features; the aerospace documentation standard (issue 100) demonstrably reduces LLM ambiguity-guessing.
 Options considered: free prose specs / ad-hoc "be clear" advice / adopt STE100's concrete grammar rules as a reference + template wiring.
@@ -63,7 +57,6 @@ Lost alternative: lint-enforcing sentence length/imperative mood — honest reas
 Cost paid: one more reference to read when writing specs; writers spend a few more seconds per sentence.
 Reversibility: easy — it is a reference + two template lines.
 Correctness policy: existing pages may keep legacy prose; new specs and briefs must follow the rules; a stylistic miss is not a defect.
-
 ## D-06: Canonical resource bodies and portable host adapters — 2026-10-14
 Trigger: the human asked for shared internal agent resources and unambiguous file separation to avoid independently edited copies drifting.
 Options considered: copied native instruction trees / whole-directory symbolic links / canonical .agents resources with thin native adapters.
@@ -72,7 +65,6 @@ Lost alternative: whole-directory links — native settings and rule formats dif
 Cost paid: native metadata is a generated cache that must be refreshed and checked; legacy/user-edited adapters require an explicit preservation-first migration or manual merge.
 Reversibility: easy — canonical bodies are plain markdown; adapters can be regenerated without changing their instructions.
 Correctness policy: canonical instruction content is never silently copied or merged; broken/stale adapters fail checks. Exact prose duplication checks are heuristic, not proof of semantic uniqueness. Host loader behavior requires verification in that host.
-
 ## D-07: Real relative resource aliases — 2026-10-14
 Trigger: the human explicitly clarified that native files/folders must be filesystem symlinks, not ordinary discovery-pointer copies; Windows Developer Mode was enabled to permit creation.
 Options considered: retain regular pointer files / alias whole native configuration trees / real relative aliases for compatible entrypoints/resources with one central Cursor view directory.
@@ -81,7 +73,6 @@ Lost alternative: whole configuration-tree aliases — incompatible formats/priv
 Cost paid: Windows creation permission and explicit migration preflight are required; incompatible Cursor metadata is a generated view. Validation snapshots, expected staged contents and final mode commit protect failures and concurrent edits.
 Reversibility: easy to inspect and regenerate; a reverse migration is deliberate, never an implicit --portable-pointers overwrite of linked sources.
 Correctness policy: links must be real, relative and resolve the intended owner. Custom/concurrently changed content is preserved; rollback refuses occupied destinations and reports recovery paths. Existing valid aliases do not require new-link permission.
-
 ## D-08: Audit findings become an ordered spec list, security before capture — 2026-10-20
 Trigger: the 2026-10-20 audit produced roughly two dozen gaps at once, and the human asked for a speclist to work through smallest-first, fixing security first where it exists.
 Options considered: one large "make it best" rebuild / priority tiers with unordered numbers / a single numbered execution queue where the next free number is always the next unit to start.
@@ -90,7 +81,6 @@ Lost alternative: tiers-without-order — honest reason: tiers let an agent pick
 Cost paid: the list must be renumbered when a unit is reordered; work that looks more exciting waits behind housekeeping; 22 roadmap rows to keep honest.
 Reversibility: easy — reorder or renumber before each unit starts; a shipped feature cannot be un-numbered.
 Correctness policy: the ordering may be revised as evidence arrives; the invariant that never bends is "no passive capture before provenance and quarantine exist".
-
 ## D-09: Evals measure deterministic routing, not LLM-judged answers — 2026-10-20
 Trigger: `references/evals.md` prescribes a cold-start test nobody has run, and the audit found retrieval returning completed history ahead of current guidance. The CLI must keep its zero-dependency contract (D-01), so it cannot call a model.
 Options considered: human-run cold-start protocol only / a scoring script that shells out to an LLM judge / a frozen `question → expected pages` set scored by `ctx brief` for hit@k, precision, token cost and blind spots, plus the human protocol kept as a separate ritual.
@@ -99,7 +89,6 @@ Lost alternative: LLM-as-judge in the CLI — honest reason: it adds a network d
 Cost paid: the expected-pages set must be maintained as the wiki evolves, and a page can be retrieved yet still be wrong — that residual needs the human protocol.
 Reversibility: easy — the eval set is data; a judge layer can be added later without changing the router.
 Correctness policy: routing metrics may be imperfect proxies for usefulness; the claim "the wiki cut orientation cost and returned the right pages" must be backed by measured numbers, never by lint passing.
-
 ## D-10: Numbers in a committed page carry their measurement source — 2026-10-20
 Trigger: the audit found four stale claims while every local check reported green, so any number quoted in a roadmap must name where it was measured.
 Options considered: cite findings freely / re-verify each number when writing specs / require a Value-sources table on every Phase 4 spec.
@@ -108,7 +97,6 @@ Lost alternative: free citation — honest reason: unattributed numbers are how 
 Cost paid: each spec gains one small table; re-measuring before quoting costs a minute.
 Reversibility: easy.
 Correctness policy: prose may summarize; a number in a committed page without a source line is a defect.
-
 ## D-11: Two version tracks, one release mapping — 2026-10-21
 Trigger: the 2026-10-21 audit found the always-green spec required `SKILL.md`, `package.json`, `plugin.json`, the CHANGELOG and the newest tag to agree on one identity, while the repo intentionally ships skill/CLI 2.7.0 and package/plugin 3.7.0, and `marketplace.json` also carries 3.7.0.
 Options considered: force one version everywhere / keep two tracks with no check / keep two tracks and check each track plus the mapping and tag.
@@ -117,7 +105,6 @@ Lost alternative: one identity — honest reason: it would force a needless majo
 Cost paid: one extra mapping table and a slightly longer release check; readers must know which track a number belongs to.
 Reversibility: easy — the mapping is documentation plus a test; collapsing the tracks later is a deliberate release decision.
 Correctness policy: each track may move independently; a release is valid only when each track is internally consistent, the mapping is current, and the tag matches the skill track. No check may assert a single number for both tracks.
-
 ## D-12: Human-facing dates use the local calendar day — 2026-10-21
 Trigger: `today()` used `new Date().toISOString().slice(0, 10)`, so at 00:57 IST on 2026-10-21 it wrote 2026-10-20. Pages, the log and the tracker are read by humans in their local day, and `ctx log` did not bump `updated` at all.
 Options considered: keep UTC everywhere / use the local calendar day for pages and logs / store UTC timestamps and render local dates.
@@ -126,7 +113,6 @@ Lost alternative: UTC everywhere — honest reason: it makes "today" disagree wi
 Cost paid: tests must freeze `TZ` and inject a clock; a user who travels can see the date move.
 Reversibility: easy — one helper plus tests.
 Correctness policy: a date may be one day off only if the local clock is wrong; machine timestamps remain precise. `ctx log` must also bump `updated`, so the page date and the newest entry never disagree.
-
 ## D-13: Validate on a remote candidate branch before publishing — 2026-10-21
 Trigger: Feature 08 forbids a push before cross-platform green, but this Windows host has no macOS runner; remote CI requires candidate publication.
 Options considered: leave Feature 08 pending / push main without proof / publish a temporary CI branch and update main only after all candidate checks pass.
@@ -135,7 +121,6 @@ Lost alternative: local-only changes — they cannot prove the macOS fixes or sa
 Cost paid: one remote candidate branch and additional CI runs. Release-candidate checks validate both tracks without pretending an unpublished tag already exists; actual release checks require the tag.
 Reversibility: easy — the candidate does not change main until verified; rollback remains a new commit rather than rewriting user history.
 Correctness policy: never report cross-platform success from local simulations; main and release publication wait for successful candidate checks. This narrowly supersedes Feature 08's no-push rule, not its no-unverified-main rule.
-
 ## D-14: Conservative housekeeping and advisory cursor defaults — 2026-10-21
 Trigger: Features 10-11 need explicit input/count/liveness policies before implementation.
 Options considered: guess at semantics / block all work / ask the human for conservative defaults.
@@ -144,7 +129,6 @@ Lost alternative: hard-failing cursor checks or silently discarding covered docu
 Cost paid: advisory signals need human reconciliation; local calendar days require timezone/DST checks; cleanup rechecks registration, reachability and tracked/untracked/ignored content before removal.
 Reversibility: easy — archived/worktree history remains in Git; guards can change through a superseding decision rather than a hidden default.
 Correctness policy: bad archive inputs fail before writes; cursor uncertainty never becomes verified/fresh. No automatic cursor update, hidden recording, source-only pending filter or self-verification.
-
 ## D-15: Build the remaining queue, then verify the batch — 2026-10-21
 Trigger: the human rejected repeated feature reviews and CI waits as too slow.
 Options considered: continue per-feature review / skip checks entirely / targeted checks while building, one consolidated final review and fix pass.
@@ -153,7 +137,13 @@ Lost alternative: repeated review/CI per unit — excessive overhead prevents ti
 Cost paid: implemented units remain awaiting final verification; they stay off main until the batch passes. The tracker separates implementation readiness from verified completion.
 Reversibility: easy — targeted tests and persisted specs remain available; no main history is rewritten.
 Correctness policy: do not skip trust-boundary validation or targeted checks, claim unrun verification, or publish an unverified batch. This supersedes per-unit full-suite/review timing, not safety or dependency ordering.
-
+## D-16: Publish ctxfolio through npm and GitHub — 2026-10-21
+Trigger: the human explicitly approved ctxfolio@3.8.0, AnshRoshan/ctxfolio and release v2.8.0 after the final roadmap candidate passed CI.
+Options considered: keep copied-only distribution / publish under the old identity / publish the approved ctxfolio identity through npm and GitHub.
+Chosen: publish ctxfolio@3.8.0 and v2.8.0 under AnshRoshan/ctxfolio. Keep skill/CLI 2.8.0 and package/plugin 3.8.0 as separate mapped tracks.
+Lost alternative: copied-only/no-npm policy — the direct human request supersedes that distribution exclusion; project-local CLI copies remain supported.
+Cost paid: registry and release metadata plus compatibility guidance; legacy generated adapter markers and project skill paths remain compatibility identifiers, not additional brands to rewrite blindly.
+Reversibility: release a corrective version or deprecate registry metadata; never rewrite published tags/history or discard user-owned installed content.
+Correctness policy: approval is not publication proof. Record actual registry/release outcomes at testing evidence; preserve zero dependencies, SHIP boundaries and historical specs. This supersedes the old no-npm exclusion, not safety or verification requirements.
 ## F-01: Appended Wave 0 IDs vs execution order — 2026-10-21 (attached to Features 30-34)
-
 We appended Features 30-34 instead of renumbering 08-29, and made the wave table authoritative while the numbers stay stable. Nobody has decided whether stable IDs or "next number = next unit" is the long-term rule. Until decided, Wave 0 runs first and no later wave starts while an earlier wave is red. If the human prefers strict execution numbers, renumber 08-34 once, before any Wave 0 unit starts.

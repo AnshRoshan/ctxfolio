@@ -71,3 +71,5 @@ confidence: unverified
 - [x] Strict lint/stale and doctor pass; owner pages, tracker, log and memory record evidence (28 pages 0/0, stale clean, doctor13/13)
 
 - 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (10): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

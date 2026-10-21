@@ -35,3 +35,5 @@ confidence: unverified
 Verification outcome: [Testing evidence](../testing.md#verification-evidence). Source review covers fresh/upgrade scaffolds, copied-CLI authoring, adapter parity, broken routes, quoted/brace metadata and custom-content preservation. No live-host loader behavior is claimed without host verification.
 
 - 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (06): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

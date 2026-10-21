@@ -77,3 +77,5 @@ Source review: scripts/ctx.mjs → imports, commands dispatch, SHIP/install, git
 - The former legacy editor worktree was safely removed through Git in Feature 10; its reachable commit history is retained. Cleanup evidence and recovery limits live in [operational gotchas](../library-docs.md#known-operational-gotchas).
 
 - 2026-10-21 navigation checkpoint: portable facts attribution now survives either CLI entrypoint. File-location routes remain unchanged; the shared invariant note is owned by [architecture](../architecture.md). This is bookkeeping evidence, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (map): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

@@ -78,3 +78,5 @@ updated: 2026-10-21
 - This is local completion, not actual remote batch CI success, live native-host discovery or authenticated external identity proof. The common [publication gate](../progress-tracker.md#local-completion-and-publication-gate) remains pending.
 
 - 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (11): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

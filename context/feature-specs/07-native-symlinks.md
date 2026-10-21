@@ -36,3 +36,5 @@ confidence: unverified
 Outcome: [Testing evidence](../testing.md#verification-evidence). Native fs.symlink/lstat/readlink and disposable Git index checks verify actual relative file/directory links and link-target blobs; fault injection separately verifies permission denial and concurrent-edit/rollback preservation. Absolute junction substitutes are refused.
 
 - 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (07): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

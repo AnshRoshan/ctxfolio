@@ -74,3 +74,5 @@ The 2026-10-21 audit found the checker is not fail-closed. `parseFrontmatter` st
 - [x] `../progress-tracker.md`, `../../memory.md`, `../log.md` and `../index.md` reflect the unit
 
 - 2026-10-21: Portable facts source attribution was corrected and checked across source/project CLI; this unit's substantive scoped contracts are unchanged. This records a narrow bookkeeping review, not new semantic verification.
+
+- 2026-10-21 publication checkpoint (30): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

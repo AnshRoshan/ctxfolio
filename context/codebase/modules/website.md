@@ -88,3 +88,5 @@ the workflow itself, and on manual dispatch. It uses Node 24, installs from
 is not a strict single-file guarantee. Build output is not committed.
 
 Observed build shape and deployed-site success live in [testing evidence](../../testing.md#verification-evidence), not in workflow configuration. Source review: `web/package.json` scripts/dependencies, `web/vite.config.ts` plugins, `web/src/App.tsx` mount/registry, `web/src/data/transcripts.ts` fixtures and `.github/workflows/pages.yml` triggers/build/deploy, at `b7e58d6586c2` on 2026-10-21.
+
+- 2026-10-21 publication checkpoint (website): ctxfolio metadata/versions updated; scoped behavior unchanged. Not semantic verification.

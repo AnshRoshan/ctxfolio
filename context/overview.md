@@ -39,6 +39,8 @@ Solo builders and small teams (2–10 devs, each with coding agents) who want se
 
 The currently authorized feature/request only; build-plan.md contains future proposals, not blanket authorization. The skill's own wiki (this folder) is in scope for keeping this upgrade accurately documented.
 
+The direct publication request authorizes npm distribution as ctxfolio@3.8.0, AnshRoshan/ctxfolio and release v2.8.0 (D-16); publication success is recorded separately at testing evidence.
+
 ## Deliberately out of scope
 
 - daemon/watch mode · databases or backends of any kind (this repo has none) · IDE plugins · personal-assistant memory trees (see CHANGELOG v2.2 rationale) · auto-filling placeholders from guesses — that's the agent's judgement job, not the tool's.
