@@ -1,6 +1,12 @@
 # Changelog
 
-## v2.7 — native relative symbolic links (package/plugin 3.7.0)
+## v2.7.0 — native relative symbolic links and substrate integrity (package/plugin 3.7.0)
+
+- Frontmatter block scalars and brace globs are checked fail-closed; contract errors remain named diagnostics rather than crashes or dropped routing metadata.
+- Core wiki writes use atomic file replacement, serialized cooperating writers and exact replay-safe archives. Installs publish a staged SHIP-only tree, preserve prior content in a named backup and record local provenance; setup backs up changed CLI bytes and migrates configuration schema without dropping unknown keys.
+- Roadmap reservations guard spec/task authoring; lint checks queue coherence, required spec sections, decision references, router code spans and page relations.
+- The macOS temporary-root alias bug in fault injection is fixed at the shared sandbox helper. Preservation regressions require evidence that injection occurred and that human edits/recovery data survive.
+- CI uses supported Node 22/24 tracks and explicit runner images, gates this repo's actual wiki, proves drift/version mismatches are caught, and verifies separate skill/CLI and package/plugin release tracks. Actions and website dependencies have automated update monitoring.
 
 - Fresh setup now creates actual relative file/folder symlinks and enables repository-local Git `core.symlinks=true`. Existing legacy layouts remain explicit until migrated; `--portable-pointers` is an opt-out, never a hidden fallback.
 - CLAUDE/GEMINI/Copilot entrypoints share AGENTS.md. Compatible Claude agent/rule/skill and Cursor skill folders share canonical directories; Cursor's native .mdc views live once centrally and are directory-linked.

@@ -16,14 +16,16 @@ Task routing and a derived page catalog. Reading-order policy lives in [AGENTS.m
 |---|---|
 | Build a feature unit | `feature-specs/NN-*.md` → `build-plan.md` (position only) → `architecture.md` invariants → module pages that `brief` returns |
 | Fix a bug | `current-issues.md` → module page covering the file (`brief <file>`) → `testing.md` → `decisions.md` (grep the area) |
-| UI work | `ui-rules.md` → `ui-tokens.md` → `ui-registry.md` → `designs/` |
-| Schema / data change | `data-model.md` → `architecture.md` invariants → `decisions.md` → `library-docs.md` (ORM) |
-| API / route change | `api-contracts.md` → module page → `code-standards.md` |
-| Add a dependency or integration | `library-docs.md` → `integrations.md` → `decisions.md` (record the new decision) |
-| Deploy / operate | `runbook.md` → `env-vars.md` |
+| UI work | `designs/` → `codebase/map.md` → `code-standards.md` |
+| Schema / data change | `architecture.md` invariants → `decisions.md` → `library-docs.md` (ORM) |
+| API / route change | `architecture.md` → `codebase/map.md` → `code-standards.md` |
+| Add a dependency or integration | `library-docs.md` → `decisions.md` → `testing.md` (record the new decision) |
+| Deploy / operate | `workflow-rules.md` → `testing.md` → `library-docs.md` |
 | "How does X work?" (question only) | `brief X` → answer from pages. Open code only if a page is stale/low-confidence. File a useful answer back as a page. |
 | Unknown area / first time here | `codebase/map.md` → `brief <keywords>` |
-| New raw source (PRD, notes, vendor docs) | follow INGEST in the skill (`references/operations.md`) |
+| New raw source (PRD, notes, vendor docs) | follow INGEST in the skill's operations reference |
+
+Optional contract, UI and operations pages are listed in the catalog when present; read that entry before following a route.
 
 ## Catalog
 

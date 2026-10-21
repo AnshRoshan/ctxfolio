@@ -4,8 +4,8 @@ type: tracker
 status: active
 summary: The task ledger — In progress (max one), Blocked, Up next, Completed with concrete details
 tags: [progress,status,tasks]
-updated: 2026-10-14
-verified_at: 080a7adb7826
+updated: 2026-10-21
+verified_at: 69e9f4c26c27
 ---
 
 # Progress Tracker
@@ -18,17 +18,15 @@ The only file that updates constantly, and the only place a unit's state lives. 
 mutually exclusive — move lines with `ctx task` (`add` / `start` / `block` / `done`); it keeps
 the ledger honest (one unit In progress at a time, `done` requires concrete details).
 
-Roadmap position: [build plan](build-plan.md). Authorized acceptance criteria: [Feature 07](feature-specs/07-native-symlinks.md).
+Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 complete. Active unit: Feature 08 (always-green baseline); its spec owns the remaining cross-platform/release gate.
 
 ## In progress
-
+- Feature 08: always-green baseline: CI red, self-context gate, release hygiene — started 2026-10-21
 ## Blocked
 
 ## Up next
-- evals runner — spec first: `ctx new feature evals-runner` (next free spec number; see build-plan)
-- hook parity beyond Claude (P3-F06, spec pending)
-- `ctx query` filing (P3-F07, spec pending)
-- opt-in project skills `--skills` (P3-F08, spec pending)
+- Phase 4 waves 0-6 (Features 08-34) live in [build-plan](build-plan.md) - Wave 0 first, then smallest first, provenance before capture. Create each numbered spec only when its unit starts.
+
 
 ## Completed
 - Feature 04: dogfood — this repo runs its own context system (setup + filled wiki) — 2026-10-06 — decisions: D-04; details: 47/47 tests, doctor 12/12, VERSION 2.4.0, detect false-positive fixed (word-boundary dep matching)
@@ -38,6 +36,11 @@ Roadmap position: [build plan](build-plan.md). Authorized acceptance criteria: [
 - Feature 05: reliable context routing and safe updates — 2026-10-14 — CLI 2.5.0, metadata 3.5.0; 72/72 Windows tests; strict lint clean; doctor 12/12; budgeted JSON and safe updates
 - Feature 06: single-source agent resources and file ownership — 2026-10-14 — Accepted single-source ownership; decisions: D-06; evidence: context/testing.md#verification-evidence
 - Feature 07: native Git-compatible symlink layout — 2026-10-14 — Native relative link layout accepted; decisions: D-07; evidence: context/testing.md#verification-evidence
+- Feature 30: Page-contract integrity — 2026-10-21 — parseFrontmatter folded/literal scalars + named errors; recursive brace globs fail closed via globError; duplicate/typo/nested/tab and malformed-glob regressions; 106 tests, lint 22 pages 0/0, doctor 13/13
+- Feature 31: Crash-safe writes — 2026-10-21 — atomicWrite (temp+fsync+rename) and appendAtomic; cross-process advisory lock with stale recovery/reentrancy; archive replay dedupe; 109 tests, lint 23 pages 0/0, doctor 13/13
+- Feature 32: Install transaction — 2026-10-21 — SHIP-only staged install with name/symlink refusal, manifest and backup swap; dry-run; setup CLI backup; .ctx.json schemaVersion migration preserving unknown keys; 114 tests, lint 24 pages 0/0, stale clean, doctor 13/13
+- Feature 33: Spec-queue integrity — 2026-10-21 — build-plan numeric reservations parsed; new feature/task add refuse implicit reserved IDs and accept explicit --spec; lint enforces roadmap-spec-tracker coherence, required Wave 0 sections and D-NN refs; 117 tests, lint 25 pages 0/0, stale clean, doctor 13/13
+- Feature 34: Route and relation integrity — 2026-10-21 — Router templates now use only always-created pages; lint validates router backticks, code-span paths and related targets; fixed relative related paths in map/module/API/integration templates; 119 tests, lint 26 pages 0/0, stale clean, doctor 13/13
 ## Session notes
 
 - 2026-10-06: detect() substring bug found by dogfooding — 'gin' matched "context-engineering" → backend false positive; fixed with word-boundary regex over manifest text (dep names keep substring match).

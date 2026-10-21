@@ -38,18 +38,19 @@
  * lint also accepts --fix (regenerates the index catalog).
  *
  * Usage: node context/ctx.mjs <command> [args] [--root dir]
- * Node >= 18. No dependencies. Works without git (staleness features degrade gracefully).
+ * Node 22 or 24. No dependencies. Works without git (staleness features degrade gracefully).
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 const SELF = fileURLToPath(import.meta.url);
 const SKILL_DIR = path.resolve(path.dirname(SELF), '..');
 const VERSION = '2.7.0';
+const CONFIG_SCHEMA = 2;
 
 /* ------------------------------------------------------------------ args */
 const VALUE_FLAGS = new Set(['root', 'since', 'budget', 'covers', 'paths', 'title', 'm', 'tail', 'limit', 'type', 'summary', 'spec', 'danger', 'days', 'keep-days', 'tool', 'dest']);
@@ -99,6 +100,115 @@ function findRoot() {
 const ROOT = ['init', 'setup'].includes(cmd) ? path.resolve(String(flags.root || process.cwd())) : findRoot();
 const CTX = path.join(ROOT, 'context');
 const rel = (abs) => posix(path.relative(ROOT, abs));
+
+/* ------------------------------------------------------------- safe writes */
+let tmpSeq = 0;
+function atomicWrite(file, data) {
+  const dir = path.dirname(file);
+  fs.mkdirSync(dir, { recursive: true });
+  let mode;
+  try { mode = fs.statSync(file).mode & 0o777; } catch {}
+  const tmp = path.join(dir, `.${path.basename(file)}.tmp-${process.pid}-${tmpSeq++}-${Math.random().toString(36).slice(2, 8)}`);
+  let fd;
+  try {
+    fd = fs.openSync(tmp, 'wx', mode || 0o666);
+    fs.writeFileSync(fd, data);
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = undefined;
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    if (fd !== undefined) {
+      try { fs.closeSync(fd); } catch {}
+    }
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
+}
+function appendAtomic(file, text) {
+  let current = '';
+  try { current = fs.readFileSync(file, 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+  atomicWrite(file, current + text);
+}
+function backupFile(file) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '') + '-' + process.pid;
+  const backup = `${file}.bak-${stamp}`;
+  fs.copyFileSync(file, backup);
+  return backup;
+}
+const LOCK_DIR = path.join(os.tmpdir(), 'ctx-locks');
+let lockDepth = 0;
+let activeLock = null;
+function lockSnapshot(file) {
+  const stat = fs.lstatSync(file);
+  return { file, dev: stat.dev, ino: stat.ino, mtimeMs: stat.mtimeMs, text: fs.readFileSync(file, 'utf8') };
+}
+function releaseLock(owner) {
+  if (!owner) return;
+  try {
+    const current = lockSnapshot(owner.file);
+    if (current.dev === owner.dev && current.ino === owner.ino && current.text === owner.text) fs.unlinkSync(owner.file);
+  } catch {}
+}
+process.once('exit', () => releaseLock(activeLock));
+const sleepSync = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function lockPath() {
+  let root = ROOT;
+  try { root = fs.realpathSync(ROOT); } catch {}
+  const key = createHash('sha1').update(root).digest('hex').slice(0, 16);
+  return path.join(LOCK_DIR, key + '.lock');
+}
+function withLock(fn) {
+  if (lockDepth > 0) {
+    lockDepth += 1;
+    try { return fn(); } finally { lockDepth -= 1; }
+  }
+  fs.mkdirSync(LOCK_DIR, { recursive: true });
+  const lock = lockPath();
+  const waitMs = Number(process.env.CTX_LOCK_WAIT_MS);
+  const deadline = Date.now() + (Number.isFinite(waitMs) && waitMs >= 0 ? waitMs : 10000);
+  let fd;
+  for (;;) {
+    try {
+      fd = fs.openSync(lock, 'wx', 0o600);
+      break;
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      let owner;
+      try { owner = lockSnapshot(lock); } catch (err) { if (err.code === 'ENOENT') continue; throw err; }
+      if (Date.now() - owner.mtimeMs > 30000) {
+        let pid;
+        try { pid = JSON.parse(owner.text).pid; } catch {}
+        let live = false;
+        if (Number.isSafeInteger(pid) && pid > 0) {
+          try { process.kill(pid, 0); live = true; } catch (err) { live = err.code !== 'ESRCH'; }
+        }
+        if (!live) {
+          releaseLock(owner);
+          // The ownership record may have changed; retry without deleting its successor.
+          if (Date.now() < deadline) continue;
+          try { fs.lstatSync(lock); } catch (err) { if (err.code === 'ENOENT') continue; throw err; }
+        }
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(`ctx is busy: another writer holds ${lock}; wait for it or delete the lock if no ctx process is running`);
+      }
+      sleepSync(50);
+    }
+  }
+  const text = JSON.stringify({ pid: process.pid, token: randomUUID(), at: new Date().toISOString(), root: ROOT });
+  try { fs.writeFileSync(fd, text); }
+  finally { fs.closeSync(fd); }
+  const owner = { ...lockSnapshot(lock), text };
+  lockDepth = 1;
+  activeLock = owner;
+  try { return fn(); }
+  finally {
+    lockDepth = 0;
+    activeLock = null;
+    releaseLock(owner);
+  }
+}
 
 const DEFAULTS = {
   resourceMode: 'pointer', // existing projects keep their layout until deliberate migration
@@ -161,9 +271,45 @@ function walk(dir, out = []) {
 }
 
 /* ------------------------------------------------------------------ glob */
-function globToRegex(glob) {
-  let g = glob.replace(/^\.\//, '');
-  if (g.endsWith('/')) g += '**';
+function regexEscape(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function globBraceEnd(g, start) {
+  let depth = 0;
+  for (let i = start; i < g.length; i++) {
+    if (g[i] === '\\') { i += 1; continue; }
+    if (g[i] === '{') depth += 1;
+    else if (g[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+function globBraceSplit(inner) {
+  const parts = [];
+  let current = '';
+  let depth = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i];
+    if (c === '\\') {
+      current += c;
+      if (i + 1 < inner.length) current += inner[++i];
+      continue;
+    }
+    if (c === '{') depth += 1;
+    if (c === '}') depth -= 1;
+    if (c === ',' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += c;
+  }
+  parts.push(current);
+  return parts;
+}
+function compileGlob(g) {
   let re = '';
   for (let i = 0; i < g.length; i++) {
     const c = g[i];
@@ -179,14 +325,29 @@ function globToRegex(glob) {
       } else re += '[^/]*';
     } else if (c === '?') re += '[^/]';
     else if (c === '{') {
-      const end = g.indexOf('}', i);
-      if (end > i) {
-        re += '(?:' + g.slice(i + 1, end).split(',').map((s) => s.replace(/[.+^$()|[\]\\]/g, '\\$&')).join('|') + ')';
-        i = end;
-      } else re += '\\{';
-    } else re += c.replace(/[.+^$()|[\]\\}]/g, '\\$&');
+      const end = globBraceEnd(g, i);
+      if (end < 0) throw new Error('unbalanced "{"');
+      re += '(?:' + globBraceSplit(g.slice(i + 1, end)).map(compileGlob).join('|') + ')';
+      i = end;
+    } else re += regexEscape(c);
   }
-  return new RegExp('^' + re + '$');
+  return re;
+}
+function globToRegex(glob) {
+  const raw = String(glob);
+  let g = raw.replace(/^\.\//, '');
+  if (g.endsWith('/')) g += '**';
+  try {
+    const rx = new RegExp('^' + compileGlob(g) + '$');
+    rx.globError = null;
+    return rx;
+  } catch (e) {
+    // Fail closed: a bad pattern matches nothing, but carries the reason so
+    // lint/brief can name the page instead of crashing the whole command.
+    const rx = /(?!)/;
+    rx.globError = `invalid covers glob \`${raw}\`: ${e.message}`;
+    return rx;
+  }
 }
 const matchers = (globs) =>
   asList(globs)
@@ -222,11 +383,44 @@ function splitList(value) {
 }
 function parseFrontmatter(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!m) return { data: {}, body: text, has: false };
+  if (!m) return { data: {}, body: text, has: false, errors: [] };
   const data = {};
+  const errors = [];
   const lines = m[1].split(/\r?\n/);
   let curKey = null;
+  let block = null;
+  const flushBlock = () => {
+    if (!block) return;
+    let value;
+    if (block.mode === '>') {
+      value = block.lines.reduce((acc, line) => {
+        if (!line.trim()) return acc + '\n';
+        if (!acc) return line;
+        return acc.endsWith('\n') ? acc + line : acc + ' ' + line;
+      }, '');
+    } else value = block.lines.join('\n');
+    data[block.key] = value.trim();
+    block = null;
+    curKey = null;
+  };
   for (const line of lines) {
+    if (/^[ \t]*\t/.test(line)) {
+      errors.push('tab indentation is not valid frontmatter');
+      continue;
+    }
+    if (block) {
+      if (!line.trim()) {
+        block.lines.push('');
+        continue;
+      }
+      const indent = line.match(/^[ \t]*/)[0].length;
+      if (block.indent === Infinity) block.indent = indent;
+      if (indent >= block.indent) {
+        block.lines.push(line.slice(block.indent));
+        continue;
+      }
+      flushBlock();
+    }
     if (/^\s*#/.test(line) || !line.trim()) continue;
     const li = line.match(/^\s+-\s+(.*)$/);
     if (li && curKey) {
@@ -234,15 +428,34 @@ function parseFrontmatter(text) {
       data[curKey].push(unquote(li[1]));
       continue;
     }
+    if (/^\s+-/.test(line)) {
+      errors.push('sequence item has no key');
+      continue;
+    }
+    if (/^\s+[A-Za-z0-9_-]+:\s*/.test(line)) {
+      errors.push(`nested mapping under \`${curKey || 'frontmatter'}\` is not supported`);
+      continue;
+    }
     const kv = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
-    if (!kv) continue;
-    curKey = kv[1];
+    if (!kv) {
+      errors.push(`unparseable frontmatter line: ${line.trim()}`);
+      continue;
+    }
+    const key = kv[1];
+    if (Object.prototype.hasOwnProperty.call(data, key)) errors.push(`duplicate frontmatter key \`${key}\``);
+    curKey = key;
     const v = kv[2].trim();
-    if (v === '') data[curKey] = '';
-    else if (v.startsWith('[') && v.endsWith(']')) data[curKey] = splitList(v);
-    else data[curKey] = unquote(v);
+    if (v === '>' || v === '|' || v === '>-' || v === '|-' || v === '>+' || v === '|+') {
+      data[key] = '';
+      block = { key, mode: v[0], indent: Infinity, lines: [] };
+      continue;
+    }
+    if (v === '') data[key] = '';
+    else if (v.startsWith('[') && v.endsWith(']')) data[key] = splitList(v);
+    else data[key] = unquote(v);
   }
-  return { data, body: text.slice(m[0].length), has: true };
+  flushBlock();
+  return { data, body: text.slice(m[0].length), has: true, errors };
 }
 function unquote(s) {
   if (s.startsWith('"')) {
@@ -272,8 +485,11 @@ function pages() {
     .filter(isPageFile)
     .map((abs) => {
       const text = fs.readFileSync(abs, 'utf8');
-      const { data, body, has } = parseFrontmatter(text);
-      return { abs, rel: rel(abs), relCtx: posix(path.relative(CTX, abs)), text, data, body, has, lines: text.split('\n').length };
+      const { data, body, has, errors } = parseFrontmatter(text);
+      for (const key of ['title', 'summary']) {
+        if (typeof data[key] === 'string') data[key] = data[key].replace(/\s+/g, ' ').trim();
+      }
+      return { abs, rel: rel(abs), relCtx: posix(path.relative(CTX, abs)), text, data, body, has, fmErrors: errors, lines: text.split('\n').length };
     })
     .sort((a, b) => a.rel.localeCompare(b.rel));
   return _pages;
@@ -546,17 +762,53 @@ commands.tools = () => {
    Run it from a clone of the skill; only the shippable parts go. */
 const TOOL_HOMES = { claude: ['.claude', 'skills'], qoder: ['.qoder', 'skills'] };
 const SHIP = ['SKILL.md', 'references', 'assets', 'scripts'];
-function copyTree(src, dst) {
-  if (!fs.existsSync(src)) return;
-  if (fs.statSync(src).isDirectory()) {
+const INSTALL_MANIFEST = '.ctx-install.json';
+function assertNotSymlink(file, label = 'destination') {
+  try {
+    if (fs.lstatSync(file).isSymbolicLink()) throw new Error(`refusing ${label} symlink: ${file}`);
+  } catch (e) {
+    if (e.code === 'ENOENT') return;
+    if (String(e.message).startsWith('refusing ')) throw e;
+    throw e;
+  }
+}
+function copyTreeSafe(src, dst) {
+  const st = fs.lstatSync(src);
+  if (st.isSymbolicLink()) throw new Error(`refusing to ship symlink: ${src}`);
+  if (st.isDirectory()) {
     fs.mkdirSync(dst, { recursive: true });
-    for (const e of fs.readdirSync(src)) copyTree(path.join(src, e), path.join(dst, e));
-  } else fs.copyFileSync(src, dst);
+    for (const entry of fs.readdirSync(src)) copyTreeSafe(path.join(src, entry), path.join(dst, entry));
+  } else if (st.isFile()) {
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    fs.copyFileSync(src, dst);
+  } else throw new Error(`refusing to ship non-file: ${src}`);
+}
+function shipFiles() {
+  const out = [];
+  const visit = (abs) => {
+    const st = fs.lstatSync(abs);
+    if (st.isSymbolicLink()) throw new Error(`refusing to ship symlink: ${abs}`);
+    if (st.isDirectory()) for (const entry of fs.readdirSync(abs)) visit(path.join(abs, entry));
+    else if (st.isFile()) out.push(posix(path.relative(SKILL_DIR, abs)));
+  };
+  for (const item of SHIP) {
+    const abs = path.join(SKILL_DIR, item);
+    if (fs.existsSync(abs)) visit(abs);
+  }
+  return out.sort();
+}
+function installStamp() {
+  return new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '') + '-' + process.pid;
 }
 commands.install = () => {
   const skillMd = path.join(SKILL_DIR, 'SKILL.md');
   if (!fs.existsSync(skillMd)) return die('install must run from the cloned skill repo (no SKILL.md beside scripts/)');
-  const name = String(parseFrontmatter(fs.readFileSync(skillMd, 'utf8')).data.name || path.basename(SKILL_DIR));
+  const { data, has, errors } = parseFrontmatter(fs.readFileSync(skillMd, 'utf8'));
+  if (!has || errors.length || typeof data.name !== 'string' || !data.name.trim()) return die('refusing missing, empty or invalid skill name frontmatter in SKILL.md');
+  const name = data.name.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) || name === '.' || name === '..') {
+    return die(`refusing unsafe skill name from SKILL.md: ${JSON.stringify(name)}`);
+  }
   const home = os.homedir();
   let targets;
   if (flags.dest && flags.dest !== true) targets = [path.resolve(String(flags.dest), name)];
@@ -568,11 +820,54 @@ commands.install = () => {
     } else if (TOOL_HOMES[tool]) targets = [path.join(home, TOOL_HOMES[tool][0], TOOL_HOMES[tool][1], name)];
     else return die(`unknown --tool "${tool}" — use claude|qoder|auto, or --dest <dir>`);
   }
+  const files = shipFiles();
+  const validateDestination = (dst) => {
+    assertNotSymlink(dst);
+    const source = realPathWithMissing(SKILL_DIR);
+    const target = realPathWithMissing(dst);
+    if (pathInside(SKILL_DIR, dst) || pathInside(dst, SKILL_DIR) || pathInside(source, target) || pathInside(target, source)) throw new Error('refusing to install onto, inside or over an ancestor of its source tree');
+    if (fs.existsSync(dst) && !fs.statSync(dst).isDirectory()) throw new Error(`install destination is not a directory: ${dst}`);
+  };
+  try { for (const dst of targets) validateDestination(dst); } catch (e) { return die(e.message); }
   for (const dst of targets) {
-    if (path.resolve(dst) === path.resolve(SKILL_DIR)) return die('refusing to install the skill onto itself');
-    fs.mkdirSync(dst, { recursive: true });
-    for (const item of SHIP) copyTree(path.join(SKILL_DIR, item), path.join(dst, item));
+    if (flags['dry-run']) {
+      console.log(`would install ${name} v${VERSION} → ${dst}`);
+      for (const file of files) console.log(`  ${file}`);
+      continue;
+    }
+    const parent = path.dirname(dst);
+    fs.mkdirSync(parent, { recursive: true });
+    const stage = fs.mkdtempSync(path.join(parent, `.${name}.stage-`));
+    let backup = null;
+    let backedUp = false;
+    try {
+      for (const item of SHIP) copyTreeSafe(path.join(SKILL_DIR, item), path.join(stage, item));
+      atomicWrite(path.join(stage, INSTALL_MANIFEST), JSON.stringify({
+        name,
+        version: VERSION,
+        installedAt: new Date().toISOString(),
+        checksum: createHash('sha256').update(fs.readFileSync(skillMd)).digest('hex'),
+        files,
+      }, null, 2) + '\n');
+      validateDestination(dst);
+      if (linkStat(dst)) {
+        backup = `${dst}.ctx-backup-${installStamp()}-${randomUUID()}`;
+        fs.renameSync(dst, backup);
+        backedUp = true;
+      }
+      if (linkStat(dst)) throw new Error(`install destination changed before publication: ${dst}`);
+      fs.renameSync(stage, dst);
+    } catch (e) {
+      const recovery = [];
+      try { fs.rmSync(stage, { recursive: true, force: true }); } catch { recovery.push(stage); }
+      if (backedUp) {
+        try { if (!linkStat(dst)) fs.renameSync(backup, dst); } catch {}
+        if (linkStat(backup)) recovery.push(backup);
+      }
+      return die(`install failed: ${e.message}${recovery.length ? `; preserved for recovery: ${recovery.join(', ')}` : ''}`);
+    }
     console.log(`installed ${name} v${VERSION} → ${dst}`);
+    if (backup) console.log(`backup: ${backup}`);
   }
   console.log('Next: in any project, tell the agent "set up the project context system" — or run node <install-dir>/scripts/ctx.mjs setup from the project root.');
 };
@@ -593,6 +888,7 @@ commands.brief = () => {
   const trust = (p) => {
     const cov = matchers(p.data.covers);
     const warnings = [];
+    const globErrors = cov.map((rx) => rx.globError).filter(Boolean);
     const changedSources = dirtySources.filter((f) => anyMatch(cov, f));
     const isStale = stale.has(p.rel) || p.data.status === 'stale';
     const retired = ['superseded', 'archived'].includes(p.data.status);
@@ -605,9 +901,15 @@ commands.brief = () => {
     if (p.data.confidence && p.data.confidence !== 'verified') warnings.push(`Confidence: ${p.data.confidence}`);
     if (cov.length && !p.data.confidence) warnings.push('No recorded confidence for code claims');
     if (cov.length && !health.available) warnings.push('Git unavailable: freshness not checked');
+    for (const err of globErrors) warnings.push(err);
     return { confidence: p.data.confidence || null, stale: isStale, verificationRequired: warnings.length > 0, changedSources, warnings };
   };
   const knownPages = pages();
+  const routingErrors = knownPages.flatMap((p) =>
+    matchers(p.data.covers)
+      .filter((rx) => rx.globError)
+      .map((rx) => ({ page: p.rel, error: rx.globError })),
+  );
   for (const p of alwaysRead) {
     const page = knownPages.find((known) => known.rel === p.page);
     if (!page) continue;
@@ -661,7 +963,7 @@ commands.brief = () => {
   }
   const covering = pages_().flatMap((p) => matchers(p.data.covers));
   const blindSpots = inputs.filter((f) => (f.includes('/') || /\.[a-z0-9]+$/i.test(f)) && !anyMatch(covering, f));
-  const payload = { command: 'brief', ok: !budgetExceeded && !alwaysRead.some((p) => p.missing || p.verificationRequired) && selected.length > 0 && !blindSpots.length && !selected.some((p) => p.verificationRequired), alwaysRead, pages: selected, skipped, blindSpots, estimatedTokens: used, budget: budget === Infinity ? null : budget, budgetExceeded, gitAvailable: health.available };
+  const payload = { command: 'brief', ok: !budgetExceeded && !alwaysRead.some((p) => p.missing || p.verificationRequired) && selected.length > 0 && !blindSpots.length && !selected.some((p) => p.verificationRequired) && !routingErrors.length, alwaysRead, pages: selected, skipped, blindSpots, routingErrors, estimatedTokens: used, budget: budget === Infinity ? null : budget, budgetExceeded, gitAvailable: health.available };
   emit(payload, () => {
     console.log('ALWAYS READ (orient):');
     for (const p of alwaysRead) {
@@ -679,6 +981,7 @@ commands.brief = () => {
     if (!selected.length) console.log(scored.length ? '  (matching pages omitted by budget/limit; inspect skipped in --json or raise the budget)' : '  (no matching pages; inspect relevant sources and record only reusable knowledge)');
     if (skipped.length) console.log(`\nOmitted: ${skipped.filter((p) => p.reason === 'budget').length} by budget, ${skipped.filter((p) => p.reason === 'limit').length} by limit.`);
     if (blindSpots.length) console.log(`\nBLIND SPOT: no current page documents ${blindSpots.join(', ')}. Check the sources; update a relevant page or create a reusable module page.`);
+    for (const item of routingErrors) console.log(`\nROUTING CONFIG ERROR: ${item.page} — ${item.error}; routing cannot use this page until the glob is fixed.`);
     console.log(`\nEstimated full-page read cost: ~${fmtTok(used)} tokens (characters / 4, not model tokenization). Read TL;DR first; verify flagged claims before relying on them.`);
   });
 };
@@ -778,12 +1081,45 @@ function duplicateProse(ps, resources) {
 
 /* ---- lint */
 const DECISION_FIELDS = ['Trigger', 'Options considered', 'Chosen', 'Lost alternative', 'Cost paid', 'Reversibility', 'Correctness policy'];
+const NEAR_MISS_KEYS = {
+  cover: 'covers',
+  coverss: 'covers',
+  summery: 'summary',
+  statuss: 'status',
+  titel: 'title',
+  updted: 'updated',
+  tag: 'tags',
+  relateds: 'related',
+};
 commands.lint = () => {
   if (flags.fix) commands.index();
   const errors = [];
   const warns = [];
   const E = (m) => errors.push(m);
   const W = (m) => warns.push(m);
+  const scanCodeSpans = (text, label, abs) => {
+    let fence = null;
+    const prose = text.split(/\r?\n/).filter((line) => {
+      if (fence) {
+        if (new RegExp(`^ {0,3}${fence.char}{${fence.length},}\\s*$`).test(line)) fence = null;
+        return false;
+      }
+      const open = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+      if (open && (open[1][0] !== '`' || !open[2].includes('`'))) {
+        fence = { char: open[1][0], length: open[1].length };
+        return false;
+      }
+      return true;
+    }).join('\n');
+    for (const m of prose.matchAll(/`([^`\n]+)`/g)) {
+      const token = m[1].trim();
+      if (!token || /^-/.test(token) || /\s|[{}*<>$|"'`=]/.test(token) || /^[a-z]+:/i.test(token)) continue;
+      const looksPath = /^[\w.@-]+(?:\/[\w.@-]+)*\/?$/.test(token) && (token.includes('/') || /\.(md|mjs|js|json|ts|tsx|jsx|py|go|rs|toml|ya?ml)$/.test(token));
+      if (!looksPath) continue;
+      const found = [path.resolve(ROOT, token), path.resolve(path.dirname(abs), token)].some((f) => fs.existsSync(f));
+      if (!found) E(`${label}: code-span path not found -> ${token}`);
+    }
+  };
   const ps = pages();
   if (!fs.existsSync(CTX)) return die('no context/ folder — run: node <skill>/scripts/ctx.mjs init');
   const required = ['title', 'type', 'status', 'summary', 'updated'];
@@ -799,6 +1135,10 @@ commands.lint = () => {
       E(`${p.rel}: missing frontmatter (title, type, status, summary, updated)`);
       continue;
     }
+    for (const err of p.fmErrors || []) E(`${p.rel}: ${err}`);
+    for (const [wrong, right] of Object.entries(NEAR_MISS_KEYS)) {
+      if (p.data[wrong] !== undefined && p.data[right] === undefined) E(`${p.rel}: frontmatter has \`${wrong}:\` but no \`${right}:\` — likely a typo; routing and staleness will not use it`);
+    }
     for (const k of required) if (!p.data[k]) E(`${p.rel}: frontmatter missing \`${k}\``);
     if (p.data.status && !statuses.includes(p.data.status)) W(`${p.rel}: unknown status \`${p.data.status}\` (use ${statuses.join('|')})`);
     if (p.data.summary && String(p.data.summary).length > CONFIG.maxSummaryChars) W(`${p.rel}: summary > ${CONFIG.maxSummaryChars} chars (it is the index line — keep it tight)`);
@@ -807,14 +1147,13 @@ commands.lint = () => {
     if (p.data.status === 'superseded' && !p.data.superseded_by) W(`${p.rel}: superseded but no \`superseded_by\``);
     if (p.data.updated && !/^\d{4}-\d{2}-\d{2}/.test(String(p.data.updated)) && !/\{\{/.test(String(p.data.updated))) W(`${p.rel}: \`updated\` should be YYYY-MM-DD`);
     if (asList(p.data.covers).length) {
-      const rx = matchers(p.data.covers);
       const files = sourceFilesAll();
       for (const g of asList(p.data.covers)) {
         if (/\{\{/.test(g)) continue;
         const r1 = globToRegex(String(g));
-        if (!files.some((f) => r1.test(f))) W(`${p.rel}: covers \`${g}\` matches no file (dead pointer — fix or remove)`);
+        if (r1.globError) E(`${p.rel}: ${r1.globError}`);
+        else if (!files.some((f) => r1.test(f))) W(`${p.rel}: covers \`${g}\` matches no file (dead pointer — fix or remove)`);
       }
-      void rx;
     }
     if (/\{\{[^}]+\}\}/.test(stripCode(p.text))) (flags.strict ? E : W)(`${p.rel}: unfilled {{placeholder}} — fill it or delete the section`);
     // machine-specific absolute paths make committed files unportable — everything is project-relative
@@ -832,6 +1171,12 @@ commands.lint = () => {
       const k = m[1].trim().toLowerCase();
       if (!slugs.has(k)) E(`${p.rel}: broken wikilink [[${m[1]}]]`);
     }
+    for (const rel of asList(p.data.related)) {
+      const target = String(rel).trim();
+      if (!target || /^[a-z]+:/i.test(target) || target.startsWith('#')) continue;
+      if (!fs.existsSync(path.resolve(path.dirname(p.abs), target))) E(`${p.rel}: related target not found -> ${target}`);
+    }
+    if (p.rel === 'context/workflow-rules.md') scanCodeSpans(p.text, p.rel, p.abs);
   }
 
   // index completeness / orphans
@@ -839,6 +1184,7 @@ commands.lint = () => {
   if (!fs.existsSync(idxPath)) E('context/index.md missing — it is the router every session reads first');
   else {
     const idx = fs.readFileSync(idxPath, 'utf8');
+    scanCodeSpans(idx, 'context/index.md', idxPath);
     if (!idx.includes('<!-- ctx:index:start -->')) W('context/index.md has no ctx:index markers — `ctx index` cannot regenerate the catalog');
     for (const p of ps) if (p.has && !['superseded', 'archived'].includes(p.data.status) && !idx.includes(p.relCtx)) W(`${p.rel}: orphan — not in context/index.md (run \`ctx index\`)`);
   }
@@ -870,6 +1216,8 @@ commands.lint = () => {
   }
 
   // tracker mutual exclusivity + every tracked unit must have a spec
+  const { reservations: roadmap, errors: roadmapErrors } = roadmapReservations();
+  roadmapErrors.forEach(E);
   const tr = ps.find((p) => p.rel === 'context/progress-tracker.md');
   if (tr) {
     const sect = (name) => (tr.text.match(new RegExp(`##\\s*${name}[^\\n]*\\n([\\s\\S]*?)(?:\\n##\\s|$)`, 'i')) || [])[1] || '';
@@ -889,10 +1237,38 @@ commands.lint = () => {
     }
     const specNums = fs.existsSync(specDir) ? fs.readdirSync(specDir).filter((f) => /^\d+/.test(f)).map((f) => f.match(/^(\d+)/)[1]) : [];
     const sdup = specNums.filter((x, i) => specNums.indexOf(x) !== i);
-    if (sdup.length) W(`feature-specs/: number ${[...new Set(sdup)].join(', ')} used by two specs (branch merge) — renumber one and update its tracker line`);
+    if (sdup.length) E(`feature-specs/: number ${[...new Set(sdup)].join(', ')} used by two specs (branch merge) — renumber one and update its tracker line`);
     const hasSpec = (id) => fs.existsSync(specDir) && fs.readdirSync(specDir).some((f) => f.startsWith(String(id).padStart(2, '0')));
-    for (const id of new Set([...a, ...b, ...feats(sect('Up next')), ...feats(sect('Blocked'))])) {
+    const upNext = feats(sect('Up next'));
+    const tracked = new Set([...a, ...b, ...upNext, ...bl]);
+    for (const id of tracked) {
       if (!hasSpec(id)) (a.has(id) || b.has(id) ? E : W)(`progress-tracker.md: Feature ${id} is tracked but has no spec in context/feature-specs/ — create one (ctx new feature <name>) or remove the line`);
+    }
+    const specPages = ps.filter((p) => p.data.type === 'feature' && /^\d+/.test(path.basename(p.rel)));
+    if (roadmap.size) {
+      for (const p of specPages) {
+        const id = path.basename(p.rel).match(/^(\d+)/)[1];
+        if (Number(id) >= 30 && !roadmap.has(id)) E(`${p.rel}: Feature ${id} is not reserved by context/build-plan.md — update the roadmap before keeping this spec`);
+      }
+      for (const id of tracked) {
+        if (Number(id) >= 30 && !roadmap.has(id)) E(`progress-tracker.md: Feature ${id} is not reserved by context/build-plan.md — add it to the roadmap or remove the line`);
+      }
+    }
+    const REQUIRED_SPEC_SECTIONS = ['TL;DR', 'What to build', 'Explicitly NOT in this spec', 'Clarifications', 'Value sources', 'Verification checklist'];
+    for (const p of specPages) {
+      const id = path.basename(p.rel).match(/^(\d+)/)[1];
+      if (Number(id) >= 30) {
+        for (const section of REQUIRED_SPEC_SECTIONS) {
+          if (!new RegExp(`^##\\s+${regexEscape(section)}\\s*$`, 'm').test(p.text)) E(`${p.rel}: missing required spec section "## ${section}"`);
+        }
+      }
+      if (p.data.status === 'complete') {
+        if (!b.has(id)) E(`${p.rel}: status is complete but Feature ${id} is not under Completed in progress-tracker.md`);
+        if (a.has(id) || bl.has(id) || upNext.has(id)) E(`${p.rel}: status is complete but Feature ${id} also appears In progress, Blocked or Up next`);
+      } else if (!['superseded', 'archived'].includes(p.data.status)) {
+        if (b.has(id)) E(`${p.rel}: status is "${p.data.status}" but Feature ${id} is under Completed in progress-tracker.md`);
+        else if (!(a.has(id) || bl.has(id) || upNext.has(id))) E(`${p.rel}: live spec is not tracked in progress-tracker.md — register it with ctx task add --spec ${id}`);
+      }
     }
   }
 
@@ -939,7 +1315,7 @@ function sourceFilesAll() {
 const IDX_START = '<!-- ctx:index:start -->';
 const IDX_END = '<!-- ctx:index:end -->';
 const TYPE_ORDER = ['overview', 'architecture', 'plan', 'standards', 'guide', 'module', 'entity', 'api', 'integration', 'feature', 'decision-log', 'tracker', 'ui', 'runbook', 'glossary', 'source', 'query'];
-commands.index = () => {
+commands.index = () => withLock(() => {
   const ps = pages().filter((p) => p.has && !['superseded', 'archived'].includes(p.data.status));
   const groups = new Map();
   for (const p of ps) {
@@ -963,15 +1339,15 @@ commands.index = () => {
   if (!cur.includes(IDX_START)) cur += `\n${IDX_START}\n${IDX_END}\n`;
   cur = cur.replace(new RegExp(`${IDX_START}[\\s\\S]*?${IDX_END}`), () => md);
   cur = upsertFm(cur, 'updated', today());
-  fs.writeFileSync(idxPath, cur);
+  atomicWrite(idxPath, cur);
   console.log(`index: ${ps.length} pages catalogued in context/index.md`);
   if (flags.llms) {
     let llms = `# ${path.basename(ROOT)}\n\n> Project context for LLMs. Start with AGENTS.md, then context/index.md. Each page below has a one-line summary.\n\n## Core\n- [AGENTS.md](AGENTS.md): instructions and invariants for any agent\n- [memory.md](memory.md): current state and exact next step\n- [context/index.md](context/index.md): task routing + full catalog\n\n## Pages\n`;
     for (const p of ps) llms += `- [${p.data.title || p.relCtx}](${p.rel}): ${p.data.summary || ''}\n`;
-    fs.writeFileSync(path.join(ROOT, 'llms.txt'), llms);
+    atomicWrite(path.join(ROOT, 'llms.txt'), llms);
     console.log('index: wrote llms.txt');
   }
-};
+});
 
 /* ---- coverage */
 commands.coverage = () => {
@@ -1002,8 +1378,8 @@ commands.log = () => {
   }
   const [op, ...title] = pos;
   if (!op || !title.length) return die('usage: ctx log <op> <title...> [-m "note"]   ops: ingest|query|lint|build|decision|fix|sync|audit|handoff');
-  if (!fs.existsSync(lp)) fs.writeFileSync(lp, `---\ntitle: Activity Log\ntype: log\nstatus: active\nsummary: Append-only timeline of ingests, builds, decisions and lint passes\nupdated: ${today()}\n---\n\n# Log\n`);
-  fs.appendFileSync(lp, `\n## [${today()}] ${op} | ${title.join(' ')}\n${flags.m && flags.m !== true ? flags.m + '\n' : ''}`);
+  if (!fs.existsSync(lp)) atomicWrite(lp, `---\ntitle: Activity Log\ntype: log\nstatus: active\nsummary: Append-only timeline of ingests, builds, decisions and lint passes\nupdated: ${today()}\n---\n\n# Log\n`);
+  appendAtomic(lp, `\n## [${today()}] ${op} | ${title.join(' ')}\n${flags.m && flags.m !== true ? flags.m + '\n' : ''}`);
   console.log(`logged: [${today()}] ${op} | ${title.join(' ')}`);
 };
 
@@ -1075,13 +1451,19 @@ commands.task = () => {
       }
       return s;
     };
+    const { reservations: reserved, errors: roadmapErrors } = roadmapReservations();
+    if (roadmapErrors.length) return die(roadmapErrors.join('; '));
     if (!id) {
       const used = usedNums();
       let n = 1;
       for (const u of used) if (u >= n) n = u + 1;
       id = String(n);
+      const key = id.padStart(2, '0');
+      if (reserved.has(key)) return die(`Feature ${key} is reserved by context/build-plan.md (${reserved.get(key)}) — pass --spec ${key} only when starting that unit`);
     } else if (usedNums().has(Number(id))) {
       return die(`Feature ${id} is already in the ledger (another branch's unit?) — pick a free number or omit --spec`);
+    } else if (reserved.size && !reserved.has(id.padStart(2, '0'))) {
+      return die(`Feature ${id.padStart(2, '0')} is not reserved by context/build-plan.md — update the roadmap before claiming it`);
     }
     id = id.padStart(2, '0');
     const body = (getSection(text, 'Up next') || '').split('\n').filter((l) => !/\{\{Feature NN/.test(l)).join('\n');
@@ -1111,12 +1493,27 @@ commands.task = () => {
     move(argId, 'Completed', `Feature ${String(argId).padStart(2, '0')}: ${taskTitle(f.line).title} — ${today()} — ${note}`);
     console.log(`Feature ${argId} → Completed`);
   } else return die('usage: ctx task list|add|start|block|done  (one unit at a time; done requires concrete details)');
-  fs.writeFileSync(tp, upsertFm(text, 'updated', today()));
+  atomicWrite(tp, upsertFm(text, 'updated', today()));
 };
 
 /* ---- archive — the growth valve: the wiki stays fast because old material moves out.
    log.md entries and tracker Completed lines older than the cutoff rotate into
    context/archive/ (still greppable forever); nothing is ever deleted. */
+function archiveEntries(file, header, entries) {
+  let current = '';
+  try { current = fs.readFileSync(file, 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+  const blocks = (text) => text.replace(/\r\n/g, '\n').split(/\n(?=## \[)/).filter((block) => /^## \[/.test(block)).map((block) => block.trim());
+  const archived = new Set(entries.some((entry) => /^## \[/.test(entry)) ? blocks(current) : current.replace(/\r\n/g, '\n').split('\n').map((line) => line.trim()));
+  const fresh = entries.filter((entry) => {
+    const key = entry.replace(/\r\n/g, '\n').trim();
+    if (archived.has(key)) return false;
+    archived.add(key);
+    return true;
+  });
+  if (!current) atomicWrite(file, header + (fresh.length ? '\n' + fresh.join('\n') + '\n' : ''));
+  else if (fresh.length) appendAtomic(file, (current.endsWith('\n') ? '' : '\n') + fresh.join('\n') + '\n');
+  return fresh.length;
+}
 commands.archive = () => {
   const dry = !!flags['dry-run'];
   const logDays = Number(flags.days || CONFIG.archiveAfterDays || 180);
@@ -1138,9 +1535,8 @@ commands.archive = () => {
       moved.log = old.length;
       if (!dry) {
         const ap = path.join(CTX, 'archive', `log-${cl.slice(0, 7)}.md`);
-        if (!fs.existsSync(ap)) fs.writeFileSync(ap, `---\ntitle: Activity Log (archived before ${cl})\ntype: log\nstatus: archived\nsummary: Rotated out of context/log.md by ctx archive on ${today()} — still greppable\nupdated: ${today()}\n---\n\n# Log (archived)\n`);
-        fs.appendFileSync(ap, '\n' + old.map((o) => o.text).join('\n') + '\n');
-        fs.writeFileSync(lp, keep.join('\n'));
+        archiveEntries(ap, `---\ntitle: Activity Log (archived before ${cl})\ntype: log\nstatus: archived\nsummary: Rotated out of context/log.md by ctx archive on ${today()} — still greppable\nupdated: ${today()}\n---\n\n# Log (archived)\n`, old.map((o) => o.text));
+        atomicWrite(lp, keep.join('\n'));
       }
       console.log(`log: ${old.length} entr${old.length === 1 ? 'y' : 'ies'} older than ${cl} → context/archive/log-${cl.slice(0, 7)}.md`);
     } else console.log(`log: nothing older than ${cutoff(logDays)} days (${cl})`);
@@ -1162,12 +1558,11 @@ commands.archive = () => {
         moved.tracker = movedLines.length;
         if (!dry) {
           const ap = path.join(CTX, 'archive', `tracker-${ct.slice(0, 4)}.md`);
-          if (!fs.existsSync(ap)) fs.writeFileSync(ap, `---\ntitle: Completed Work (archived ${ct.slice(0, 4)})\ntype: tracker\nstatus: archived\nsummary: Completions older than ${ct}, rotated by ctx archive — concrete details preserved, greppable\nupdated: ${today()}\n---\n\n# Completed (archived)\n`);
-          fs.appendFileSync(ap, '\n' + movedLines.join('\n') + '\n');
+          archiveEntries(ap, `---\ntitle: Completed Work (archived ${ct.slice(0, 4)})\ntype: tracker\nstatus: archived\nsummary: Completions older than ${ct}, rotated by ctx archive — concrete details preserved, greppable\nupdated: ${today()}\n---\n\n# Completed (archived)\n`, movedLines);
           const pointer = `- (older completions archived: ${rel(path.join(CTX, 'archive', `tracker-${ct.slice(0, 4)}.md`))})`;
           if (!keepLines.some((l) => l.includes('older completions archived'))) keepLines.push(pointer);
           text = setSection(text, 'Completed', keepLines.join('\n'));
-          fs.writeFileSync(tp, upsertFm(text, 'updated', today()));
+          atomicWrite(tp, upsertFm(text, 'updated', today()));
         }
         console.log(`tracker: ${movedLines.length} old completion(s) → context/archive/tracker-${ct.slice(0, 4)}.md (pointer left behind)`);
       } else console.log(`tracker: nothing completed before ${ct}`);
@@ -1196,7 +1591,7 @@ commands.stamp = () => {
     let txt = fs.readFileSync(t, 'utf8');
     txt = upsertFm(txt, 'updated', today());
     if (sha) txt = upsertFm(txt, 'verified_at', sha.slice(0, 12));
-    fs.writeFileSync(t, txt);
+    atomicWrite(t, txt);
     console.log(`stamped ${rel(t)}${sha ? ' @ ' + sha.slice(0, 7) : ''}`);
   }
 };
@@ -1697,7 +2092,7 @@ function adapterReport({ check = false, migrate = false, promote = [] } = {}) {
       }
       if (!parseFrontmatter(item.text).has) { conflicts.push({ file: item.file, source, reason: 'legacy resource needs frontmatter before promotion' }); continue; }
       fs.mkdirSync(path.dirname(abs), { recursive: true });
-      fs.writeFileSync(abs, item.text); // explicit promotion preserves the exact source, not a rewritten summary
+      atomicWrite(abs, item.text); // explicit promotion preserves the exact source, not a rewritten summary
       promoted.add(item.file);
       written.push(source);
     }
@@ -1723,8 +2118,7 @@ function adapterReport({ check = false, migrate = false, promote = [] } = {}) {
       } else if (!row.ok) {
         row.changed = true;
         if (!check) {
-          fs.mkdirSync(path.dirname(abs), { recursive: true });
-          fs.writeFileSync(abs, expected);
+          atomicWrite(abs, expected);
           written.push(file); row.ok = true; row.managed = true;
         }
       }
@@ -1804,8 +2198,7 @@ commands.new = () => {
     if (type === 'rule') fields.paths = splitList(flags.paths || flags.covers || '**/*');
     if (type === 'agent') fields.tools = 'Read, Grep, Glob, Bash';
     const body = type === 'rule' ? `# ${title}\n\nRead the owning context page before editing matching paths. Add links here, not copies of its rules.\n` : type === 'agent' ? `# ${title}\n\nRead AGENTS.md first.\n\n## Purpose\nTODO\n\n## Procedure\nTODO reusable role behavior only; link to project facts and workflow owners.\n` : `# ${title}\n\nRead AGENTS.md first.\n\n## When to use\nTODO\n\n## Procedure\nTODO reusable procedure only; project facts stay at their owners. Resolve companion resources relative to this canonical skill directory.\n`;
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\n\n${body}`);
+    atomicWrite(abs, `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\n\n${body}`);
     const report = adapterReport();
     const ok = !report.errors.length && !report.conflicts.length && report.adapters.every((a) => a.ok);
     emit({ command: 'new', ok, file, ...report, resources: report.resources.map(({ kind, name, file }) => ({ kind, name, file })), exitCode: ok ? 0 : 1 }, () => {
@@ -1820,14 +2213,27 @@ commands.new = () => {
   if (type === 'module') dest = path.join(CTX, 'codebase', 'modules', `${slug}.md`);
   else if (type === 'feature') {
     const dir = path.join(CTX, 'feature-specs');
-    const n = fs.existsSync(dir) ? Math.max(0, ...fs.readdirSync(dir).map((f) => parseInt(f, 10)).filter((x) => !isNaN(x))) + 1 : 1;
+    fs.mkdirSync(dir, { recursive: true });
+    const { reservations: reserved, errors: roadmapErrors } = roadmapReservations();
+    if (roadmapErrors.length) return die(roadmapErrors.join('; '));
+    const requested = flags.spec && flags.spec !== true ? String(flags.spec).replace(/\D/g, '') : '';
+    let n;
+    if (requested) {
+      n = Number(requested);
+      const key = String(n).padStart(2, '0');
+      if (reserved.size && !reserved.has(key)) return die(`Feature ${key} is not reserved by context/build-plan.md — update the roadmap before creating it`);
+      if (fs.readdirSync(dir).some((f) => f.startsWith(key + '-'))) return die(`Feature ${key} already has a spec — pick another number`);
+    } else {
+      n = fs.existsSync(dir) ? Math.max(0, ...fs.readdirSync(dir).map((f) => parseInt(f, 10)).filter((x) => !isNaN(x))) + 1 : 1;
+      const key = String(n).padStart(2, '0');
+      if (reserved.has(key)) return die(`Feature ${key} is reserved by context/build-plan.md (${reserved.get(key)}) — pass --spec ${key} only when starting that unit`);
+    }
     dest = path.join(dir, `${String(n).padStart(2, '0')}-${slug}.md`);
   } else if (type === 'source') dest = path.join(CTX, 'sources', `${slug}.md`);
   else dest = path.join(CTX, `${slug}.md`);
   if (fs.existsSync(dest)) return die(`${rel(dest)} already exists`);
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
   const sk = SKELETONS[type] || ((t, s) => `---\ntitle: ${t}\ntype: ${type}\nstatus: draft\nsummary: TODO one line\ntags: [${s}]\ncovers: []\nupdated: ${today()}\n---\n\n# ${t}\n\n## TL;DR\n\n`);
-  fs.writeFileSync(dest, sk(title, slug, covers));
+  atomicWrite(dest, sk(title, slug, covers));
   console.log(`created ${rel(dest)} — fill TODOs, then run: ctx index`);
 };
 
@@ -2013,32 +2419,32 @@ const POINTER_MAP = [
 /* ---- setup — the ONE command: everything mechanical, greenfield or brownfield.
    Idempotent (never clobbers filled content) and upgrade-safe (re-run after updating
    the skill: refreshes context/ctx.mjs, adds new files, bumps setupVersion). */
-function projectPathError(abs) {
-  const inside = (base, target) => {
-    const r = path.relative(base, target);
-    return !path.isAbsolute(r) && r !== '..' && !r.startsWith('..' + path.sep);
-  };
-  const real = (target) => {
-    let parent = target;
-    const suffix = [];
-    for (;;) {
-      try {
-        fs.lstatSync(parent);
-      } catch (e) {
-        if (e.code !== 'ENOENT') throw e;
-        const up = path.dirname(parent);
-        if (up === parent) throw e;
-        suffix.unshift(path.basename(parent));
-        parent = up;
-        continue;
-      }
-      // A dangling link exists according to lstat; never mistake realpath's
-      // ENOENT for an ordinary missing destination and follow it during writes.
-      return path.resolve(fs.realpathSync(parent), ...suffix);
+function pathInside(base, target) {
+  const r = path.relative(base, target);
+  return !path.isAbsolute(r) && r !== '..' && !r.startsWith('..' + path.sep);
+}
+function realPathWithMissing(target) {
+  let parent = target;
+  const suffix = [];
+  for (;;) {
+    try {
+      fs.lstatSync(parent);
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+      const up = path.dirname(parent);
+      if (up === parent) throw e;
+      suffix.unshift(path.basename(parent));
+      parent = up;
+      continue;
     }
-  };
+    // A dangling link exists according to lstat; never mistake realpath's
+    // ENOENT for an ordinary missing destination and follow it during writes.
+    return path.resolve(fs.realpathSync(parent), ...suffix);
+  }
+}
+function projectPathError(abs) {
   try {
-    if (!inside(ROOT, abs) || !inside(real(ROOT), real(abs))) return `path escapes project root: ${rel(abs)}`;
+    if (!pathInside(ROOT, abs) || !pathInside(realPathWithMissing(ROOT), realPathWithMissing(abs))) return `path escapes project root: ${rel(abs)}`;
   } catch (e) {
     return `cannot safely resolve project path ${rel(abs)}: ${e.message}`;
   }
@@ -2114,8 +2520,7 @@ TODO — list code generators, migrations, vendored output. (\`ctx\` already ign
 
 Create one per cohesive area as you learn it — \`ctx new module <name> --covers "<glob>"\`. Candidate globs from the census: ${topGlobs.slice(0, 6).map((g) => '`' + g + '`').join(', ') || '—'} (\`ctx coverage\` tracks the rest).
 `;
-  fs.mkdirSync(path.dirname(mp), { recursive: true });
-  fs.writeFileSync(mp, md);
+  atomicWrite(mp, md);
   return { skipped: false, files: files.length };
 }
 commands.setup = () => {
@@ -2177,6 +2582,21 @@ commands.rules = () => {
 };
 function pages_() {
   return pages().filter((p) => !['superseded', 'archived'].includes(p.data.status));
+}
+function roadmapReservations() {
+  const file = path.join(CTX, 'build-plan.md');
+  const reservations = new Map();
+  const errors = [];
+  if (!fs.existsSync(file)) return { reservations, errors };
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    const m = line.match(/^\|\s*(\d{1,3})\s*\|\s*([^|]+?)\s*\|/);
+    if (!m) continue;
+    const id = String(Number(m[1])).padStart(2, '0');
+    const title = m[2].replace(/\s+[—–-]\s+.*$/, '').trim();
+    if (reservations.has(id)) errors.push(`context/build-plan.md: duplicate roadmap id ${id} — keep one reservation per feature`);
+    else reservations.set(id, title);
+  }
+  return { reservations, errors };
 }
 commands.init = () => {
   const assetsDir = path.join(SKILL_DIR, 'assets');
@@ -2244,8 +2664,7 @@ commands.init = () => {
       skipped.push(`${dest} (legacy owner preserved; explicit migration required)`);
       return;
     }
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.writeFileSync(dst, text);
+    atomicWrite(dst, text);
     created.push(dest);
   };
   for (const [asset, dest, when] of INIT_MAP) if (when(d, flags)) put(asset, dest);
@@ -2258,6 +2677,7 @@ commands.init = () => {
     const cfg = {
       resourceMode: mode === 'symlink' ? 'pointer' : mode, // installed strategy is committed by the validated link transaction
       requestedResourceMode: mode === 'symlink' ? 'symlink' : undefined,
+      schemaVersion: CONFIG_SCHEMA,
       setupVersion: VERSION,
       profile: { langs: d.langs, kinds: d.kinds },
       maxPageLines: DEFAULTS.maxPageLines,
@@ -2267,18 +2687,26 @@ commands.init = () => {
       sourceExt: d.sourceExt.length ? d.sourceExt : DEFAULTS.sourceExt,
       ignoreSourceGlobs: d.ignoreSourceGlobs.length ? d.ignoreSourceGlobs : DEFAULTS.ignoreSourceGlobs,
     };
-    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+    atomicWrite(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
     created.push('context/.ctx.json (seeded from detected profile)');
   } else {
     try {
       const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-      if (cfg.setupVersion !== VERSION) {
-        cfg.setupVersion = VERSION;
-        fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
-        created.push('context/.ctx.json (setupVersion → ' + VERSION + ')');
-      } else skipped.push('context/.ctx.json');
+      const before = JSON.stringify(cfg);
+      const hadSchema = Number.isInteger(cfg.schemaVersion);
+      if (!hadSchema) cfg.schemaVersion = 1;
+      if (cfg.schemaVersion > CONFIG_SCHEMA) {
+        skipped.push(`context/.ctx.json (schema ${cfg.schemaVersion} is newer than this CLI; upgrade the CLI first)`);
+      } else {
+        if (cfg.schemaVersion < CONFIG_SCHEMA) cfg.schemaVersion = CONFIG_SCHEMA;
+        if (cfg.setupVersion !== VERSION) cfg.setupVersion = VERSION;
+        if (JSON.stringify(cfg) !== before) {
+          atomicWrite(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+          created.push(`context/.ctx.json (schema ${cfg.schemaVersion}, setupVersion ${VERSION})`);
+        } else skipped.push('context/.ctx.json');
+      }
     } catch {
-      skipped.push('context/.ctx.json (unparseable — fix by hand)');
+      skipped.push('context/.ctx.json (unparseable - fix by hand)');
     }
   }
 
@@ -2298,8 +2726,7 @@ commands.init = () => {
       .replace(/\{\{GLOBS\}\}/g, globs.join(', '))
       .replace(/\{\{READ\}\}/g, read);
     if (!canSeedResource('rule', name.replace(/\.md$/, ''), text)) { skipped.push(`${dest} (legacy owner preserved; explicit migration required)`); continue; }
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.writeFileSync(dst, text);
+    atomicWrite(dst, text);
     created.push(dest + ' (canonical path route)');
   }
 
@@ -2310,8 +2737,7 @@ commands.init = () => {
       skipped.push('context/agents/' + agent + '/MEMORY.md');
       continue;
     }
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.writeFileSync(dst, fs.readFileSync(path.join(assetsDir, 'agent-memory.md.template'), 'utf8').replace(/\{\{TODAY\}\}/g, today()).replace(/\{\{AGENT\}\}/g, agent));
+    atomicWrite(dst, fs.readFileSync(path.join(assetsDir, 'agent-memory.md.template'), 'utf8').replace(/\{\{TODAY\}\}/g, today()).replace(/\{\{AGENT\}\}/g, agent));
     created.push('context/agents/' + agent + '/MEMORY.md');
   }
 
@@ -2328,7 +2754,7 @@ commands.init = () => {
         skipped.push(zone + '/AGENTS.md');
         continue;
       }
-      fs.writeFileSync(dst, fs.readFileSync(path.join(assetsDir, 'nested-AGENTS.md.template'), 'utf8').replace(/\{\{packages\/storefront\/\}\}/g, zone + '/'));
+      atomicWrite(dst, fs.readFileSync(path.join(assetsDir, 'nested-AGENTS.md.template'), 'utf8').replace(/\{\{packages\/storefront\/\}\}/g, zone + '/'));
       created.push(zone + '/AGENTS.md (danger zone)');
     }
   }
@@ -2338,16 +2764,18 @@ commands.init = () => {
   for (const dir of resourceDirs) {
     fs.mkdirSync(path.join(ROOT, dir), { recursive: true });
     const keep = path.join(ROOT, dir, '.gitkeep');
-    if (!fs.existsSync(keep) && !fs.readdirSync(path.join(ROOT, dir)).length) fs.writeFileSync(keep, '');
+    if (!fs.existsSync(keep) && !fs.readdirSync(path.join(ROOT, dir)).length) atomicWrite(keep, '');
   }
   const adapterState = adapterReport({ migrate: !!flags.migrate, promote: promoted });
   created.push(...adapterState.written);
   const self = path.join(ROOT, 'context', 'ctx.mjs');
   if (path.resolve(self) !== path.resolve(SELF)) {
     const srcBuf = fs.readFileSync(SELF);
-    if (!fs.existsSync(self) || !fs.readFileSync(self).equals(srcBuf)) {
-      fs.writeFileSync(self, srcBuf);
-      created.push('context/ctx.mjs (refreshed to skill version ' + VERSION + ')');
+    const exists = fs.existsSync(self);
+    if (!exists || !fs.readFileSync(self).equals(srcBuf)) {
+      const backup = exists ? backupFile(self) : null;
+      atomicWrite(self, srcBuf);
+      created.push('context/ctx.mjs (refreshed to skill version ' + VERSION + ')' + (backup ? '; backup: ' + rel(backup) : ''));
     } else skipped.push('context/ctx.mjs');
   }
   const gi = path.join(ROOT, '.gitignore');
@@ -2356,7 +2784,7 @@ commands.init = () => {
   const have = new Set(cur.split('\n').map((l) => l.trim()));
   const newLines = add.split('\n').filter((l) => l.trim() && !l.startsWith('#') && !have.has(l.trim()));
   if (newLines.length) {
-    fs.appendFileSync(gi, (cur && !cur.endsWith('\n') ? '\n' : '') + '\n# project-context-system\n' + newLines.join('\n') + '\n');
+    appendAtomic(gi, (cur && !cur.endsWith('\n') ? '\n' : '') + '\n# project-context-system\n' + newLines.join('\n') + '\n');
     created.push('.gitignore (merged)');
   }
   console.log(`profile: ${d.langs.join(', ') || '?'} · kinds: ${d.kinds.join(', ') || 'generic'} · signals: ${d.signals.join(', ') || '—'}${flags['no-detect'] ? ' (detection skipped)' : ''}`);
@@ -2392,4 +2820,6 @@ if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '--version' || !comman
   console.log(doc.trim());
   process.exit(cmd && cmd !== 'help' && cmd !== '--help' ? 1 : 0);
 }
-commands[cmd]();
+const LOCKED_COMMANDS = new Set(['index', 'log', 'task', 'archive', 'stamp', 'new']);
+if (LOCKED_COMMANDS.has(cmd)) withLock(() => commands[cmd]());
+else commands[cmd]();

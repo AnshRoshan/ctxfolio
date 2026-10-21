@@ -5,7 +5,7 @@ status: draft
 summary: {{One line — what this module owns and its main entry point}}
 tags: [{{auth}}, {{security}}]
 covers: [{{src/auth/**}}, {{src/middleware.ts}}]
-related: [decisions.md, data-model.md]
+related: [../../decisions.md, ../map.md]
 updated: {{TODAY}}
 confidence: inferred
 ---

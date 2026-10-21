@@ -18,7 +18,7 @@ verified_at: 080a7adb7826
 
 ## Language & style
 
-- Plain JS (Node ≥ 18), no TypeScript, no deps — D-01. `node --check` must pass.
+- Plain JS on the supported Node tracks declared in package.json, no TypeScript, no deps — D-01. `node --check` must pass.
 - Helpers live at the top with the rest (glob engine, frontmatter, git); commands only compose them.
 - Paths: internal absolute, user-facing ALWAYS relative via `rel()`.
 - git invocations: through `git()` (CRLF-normalized, never `.trim()` on positional output).

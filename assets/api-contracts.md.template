@@ -5,7 +5,7 @@ status: draft
 summary: Every HTTP route / server action / event: inputs, outputs, auth, errors — the contract, not the implementation
 tags: [api, routes, contracts]
 covers: [{{src/app/api/**}}]
-related: [data-model.md, architecture.md]
+related: [architecture.md, decisions.md]
 updated: {{TODAY}}
 confidence: inferred
 ---

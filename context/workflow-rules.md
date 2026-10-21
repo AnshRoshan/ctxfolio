@@ -51,7 +51,7 @@ Present important options with a recommendation and concrete cost. Record the ap
 
 ## Verification and review
 
-- Use the applicable commands in testing.md and operational steps in runbook.md; report missing/unavailable checks instead of inventing them.
+- Use the applicable commands in testing.md and any operational page the catalog lists; report missing/unavailable checks instead of inventing them.
 - Drive actual changed behavior against acceptance criteria: CLI, library test, document review or browser flow as appropriate.
 - If implementation already exists, prove the check detects the regression; process ordering alone is not a reason to redo correct work.
 - Review separately from implementation when risk warrants it. Triage findings; record deferred issues at their owner.

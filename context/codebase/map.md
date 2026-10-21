@@ -2,20 +2,20 @@
 title: Codebase Map
 type: architecture
 status: active
-summary: The repo's two code files and the markdown layers around them — where each behavior actually lives
+summary: The CLI, behavior suite, baseline/release probes and markdown layers — where each behavior lives
 tags: [map, structure, entry-points]
-covers: [scripts/ctx.mjs, tests/run.mjs]
-related: [architecture.md]
-updated: 2026-10-14
+covers: [scripts/ctx.mjs, tests/**]
+related: [../architecture.md]
+updated: 2026-10-21
 confidence: verified
-verified_at: 1043ccc98e2a
+verified_at: 69e9f4c26c27
 ---
 
 # Codebase Map
 
 ## TL;DR
 
-- CLI entrypoint: `scripts/ctx.mjs`; behavior checks: `tests/run.mjs`.
+- CLI entrypoint: `scripts/ctx.mjs`; behavior checks: `tests/run.mjs`; development-only baseline/release gates: tests/check-baseline.mjs and tests/check-versions.mjs.
 - Use the symbol routing table below for changes. Component roles and invariants live in [architecture](../architecture.md), not this navigation map.
 - Project-generated catalogs and native adapters are views; edit their canonical inputs.
 
@@ -24,7 +24,11 @@ verified_at: 1043ccc98e2a
 ```
 SKILL.md              the router agents load (mode table, bootstrap, core loop, recording table)
 scripts/ctx.mjs       the entire CLI: args → commands.{setup,init,task,lint,doctor,impact,stale,brief,rules,index,coverage,log,stamp,new,status,detect,tools,archive,hook,install}
-  ├ utils/frontmatter glob engine         parseFrontmatter / globToRegex / matchers — shared by every command
+  ├ utils/frontmatter glob engine         parseFrontmatter (folded/literal scalars, named errors) / globToRegex (nested braces, fail-closed) / matchers — shared by every command
+  ├ atomicWrite/withLock/archiveEntries   temp+fsync+rename writes, external advisory lock, idempotent archive replay
+  install transaction              SHIP-only staged copy, symlink refusal, manifest, backup+swap; setup CLI backup and config schema migration
+  roadmapReservations()            parses build-plan numeric rows; guards new feature/task add and lint queue coherence
+  scanCodeSpans()/related check    validates router backticks and page-relative related targets during lint
   ├ pages()/sourceFiles()/staleReport()   the wiki's read model over context/ + git
   ├ detect() + DEP_MARKERS + INTEL_TOOLS  profile detection and delegation-tool probing (setup/init read it)
   └ commands.*                            each subcommand; emit() wraps human/JSON output ({command, ok})

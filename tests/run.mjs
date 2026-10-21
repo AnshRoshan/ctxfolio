@@ -15,6 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CTX_SRC = path.join(HERE, '..', 'scripts', 'ctx.mjs');
@@ -35,7 +36,8 @@ function sh(cmd, args, cwd, env = {}, input) {
 
 /** A fresh git repo with a couple of source files. */
 function sandbox() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-test-'));
+  // macOS temporary roots can be aliases; child cwd resolves to the physical path.
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-test-')));
   sh('git', ['init', '-q'], dir);
   sh('git', ['config', 'user.email', 't@example.com'], dir);
   sh('git', ['config', 'user.name', 'Test'], dir);
@@ -91,6 +93,70 @@ function initRepo(dir, extra = []) {
   assert(r.code === 0, `init failed: ${r.out}`);
   // Fill the one placeholder-free page we need and commit, mirroring a real setup.
   return r;
+}
+
+function queueFixture(dir) {
+  initRepo(dir);
+  fs.writeFileSync(path.join(dir, 'context', 'build-plan.md'), `---
+title: Build Plan
+type: plan
+status: active
+summary: Fixture roadmap for the spec queue.
+tags: [plan]
+updated: 2026-10-21
+---
+
+# Build Plan
+
+| # | Feature | Size | Build first because |
+|---|---|---|---|
+| 30 | Queue unit — the first fixture unit | S | fixture |
+| 31 | Second unit — the second fixture unit | S | fixture |
+`);
+  fs.writeFileSync(path.join(dir, 'context', 'feature-specs', '30-queue-unit.md'), `---
+title: Queue unit
+type: feature
+status: complete
+summary: Fixture spec that satisfies the required Wave 0 section schema.
+tags: [queue]
+covers: []
+related: []
+updated: 2026-10-21
+---
+
+# Queue Unit
+
+## TL;DR
+
+- Goal: fixture.
+- Boundary: fixture.
+
+## What to build
+
+1. Fixture.
+
+## Explicitly NOT in this spec
+
+- Nothing.
+
+## Clarifications
+
+- Fixture.
+
+## Value sources
+
+| Value | Comes from |
+|---|---|
+| fixture | tests/run.mjs |
+
+## Verification checklist
+
+- [x] fixture verified
+`);
+  const tr = path.join(dir, 'context', 'progress-tracker.md');
+  fs.writeFileSync(tr, fs.readFileSync(tr, 'utf8').replace('## Completed\n', '## Completed\n- Feature 30: Queue unit — 2026-10-21 — fixture evidence\n'));
+  const r = ctx(dir, 'index');
+  assert(r.code === 0, `fixture index failed: ${r.out}`);
 }
 
 /* ------------------------------------------------------------------- cases */
@@ -191,6 +257,69 @@ test('brief warns when the file you are about to touch has no page', (dir) => {
   initRepo(dir);
   const r = ctx(dir, 'brief', 'src/billing/charge.ts');
   assertContains(r.out, 'BLIND SPOT', 'brief should surface the routing blind spot');
+});
+
+test('frontmatter block scalars keep their text and the catalog stays one line', (dir) => {
+  initRepo(dir);
+  const page = path.join(dir, 'context', 'folded.md');
+  fs.writeFileSync(page, '---\ntitle: Folded Guide\ntype: guide\nstatus: active\nsummary: >\n  A folded summary\n  that spans two lines.\nupdated: 2026-10-21\n---\n\n# Folded Guide\n\n## TL;DR\n- Block scalars are parsed.\n');
+  const literal = path.join(dir, 'context', 'literal.md');
+  fs.writeFileSync(literal, '---\ntitle: Literal Guide\ntype: guide\nstatus: active\nsummary: |\n  A literal summary\n  that spans two lines.\nupdated: 2026-10-21\n---\n\n# Literal Guide\n\n## TL;DR\n- Literal blocks are parsed.\n');
+  ctx(dir, 'index');
+  const idx = fs.readFileSync(path.join(dir, 'context', 'index.md'), 'utf8');
+  assertContains(idx, 'A folded summary that spans two lines.', 'folded summary was not parsed');
+  assertContains(idx, 'A literal summary that spans two lines.', 'literal summary was not parsed');
+  assert(!idx.includes('— >'), 'the block scalar marker leaked into the catalog');
+});
+
+test('lint fails closed on duplicate frontmatter keys', (dir) => {
+  initRepo(dir);
+  fs.writeFileSync(path.join(dir, 'context', 'duplicate.md'), '---\ntitle: Duplicate\ntype: guide\nstatus: active\nsummary: first\nsummary: second\nupdated: 2026-10-21\n---\n\n# Duplicate\n\n## TL;DR\n- Duplicate keys are rejected.\n');
+  const r = ctx(dir, 'lint');
+  assert(r.code !== 0, 'lint should fail on a duplicate frontmatter key');
+  assertContains(r.out, 'duplicate frontmatter key `summary`');
+});
+
+test('lint fails closed on a cover typo and nested mappings', (dir) => {
+  initRepo(dir);
+  fs.writeFileSync(path.join(dir, 'context', 'typo.md'), '---\ntitle: Typo\ntype: guide\nstatus: active\nsummary: A cover typo.\ncover: ["src/auth/**"]\nupdated: 2026-10-21\n---\n\n# Typo\n\n## TL;DR\n- Typo keys are rejected.\n');
+  const r = ctx(dir, 'lint');
+  assert(r.code !== 0, 'lint should fail on a cover typo');
+  assertContains(r.out, 'has `cover:` but no `covers:`');
+  fs.writeFileSync(path.join(dir, 'context', 'nested.md'), '---\ntitle: Nested\ntype: guide\nstatus: active\nsummary: Nested values.\nmetadata:\n  owner: team\nupdated: 2026-10-21\n---\n\n# Nested\n\n## TL;DR\n- Nested mappings are rejected.\n');
+  const nested = ctx(dir, 'lint');
+  assert(nested.code !== 0, 'lint should fail on a nested frontmatter mapping');
+  assertContains(nested.out, 'nested mapping under `metadata` is not supported');
+  fs.writeFileSync(path.join(dir, 'context', 'tabbed.md'), '---\ntitle: Tabbed\ntype: guide\nstatus: active\n\tsummary: Tab indentation.\nupdated: 2026-10-21\n---\n\n# Tabbed\n\n## TL;DR\n- Tabs are rejected.\n');
+  const tabbed = ctx(dir, 'lint');
+  assert(tabbed.code !== 0, 'lint should fail on tab indentation');
+  assertContains(tabbed.out, 'tab indentation is not valid frontmatter');
+});
+
+test('brace globs match alternatives without crashing', (dir) => {
+  initRepo(dir);
+  fs.writeFileSync(path.join(dir, 'context', 'brace.md'), '---\ntitle: Brace Guide\ntype: guide\nstatus: active\nsummary: Brace alternatives.\ncovers: ["{*.ts,*.tsx}", "{src/auth/*.ts,src/billing/*.ts}"]\nupdated: 2026-10-21\n---\n\n# Brace Guide\n\n## TL;DR\n- Brace globs compile.\n');
+  const lint = ctx(dir, 'lint');
+  assert(!lint.out.includes('Nothing to repeat'), `brace glob crashed lint:\n${lint.out}`);
+  const r = ctx(dir, 'brief', 'src/auth/session.ts');
+  assert(!r.out.includes('SyntaxError'), `brace glob crashed brief:\n${r.out}`);
+  assertContains(r.out, 'brace.md', 'brace alternatives should match a covered file');
+  assert(r.code === 0, `brief should answer with the brace page:\n${r.out}`);
+});
+
+test('a malformed glob is reported, not thrown', (dir) => {
+  initRepo(dir);
+  fs.writeFileSync(path.join(dir, 'context', 'bad-glob.md'), '---\ntitle: Bad Glob\ntype: guide\nstatus: active\nsummary: Unbalanced brace.\ncovers: ["src/{auth/*.ts"]\nupdated: 2026-10-21\n---\n\n# Bad Glob\n\n## TL;DR\n- Malformed globs fail closed.\n');
+  const lint = ctx(dir, 'lint');
+  assert(lint.code !== 0, 'lint should fail on a malformed covers glob');
+  assertContains(lint.out, 'invalid covers glob');
+  const r = ctx(dir, 'brief', 'src/auth/session.ts');
+  assertContains(r.out, 'invalid covers glob', 'brief should warn about the malformed cover');
+  assert(!r.out.includes('SyntaxError'), `brief threw on a malformed glob:\n${r.out}`);
+  for (const command of ['impact', 'stale']) {
+    const out = ctx(dir, command);
+    assert(!out.out.includes('SyntaxError'), `${command} threw on a malformed glob:\n${out.out}`);
+  }
 });
 
 test('lint catches an incomplete decision record', (dir) => {
@@ -574,6 +703,70 @@ test('archive rotates old log and tracker entries without deleting history', (di
   assertContains(fs.readFileSync(tr, 'utf8'), 'older completions archived', 'tracker must keep a pointer to its archive');
 });
 
+test('archive replay does not duplicate entries a crashed run already archived', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  fs.writeFileSync(lp, fs.readFileSync(lp, 'utf8') + '\n## [2025-01-05] build | ancient unit\nnote one\n\n## [2099-01-01] build | future unit\n');
+  const tr = path.join(dir, 'context', 'progress-tracker.md');
+  const oldLine = '- Feature 01: old thing — 2025-01-05 — details here';
+  fs.writeFileSync(tr, fs.readFileSync(tr, 'utf8').replace(/\r\n/g, '\n').replace('## Completed\n', `## Completed\n\n${oldLine}\n`));
+  const cl = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 7);
+  const ct = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 4);
+  const archDir = path.join(dir, 'context', 'archive');
+  fs.mkdirSync(archDir, { recursive: true });
+  const logArchive = path.join(archDir, `log-${cl}.md`);
+  const trackerArchive = path.join(archDir, `tracker-${ct}.md`);
+  fs.writeFileSync(logArchive, '# Log (archived)\n\n## [2025-01-05] build | ancient unit\nnote one\n');
+  fs.writeFileSync(trackerArchive, '# Completed (archived)\n\n' + oldLine + '\n');
+  const r = ctx(dir, 'archive');
+  assert(r.code === 0, `archive replay failed:\n${r.out}`);
+  const logText = fs.readFileSync(logArchive, 'utf8');
+  const trackerText = fs.readFileSync(trackerArchive, 'utf8');
+  assert(logText.split('ancient unit').length - 1 === 1, `log archive duplicated the entry:\n${logText}`);
+  assert(trackerText.split(oldLine).length - 1 === 1, `tracker archive duplicated the line:\n${trackerText}`);
+  assert(!fs.readFileSync(lp, 'utf8').includes('ancient unit'), 'source log still holds the archived entry');
+  assert(!fs.readFileSync(tr, 'utf8').includes(oldLine), 'source tracker still holds the archived line');
+});
+
+test('core commands leave no temp files and recover a stale lock', (dir) => {
+  initRepo(dir);
+  ctx(dir, 'log', 'build', 'atomic one');
+  ctx(dir, 'index');
+  const seen = [];
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else seen.push(p);
+    }
+  };
+  walk(path.join(dir, 'context'));
+  assert(!seen.some((f) => f.includes('.tmp-')), `temp file left behind: ${seen.filter((f) => f.includes('.tmp-')).join(', ')}`);
+  const key = createHash('sha1').update(fs.realpathSync(dir)).digest('hex').slice(0, 16);
+  const lock = path.join(os.tmpdir(), 'ctx-locks', key + '.lock');
+  fs.mkdirSync(path.dirname(lock), { recursive: true });
+  fs.writeFileSync(lock, 'stale');
+  const old = new Date(Date.now() - 60000);
+  fs.utimesSync(lock, old, old);
+  const r = ctx(dir, 'task', 'add', 'after stale lock');
+  assert(r.code === 0, `stale lock was not recovered:\n${r.out}`);
+  assert(!fs.existsSync(lock), 'stale lock was not removed');
+});
+
+test('a blocked writer fails without truncating the original', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  const before = fs.readFileSync(lp, 'utf8');
+  const key = createHash('sha1').update(fs.realpathSync(dir)).digest('hex').slice(0, 16);
+  const lock = path.join(os.tmpdir(), 'ctx-locks', key + '.lock');
+  fs.mkdirSync(path.dirname(lock), { recursive: true });
+  fs.writeFileSync(lock, 'held');
+  const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'log', 'build', 'blocked'], dir, { CTX_LOCK_WAIT_MS: '150' });
+  assert(r.code !== 0 && /ctx is busy/.test(r.out), `a held lock must fail clearly:\n${r.out}`);
+  assert(fs.readFileSync(lp, 'utf8') === before, 'a blocked writer changed the original file');
+  fs.unlinkSync(lock);
+});
+
 test('lint catches branch-merge ID collisions in the tracker', (dir) => {
   initRepo(dir);
   const tr = path.join(dir, 'context', 'progress-tracker.md');
@@ -611,6 +804,184 @@ test('install ships the skill files and keeps repo dev history behind', (dir) =>
   // idempotent re-install overwrites cleanly
   const again = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
   assert(again.code === 0 && again.out.includes('installed'), `re-install failed:\n${again.out}`);
+});
+
+test('install refuses an unsafe skill name before writing', (dir) => {
+  const fake = path.join(dir, 'fake-skill');
+  fs.mkdirSync(path.join(fake, 'scripts'), { recursive: true });
+  fs.copyFileSync(CTX_SRC, path.join(fake, 'scripts', 'ctx.mjs'));
+  fs.writeFileSync(path.join(fake, 'SKILL.md'), '---\nname: ../escape\n---\n\n# fake\n');
+  const dest = path.join(dir, 'installed');
+  const r = sh('node', [path.join(fake, 'scripts', 'ctx.mjs'), 'install', '--dest', dest], dir);
+  assert(r.code !== 0 && /unsafe skill name/.test(r.out), `unsafe name was accepted:\n${r.out}`);
+  assert(!fs.existsSync(path.join(dir, 'escape')), 'unsafe name escaped the destination');
+});
+
+test('install refuses a symlinked destination', (dir) => {
+  const dest = path.join(dir, 'skillhome');
+  const outside = path.join(dir, 'outside');
+  fs.mkdirSync(dest, { recursive: true });
+  fs.mkdirSync(outside, { recursive: true });
+  try {
+    fs.symlinkSync(outside, path.join(dest, 'project-context-system'), process.platform === 'win32' ? 'junction' : 'dir');
+  } catch (e) {
+    const skip = new Error(`native link privilege unavailable (${e.code}); no success simulated`);
+    skip.nativeSkip = true;
+    throw skip;
+  }
+  const r = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
+  assert(r.code !== 0 && /refusing destination symlink/.test(r.out), `symlink destination was accepted:\n${r.out}`);
+  assert(!fs.readdirSync(outside).length, 'symlink destination was written through');
+});
+
+test('install stages a full tree, removes stale files and backs up local edits', (dir) => {
+  const dest = path.join(dir, 'skillhome');
+  const root = path.join(dest, 'project-context-system');
+  const first = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
+  assert(first.code === 0, `install failed: ${first.out}`);
+  fs.writeFileSync(path.join(root, 'obsolete.txt'), 'old copy\n');
+  fs.writeFileSync(path.join(root, 'SKILL.md'), 'LOCAL EDIT\n');
+  const again = sh('node', [CTX_SRC, 'install', '--dest', dest], dir);
+  assert(again.code === 0 && again.out.includes('backup:'), `re-install failed:\n${again.out}`);
+  assert(!fs.existsSync(path.join(root, 'obsolete.txt')), 'a file dropped from SHIP survived reinstall');
+  assert(fs.readFileSync(path.join(root, 'SKILL.md'), 'utf8').includes('project-context-system'), 'new tree was not published');
+  const backups = fs.readdirSync(dest).filter((f) => f.includes('.ctx-backup-'));
+  assert(backups.length === 1, `expected one install backup, got ${backups.join(', ')}`);
+  assert(fs.readFileSync(path.join(dest, backups[0], 'SKILL.md'), 'utf8') === 'LOCAL EDIT\n', 'local edit was not preserved in the backup');
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, '.ctx-install.json'), 'utf8'));
+  assert(manifest.name === 'project-context-system' && manifest.version && manifest.checksum && manifest.files.includes('SKILL.md'), 'install manifest is incomplete');
+});
+
+test('install --dry-run writes nothing', (dir) => {
+  const dest = path.join(dir, 'dry-home');
+  const r = sh('node', [CTX_SRC, 'install', '--dest', dest, '--dry-run'], dir);
+  assert(r.code === 0 && /would install/.test(r.out), `dry-run failed:\n${r.out}`);
+  assert(!fs.existsSync(path.join(dest, 'project-context-system')), 'dry-run created the target');
+});
+
+test('setup backs up a changed CLI and migrates the config schema', (dir) => {
+  setupRepo(dir);
+  const cfgP = path.join(dir, 'context', '.ctx.json');
+  const cfg = JSON.parse(fs.readFileSync(cfgP, 'utf8'));
+  assert(cfg.schemaVersion === 2, `new config lacks the current schema: ${JSON.stringify(cfg)}`);
+  cfg.unknownKey = 'preserve-me';
+  cfg.schemaVersion = 1;
+  fs.writeFileSync(cfgP, JSON.stringify(cfg, null, 2));
+  const self = path.join(dir, 'context', 'ctx.mjs');
+  fs.writeFileSync(self, 'HAND EDITED CLI\n');
+  setupRepo(dir);
+  const backups = fs.readdirSync(path.join(dir, 'context')).filter((f) => f.startsWith('ctx.mjs.bak-'));
+  assert(backups.length === 1, `expected one CLI backup, got ${backups.join(', ')}`);
+  assert(fs.readFileSync(path.join(dir, 'context', backups[0]), 'utf8') === 'HAND EDITED CLI\n', 'CLI backup lost the hand edit');
+  assert(fs.readFileSync(self, 'utf8') !== 'HAND EDITED CLI\n', 'setup did not refresh the CLI');
+  const migrated = JSON.parse(fs.readFileSync(cfgP, 'utf8'));
+  assert(migrated.schemaVersion === 2 && migrated.unknownKey === 'preserve-me', 'config migration dropped schema or unknown keys');
+});
+
+test('new feature and task add refuse implicit roadmap-reserved numbers', (dir) => {
+  initRepo(dir);
+  fs.writeFileSync(path.join(dir, 'context', 'build-plan.md'), `---
+title: Build Plan
+type: plan
+status: active
+summary: Fixture roadmap.
+tags: [plan]
+updated: 2026-10-21
+---
+
+| # | Feature | Size | Build first because |
+|---|---|---|---|
+| 01 | Reserved unit — first | S | fixture |
+| 02 | Later unit — second | S | fixture |
+`);
+  let r = ctx(dir, 'new', 'feature', 'Reserved unit');
+  assert(r.code !== 0 && r.out.includes('reserved by context/build-plan.md'), `implicit reserved number was accepted:\n${r.out}`);
+  r = ctx(dir, 'new', 'feature', 'Reserved unit', '--spec', '1');
+  assert(r.code === 0 && fs.existsSync(path.join(dir, 'context', 'feature-specs', '01-reserved-unit.md')), `explicit reserved spec failed:\n${r.out}`);
+  r = ctx(dir, 'new', 'feature', 'Unreserved unit', '--spec', '3');
+  assert(r.code !== 0 && r.out.includes('not reserved'), `unreserved explicit number was accepted:\n${r.out}`);
+  r = ctx(dir, 'task', 'add', 'Reserved unit');
+  assert(r.code !== 0 && r.out.includes('reserved by context/build-plan.md'), `implicit reserved tracker number was accepted:\n${r.out}`);
+  r = ctx(dir, 'task', 'add', 'Reserved unit', '--spec', '1');
+  assert(r.code === 0 && r.out.includes('added Feature 01'), `explicit tracker number failed:\n${r.out}`);
+});
+
+test('lint enforces roadmap spec and tracker coherence', (dir) => {
+  queueFixture(dir);
+  const tr = path.join(dir, 'context', 'progress-tracker.md');
+  const spec = path.join(dir, 'context', 'feature-specs', '30-queue-unit.md');
+  const baseTracker = fs.readFileSync(tr, 'utf8');
+  const baseSpec = fs.readFileSync(spec, 'utf8');
+  const lint = () => ctx(dir, 'lint');
+  let r = lint();
+  assert(r.code === 0, `coherent fixture failed lint:\n${r.out}`);
+
+  fs.writeFileSync(path.join(dir, 'context', 'feature-specs', '99-rogue.md'), baseSpec.replace(/title: Queue unit/, 'title: Rogue unit'));
+  r = lint();
+  assert(r.code !== 0 && r.out.includes('Feature 99 is not reserved'), `unreserved spec passed lint:\n${r.out}`);
+  fs.rmSync(path.join(dir, 'context', 'feature-specs', '99-rogue.md'));
+
+  fs.writeFileSync(tr, baseTracker.replace('## Up next\n', '## Up next\n- Feature 99: rogue unit\n'));
+  r = lint();
+  assert(r.code !== 0 && r.out.includes('Feature 99 is not reserved'), `unreserved tracker number passed lint:\n${r.out}`);
+
+  fs.writeFileSync(tr, baseTracker.replace(/- Feature 30: Queue unit[^\n]*\n/, ''));
+  r = lint();
+  assert(r.code !== 0 && r.out.includes('not under Completed'), `complete spec outside Completed passed lint:\n${r.out}`);
+
+  fs.writeFileSync(tr, baseTracker);
+  fs.writeFileSync(spec, baseSpec.replace('status: complete', 'status: draft'));
+  r = lint();
+  assert(r.code !== 0 && r.out.includes('under Completed'), `draft spec in Completed passed lint:\n${r.out}`);
+});
+
+test('lint requires Wave 0 spec sections and real decision references', (dir) => {
+  queueFixture(dir);
+  const spec = path.join(dir, 'context', 'feature-specs', '30-queue-unit.md');
+  const base = fs.readFileSync(spec, 'utf8');
+  fs.writeFileSync(spec, base.replace('## Value sources', '## Sources'));
+  let r = ctx(dir, 'lint', '--strict');
+  assert(r.code !== 0 && r.out.includes('missing required spec section "## Value sources"'), `missing section passed lint:\n${r.out}`);
+  fs.writeFileSync(spec, base.replace('## Clarifications', '## Clarifications\n\n- D-99 is not defined.'));
+  r = ctx(dir, 'lint', '--strict');
+  assert(r.code !== 0 && r.out.includes('references D-99'), `unknown decision reference passed lint:\n${r.out}`);
+});
+
+test('lint catches dead router backticks and related targets', (dir) => {
+  queueFixture(dir);
+  const idx = path.join(dir, 'context', 'index.md');
+  const spec = path.join(dir, 'context', 'feature-specs', '30-queue-unit.md');
+  const baseIdx = fs.readFileSync(idx, 'utf8').replace(/\r\n/g, '\n');
+  const baseSpec = fs.readFileSync(spec, 'utf8').replace(/\r\n/g, '\n');
+  assert(fs.readdirSync(path.join(dir, 'context', 'feature-specs')).includes('30-queue-unit.md'), 'fixture spec is missing');
+  let r = ctx(dir, 'lint');
+  assert(r.code === 0, `coherent routing fixture failed lint:\n${r.out}`);
+
+  const deadIdx = baseIdx.replace('| Task | Read, in this order |\n', '| Task | Read, in this order |\n| Dead route | `missing-page.md` |\n');
+  assert(deadIdx !== baseIdx, 'fixture could not inject a dead route');
+  fs.writeFileSync(idx, deadIdx);
+  assert(fs.readFileSync(idx, 'utf8').includes('missing-page.md'), 'fixture did not persist the dead route');
+  r = ctx(dir, 'lint');
+  assert(r.code !== 0 && r.out.includes('code-span path not found -> missing-page.md'), `dead router page passed lint:\n${r.out}`);
+
+  fs.writeFileSync(idx, baseIdx.replace('| Task | Read, in this order |\n', '| Task | Read, in this order |\n| Dead route | `scripts/missing.mjs` |\n'));
+  r = ctx(dir, 'lint');
+  assert(r.code !== 0 && r.out.includes('code-span path not found -> scripts/missing.mjs'), `dead code-span path passed lint:\n${r.out}`);
+
+  fs.writeFileSync(idx, baseIdx);
+  fs.writeFileSync(spec, baseSpec.replace('related: []', 'related: [../missing.md]'));
+  r = ctx(dir, 'lint');
+  assert(r.code !== 0 && r.out.includes('related target not found -> ../missing.md'), `missing related target passed lint:\n${r.out}`);
+});
+
+test('shipped routing templates name only always-created pages', () => {
+  const idx = fs.readFileSync(path.join(HERE, '..', 'assets', 'index.md.template'), 'utf8');
+  const flow = fs.readFileSync(path.join(HERE, '..', 'assets', 'workflow-rules.md.template'), 'utf8');
+  for (const dead of ['ui-rules.md', 'ui-tokens.md', 'ui-registry.md', 'data-model.md', 'api-contracts.md', 'integrations.md', 'runbook.md', 'env-vars.md']) {
+    assert(!idx.includes(dead), `index template still routes to optional ${dead}`);
+  }
+  assert(idx.includes('`designs/`') && idx.includes('`codebase/map.md`'), 'index template lost its always-created UI route');
+  assert(!/runbook\.md/.test(flow), 'workflow template still names runbook.md unconditionally');
 });
 
 /* ---- reliability regressions */
@@ -1197,9 +1568,13 @@ test('symlinks concurrent native edits are preserved during migration validation
   fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
   const native = path.join(dir, '.claude', 'agents', 'context-explorer.md');
   const hook = path.join(dir, 'edit-during-validation.cjs');
-  fs.writeFileSync(hook, `const fs=require('node:fs');const target=${JSON.stringify(native)};const read=fs.readFileSync;let edited=false;fs.readFileSync=function(file,...args){const data=read.call(fs,file,...args);if(!edited&&String(file)===target){edited=true;fs.appendFileSync(target,'\\nCONCURRENT HUMAN CHANGE\\n');}return data;};\n`);
+  const marker = path.join(dir, 'validation-injected');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const target=${JSON.stringify(native)};const read=fs.readFileSync;let edited=false;fs.readFileSync=function(file,...args){const data=read.call(fs,file,...args);if(!edited&&String(file)===target&&args[0]==='utf8'){edited=true;fs.writeFileSync(${JSON.stringify(marker)},'hit');fs.appendFileSync(target,'\\nCONCURRENT HUMAN CHANGE\\n');}return data;};\n`);
   const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  assert(fs.existsSync(marker), `validation edit was never injected: ${r.out}`);
   assert(r.code !== 0 && fs.readFileSync(native, 'utf8').includes('CONCURRENT HUMAN CHANGE'), `concurrent native edit lost: ${r.out}`);
+  assert(!fs.lstatSync(path.dirname(native)).isSymbolicLink(), 'validation failure replaced the edited native directory');
+  assert(JSON.parse(fs.readFileSync(path.join(dir, 'context', '.ctx.json'), 'utf8')).resourceMode === 'pointer', 'validation failure committed native mode');
 });
 
 test('symlinks concurrent configuration edits survive Git setup and rollback', (dir) => {
@@ -1231,11 +1606,14 @@ test('symlinks rollback does not overwrite a concurrent replacement at the desti
   fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n');
   const target = path.join(dir, 'CLAUDE.md');
   const hook = path.join(dir, 'occupied-rollback.cjs');
-  fs.writeFileSync(hook, `const fs=require('node:fs');const rename=fs.renameSync;const target=${JSON.stringify(target)};let injected=false;fs.renameSync=function(from,to){if(!injected&&String(to)===target&&String(from).endsWith('-new')){injected=true;fs.writeFileSync(target,'CONCURRENT DESTINATION CONTENT');const e=new Error('test publication failure');e.code='EACCES';throw e;}return rename.call(fs,from,to);};\n`);
+  const marker = path.join(dir, 'rollback-injected');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const rename=fs.renameSync;const target=${JSON.stringify(target)};let injected=false;fs.renameSync=function(from,to){if(!injected&&String(to)===target&&String(from).endsWith('-new')){injected=true;fs.writeFileSync(${JSON.stringify(marker)},'hit');fs.writeFileSync(target,'CONCURRENT DESTINATION CONTENT');const e=new Error('test publication failure');e.code='EACCES';throw e;}return rename.call(fs,from,to);};\n`);
   const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  assert(fs.existsSync(marker), `occupied rollback was never injected: ${r.out}`);
   assert(r.code !== 0 && fs.readFileSync(target, 'utf8') === 'CONCURRENT DESTINATION CONTENT', `rollback overwrote a new destination: ${r.out}`);
   const data = JSON.parse(r.out);
-  assert(data.recovery?.length > 0, 'preserved rollback backup not reported');
+  const backup = data.recovery?.find((file) => file.endsWith('-backup') && !file.includes('/'));
+  assert(backup && fs.readFileSync(path.join(dir, backup), 'utf8') === '@AGENTS.md\n', 'original loader notes not preserved in reported recovery backup');
 });
 
 test('symlinks rollback preserves view edits made after publication', (dir) => {
@@ -1245,9 +1623,14 @@ test('symlinks rollback preserves view edits made after publication', (dir) => {
   const viewDir = path.join(dir, '.agents', 'views', 'cursor', 'rules');
   const target = path.join(dir, 'CLAUDE.md');
   const hook = path.join(dir, 'published-view-edit.cjs');
-  fs.writeFileSync(hook, `const fs=require('node:fs');const path=require('node:path');const rename=fs.renameSync;const view=${JSON.stringify(viewDir)},target=${JSON.stringify(target)};fs.renameSync=function(from,to){if(String(to)===target&&String(from).endsWith('-new'))throw new Error('test later alias failure');const result=rename.call(fs,from,to);if(String(to)===view)fs.appendFileSync(path.join(view,'testing.mdc'),'\\nPUBLISHED HUMAN VIEW EDIT\\n');return result;};\n`);
+  const marker = path.join(dir, 'view-edit-injected');
+  fs.writeFileSync(hook, `const fs=require('node:fs');const path=require('node:path');const rename=fs.renameSync;const view=${JSON.stringify(viewDir)},target=${JSON.stringify(target)};fs.renameSync=function(from,to){if(String(to)===target&&String(from).endsWith('-new'))throw new Error('test later alias failure');const result=rename.call(fs,from,to);if(String(to)===view){fs.writeFileSync(${JSON.stringify(marker)},'hit');fs.appendFileSync(path.join(view,'testing.mdc'),'\\nPUBLISHED HUMAN VIEW EDIT\\n');}return result;};\n`);
   const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'symlinks', '--migrate', '--json'], dir, { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"` });
+  assert(fs.existsSync(marker), `published view edit was never injected: ${r.out}`);
   assert(r.code !== 0 && fs.existsSync(path.join(viewDir, 'testing.mdc')) && fs.readFileSync(path.join(viewDir, 'testing.mdc'), 'utf8').includes('PUBLISHED HUMAN VIEW EDIT'), `rollback removed a published edit: ${r.out}`);
+  const data = JSON.parse(r.out);
+  assert(data.recovery?.includes('.agents/views/cursor/rules'), 'edited published view not reported for recovery');
+  assert(fs.readFileSync(target, 'utf8') === '@AGENTS.md\n', 'later alias failure lost original loader notes');
 });
 
 test('symlinks failed fresh install does not claim an installed symlink mode', (dir) => {
@@ -1261,6 +1644,216 @@ test('symlinks failed fresh install does not claim an installed symlink mode', (
   assert(again.code !== 0 && /Developer Mode|EPERM/.test(again.out), 'retry silently downgraded the requested symlink strategy');
   const adapters = ctx(dir, 'adapters', '--json');
   assert(adapters.code !== 0 && !fs.existsSync(path.join(dir, '.claude', 'agents', 'context-explorer.md')), 'pending native setup silently generated portable adapter copies');
+});
+
+/* ---- Wave0 audit safety regressions (append-only ownership boundary) */
+function wave0Lock(dir) {
+  const key = createHash('sha1').update(fs.realpathSync(dir)).digest('hex').slice(0, 16);
+  return path.join(os.tmpdir(), 'ctx-locks', key + '.lock');
+}
+function wave0Hook(dir, source) {
+  const hook = path.join(dir, 'wave0-fault.cjs');
+  fs.writeFileSync(hook, source);
+  return { NODE_OPTIONS: `--require "${hook.replace(/\\/g, '/')}"`, CTX_LOCK_WAIT_MS: '0' };
+}
+function wave0Skill(dir, name = 'demo') {
+  const source = path.join(dir, 'skill-source');
+  fs.mkdirSync(path.join(source, 'scripts'), { recursive: true });
+  fs.copyFileSync(CTX_SRC, path.join(source, 'scripts', 'ctx.mjs'));
+  fs.writeFileSync(path.join(source, 'SKILL.md'), `---\nname: ${name}\n---\n\n# fixture\n`);
+  for (const folder of ['references', 'assets']) {
+    fs.mkdirSync(path.join(source, folder));
+    fs.writeFileSync(path.join(source, folder, 'fixture.txt'), 'SHIPPABLE CONTENT\n');
+  }
+  return source;
+}
+
+test('Wave0 stale locks never evict a live or permission-protected PID', (dir) => {
+  initRepo(dir);
+  const lock = wave0Lock(dir);
+  const original = fs.readFileSync(path.join(dir, 'context', 'log.md'), 'utf8');
+  fs.mkdirSync(path.dirname(lock), { recursive: true });
+  const text = JSON.stringify({ pid: process.pid, token: 'live-owner' });
+  const old = new Date(Date.now() - 60000);
+  try {
+    for (const env of [{ CTX_LOCK_WAIT_MS: '0' }, wave0Hook(dir, `process.kill=()=>{const e=new Error('protected PID');e.code='EPERM';throw e;};`)]) {
+      fs.writeFileSync(lock, text);
+      fs.utimesSync(lock, old, old);
+      const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'log', 'build', 'blocked'], dir, env);
+      assert(r.code !== 0 && /ctx is busy/.test(r.out), `live lock was evicted: ${r.out}`);
+      assert(fs.readFileSync(lock, 'utf8') === text, 'live ownership record was replaced');
+      assert(fs.readFileSync(path.join(dir, 'context', 'log.md'), 'utf8') === original, 'blocked writer changed the log');
+    }
+  } finally { if (fs.existsSync(lock)) fs.unlinkSync(lock); }
+});
+
+test('Wave0 normal and process-exit release preserve replacement lock ownership', (dir) => {
+  initRepo(dir);
+  const lock = wave0Lock(dir);
+  const replacement = JSON.stringify({ pid: process.pid, token: 'replacement-owner' });
+  try {
+    const env = wave0Hook(dir, `const fs=require('node:fs');const rename=fs.renameSync;fs.renameSync=function(...args){const result=rename.apply(fs,args);if(String(args[1]).endsWith('log.md'))fs.writeFileSync(${JSON.stringify(lock)},${JSON.stringify(replacement)});return result;};`);
+    const r = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'log', 'build', 'release'], dir, env);
+    assert(r.code === 0 && fs.existsSync(lock) && fs.readFileSync(lock, 'utf8') === replacement, `normal release removed another owner: ${r.out}`);
+    fs.unlinkSync(lock);
+    const exitEnv = wave0Hook(dir, `const fs=require('node:fs');const read=fs.readFileSync;fs.readFileSync=function(file,...args){const result=read.call(fs,file,...args);if(String(file).endsWith('progress-tracker.md'))fs.writeFileSync(${JSON.stringify(lock)},${JSON.stringify(replacement)});return result;};`);
+    const failed = sh('node', [path.join(dir, 'context', 'ctx.mjs'), 'task', 'start', '999'], dir, exitEnv);
+    assert(failed.code !== 0 && fs.existsSync(lock) && fs.readFileSync(lock, 'utf8') === replacement, `exit release removed another owner: ${failed.out}`);
+  } finally { if (fs.existsSync(lock)) fs.unlinkSync(lock); }
+});
+
+test('Wave0 internal index callers cannot bypass a held writer lock', (dir) => {
+  initRepo(dir);
+  const idx = path.join(dir, 'context', 'index.md');
+  const original = fs.readFileSync(idx, 'utf8');
+  const lock = wave0Lock(dir);
+  fs.writeFileSync(lock, JSON.stringify({ pid: process.pid, token: 'held-owner' }));
+  try {
+    for (const args of [[path.join(dir, 'context', 'ctx.mjs'), 'lint', '--fix'], [CTX_SRC, 'setup', '--root', dir, '--portable-pointers']]) {
+      const r = sh('node', args, dir, { CTX_LOCK_WAIT_MS: '0' });
+      assert(r.code !== 0 && /ctx is busy/.test(r.out), `internal index bypassed the lock: ${r.out}`);
+      assert(fs.readFileSync(idx, 'utf8') === original, 'held index was rewritten');
+    }
+  } finally { if (fs.existsSync(lock)) fs.unlinkSync(lock); }
+});
+
+test('Wave0 archive dedupe compares exact blocks and lines rather than substrings', (dir) => {
+  initRepo(dir);
+  const lp = path.join(dir, 'context', 'log.md');
+  const tr = path.join(dir, 'context', 'progress-tracker.md');
+  const entry = '## [2025-01-05] build | short entry\nshort note';
+  const line = '- Feature 01: short unit — 2025-01-05 — short detail';
+  fs.appendFileSync(lp, '\n' + entry + '\n');
+  fs.writeFileSync(tr, fs.readFileSync(tr, 'utf8').replace('## Completed\n', `## Completed\n${line}\n`));
+  const arch = path.join(dir, 'context', 'archive');
+  const logArchive = path.join(arch, `log-${new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 7)}.md`);
+  const trackerArchive = path.join(arch, `tracker-${new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 4)}.md`);
+  fs.writeFileSync(logArchive, '# Log (archived)\n\n' + entry + ' with additional detail\n');
+  fs.writeFileSync(trackerArchive, '# Completed (archived)\n\n' + line + ' with additional detail\n');
+  const r = ctx(dir, 'archive');
+  assert(r.code === 0, `archive failed: ${r.out}`);
+  const logs = fs.readFileSync(logArchive, 'utf8').split(/\n(?=## \[)/).map((s) => s.trim());
+  assert(logs.includes(entry), 'short exact log block was lost inside a longer archived block');
+  assert(fs.readFileSync(trackerArchive, 'utf8').split('\n').includes(line), 'short exact tracker line was lost inside a longer archived line');
+  fs.appendFileSync(lp, '\n' + entry + '\n');
+  assert(ctx(dir, 'archive').code === 0, 'archive replay failed');
+  assert(fs.readFileSync(logArchive, 'utf8').split(/\n(?=## \[)/).filter((s) => s.trim() === entry).length === 1, 'exact archive replay duplicated a block');
+});
+
+test('Wave0 install refuses missing and empty names without destination writes', (dir) => {
+  const source = wave0Skill(dir);
+  const dest = path.join(dir, 'installed');
+  for (const fm of ['title: unnamed', 'name:', 'name: ""', "name: ''", 'name: []']) {
+    fs.writeFileSync(path.join(source, 'SKILL.md'), `---\n${fm}\n---\n\n# fixture\n`);
+    const r = sh('node', [path.join(source, 'scripts', 'ctx.mjs'), 'install', '--dest', dest], dir);
+    assert(r.code !== 0 && /skill name/.test(r.out), `missing/empty name accepted: ${fm}: ${r.out}`);
+    assert(!fs.existsSync(dest), `refused name created destination: ${fm}`);
+  }
+});
+
+test('Wave0 install refuses lexical source ancestors before moving the source', (dir) => {
+  const source = wave0Skill(dir, path.basename(dir));
+  const before = fs.readFileSync(path.join(source, 'scripts', 'ctx.mjs'), 'utf8');
+  const r = sh('node', [path.join(source, 'scripts', 'ctx.mjs'), 'install', '--dest', path.dirname(dir), '--dry-run'], dir);
+  assert(r.code !== 0 && /source tree/.test(r.out), `source ancestor accepted: ${r.out}`);
+  assert(fs.readFileSync(path.join(source, 'scripts', 'ctx.mjs'), 'utf8') === before, 'ancestor install moved its own source');
+});
+
+test('Wave0 install resolves existing ancestor aliases for missing destinations', (dir) => {
+  const source = wave0Skill(dir);
+  const alias = path.join(dir, 'source-alias');
+  try { fs.symlinkSync(source, alias, process.platform === 'win32' ? 'junction' : 'dir'); }
+  catch (e) { if (['EPERM', 'EACCES', 'ENOTSUP'].includes(e.code)) { const skip = new Error(`native link privilege unavailable (${e.code})`); skip.nativeSkip = true; throw skip; } throw e; }
+  const dest = path.join(alias, 'missing-home');
+  const r = sh('node', [path.join(source, 'scripts', 'ctx.mjs'), 'install', '--dest', dest], dir);
+  assert(r.code !== 0 && /source tree/.test(r.out), `real ancestor source containment bypassed: ${r.out}`);
+  assert(!fs.existsSync(path.join(source, 'missing-home')), 'alias install wrote into its source');
+});
+
+test('Wave0 install copy and publication faults restore the original tree', (dir) => {
+  const source = wave0Skill(dir);
+  const dest = path.join(dir, 'installed');
+  const target = path.join(dest, 'demo');
+  fs.mkdirSync(target, { recursive: true });
+  fs.writeFileSync(path.join(target, 'owner.txt'), 'ORIGINAL LOCAL OWNER\n');
+  const faults = [
+    `const fs=require('node:fs');const copy=fs.copyFileSync;fs.copyFileSync=function(from,to,...args){if(String(to).includes('.stage-')&&String(from).endsWith('fixture.txt'))throw new Error('INJECTED COPY FAILURE');return copy.call(fs,from,to,...args);};`,
+    `const fs=require('node:fs');const rename=fs.renameSync;fs.renameSync=function(from,to){if(String(from).includes('.stage-')&&String(to)===${JSON.stringify(target)})throw new Error('INJECTED PUBLISH FAILURE');return rename.call(fs,from,to);};`,
+  ];
+  for (const fault of faults) {
+    const r = sh('node', [path.join(source, 'scripts', 'ctx.mjs'), 'install', '--dest', dest], dir, wave0Hook(dir, fault));
+    assert(r.code !== 0 && /INJECTED/.test(r.out), `fault did not run: ${r.out}`);
+    assert(fs.readFileSync(path.join(target, 'owner.txt'), 'utf8') === 'ORIGINAL LOCAL OWNER\n', `failed install lost original tree: ${r.out}`);
+    assert(fs.readdirSync(dest).join(',') === 'demo', 'failure left a stage or failed to restore its backup');
+  }
+});
+
+test('Wave0 install occupied rollback preserves destination and reports original backup', (dir) => {
+  const source = wave0Skill(dir);
+  const dest = path.join(dir, 'installed');
+  const target = path.join(dest, 'demo');
+  fs.mkdirSync(target, { recursive: true });
+  fs.writeFileSync(path.join(target, 'owner.txt'), 'ORIGINAL LOCAL OWNER\n');
+  const env = wave0Hook(dir, `const fs=require('node:fs');const rename=fs.renameSync;fs.renameSync=function(from,to){if(String(from).includes('.stage-')&&String(to)===${JSON.stringify(target)}){fs.mkdirSync(to);fs.writeFileSync(require('node:path').join(to,'replacement.txt'),'CONCURRENT OWNER');throw new Error('INJECTED OCCUPIED PUBLISH');}return rename.call(fs,from,to);};`);
+  const r = sh('node', [path.join(source, 'scripts', 'ctx.mjs'), 'install', '--dest', dest], dir, env);
+  assert(r.code !== 0 && /INJECTED/.test(r.out), `occupied fault did not run: ${r.out}`);
+  assert(fs.readFileSync(path.join(target, 'replacement.txt'), 'utf8') === 'CONCURRENT OWNER', 'rollback overwrote concurrent destination');
+  const backup = fs.readdirSync(dest).find((f) => f.includes('.ctx-backup-'));
+  assert(backup && fs.readFileSync(path.join(dest, backup, 'owner.txt'), 'utf8') === 'ORIGINAL LOCAL OWNER\n', 'original backup was lost');
+  assertContains(r.out, path.join(dest, backup), 'preserved original backup was not reported');
+});
+
+test('Wave0 duplicate normalized roadmap IDs fail lint even without a tracker', (dir) => {
+  queueFixture(dir);
+  const roadmap = path.join(dir, 'context', 'build-plan.md');
+  fs.appendFileSync(roadmap, '| 031 | Conflicting second reservation | S | collision |\n');
+  for (const removeTracker of [false, true]) {
+    if (removeTracker) fs.unlinkSync(path.join(dir, 'context', 'progress-tracker.md'));
+    const r = ctx(dir, 'lint', '--json');
+    const data = JSON.parse(r.out);
+    assert(data.errors.some((e) => /build-plan.md.*duplicate.*31/i.test(e)), `duplicate roadmap ID was hidden: ${r.out}`);
+  }
+});
+
+test('Wave0 duplicate roadmap reservations refuse feature and task authoring', (dir) => {
+  queueFixture(dir);
+  const roadmap = path.join(dir, 'context', 'build-plan.md');
+  fs.appendFileSync(roadmap, '| 031 | Conflicting second reservation | S | collision |\n');
+  const tracker = path.join(dir, 'context', 'progress-tracker.md');
+  const before = fs.readFileSync(tracker, 'utf8');
+  for (const args of [['new', 'feature', 'second-unit', '--spec', '31'], ['task', 'add', 'second unit', '--spec', '31']]) {
+    const r = ctx(dir, ...args);
+    assert(r.code !== 0 && /duplicate.*31/i.test(r.out), `ambiguous roadmap authored new work: ${r.out}`);
+    assert(fs.readFileSync(tracker, 'utf8') === before, 'refused authoring changed the tracker');
+    assert(!fs.existsSync(path.join(dir, 'context', 'feature-specs', '31-second-unit.md')), 'refused authoring created a spec');
+  }
+});
+
+test('Wave0 frontmatter rejects leading indentation tabs before block and list parsing', (dir) => {
+  initRepo(dir);
+  const file = path.join(dir, 'context', 'tabbed.md');
+  for (const fields of ['summary: >\n \tbad folded line', 'summary: |\n  \tbad literal line', 'summary: Good\ncovers:\n \t- src/auth/**', 'summary: >\n \t\n  good text']) {
+    fs.writeFileSync(file, `---\ntitle: Tabbed\ntype: guide\nstatus: active\n${fields}\nupdated: 2026-10-21\n---\n\n# Tabbed\n`);
+    const r = ctx(dir, 'lint', '--json');
+    assert(JSON.parse(r.out).errors.some((e) => e.includes('tabbed.md') && /tab indentation/.test(e)), `indent tab was accepted: ${fields}: ${r.out}`);
+  }
+  fs.writeFileSync(file, '---\ntitle: Tabbed\ntype: guide\nstatus: active\nsummary: >\n  ordinary\tcontent\nupdated: 2026-10-21\n---\n\n# Tabbed\n');
+  assert(!JSON.parse(ctx(dir, 'lint', '--json').out).errors.some((e) => /tab indentation/.test(e)), 'content tab incorrectly treated as indentation');
+});
+
+test('Wave0 router code spans ignore fenced examples without expanding ordinary page scope', (dir) => {
+  queueFixture(dir);
+  const idx = path.join(dir, 'context', 'index.md');
+  const workflow = path.join(dir, 'context', 'workflow-rules.md');
+  const example = '\n\nFlags: `--example/file.md` and `-example/file.md`\n\n```markdown\n`missing-example.md`\n```\n\n   ~~~~md\n`missing-tilde.md`\n   ~~~~\n';
+  for (const file of [idx, workflow]) fs.appendFileSync(file, example);
+  fs.appendFileSync(path.join(dir, 'context', 'feature-specs', '30-queue-unit.md'), '\nOrdinary illustrative path: `missing-ordinary.md`\n');
+  let data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(!data.errors.some((e) => /missing-example|missing-tilde|missing-ordinary|example\/file/.test(e)), `illustrative paths entered router scope: ${JSON.stringify(data.errors)}`);
+  fs.appendFileSync(workflow, '\nReal route: `missing-live.md`\n\n~~~md\n`unclosed-fence.md`\n');
+  data = JSON.parse(ctx(dir, 'lint', '--json').out);
+  assert(data.errors.some((e) => /workflow-rules.md.*missing-live.md/.test(e)), 'live router code-span no longer checked');
+  assert(!data.errors.some((e) => /unclosed-fence/.test(e)), 'unclosed fenced example entered router scope');
 });
 
 /* ----------------------------------------------------------------- summary */

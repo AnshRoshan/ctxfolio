@@ -2,34 +2,81 @@ name: ci
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, 'ci/**']
+    tags: ['v*']
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node: ['18', '20', '22']
+        os: [ubuntu-24.04, windows-2025, macos-26]
+        node: ['22', '24']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Check CLI and harness syntax
+        run: |
+          node --check scripts/ctx.mjs
+          node --check tests/run.mjs
       - name: Self-test the ctx CLI
         run: node tests/run.mjs
+      - name: Verify symlink injection through an aliased temporary root
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          mkdir "$work/real"
+          ln -s "$work/real" "$work/alias"
+          TMPDIR="$work/alias" node tests/run.mjs symlinks
 
-  # The skill's own templates must stay valid: every context page the scaffolder
-  # ships has to satisfy the lint rules the CLI enforces on user projects.
-  scaffold-lint:
-    runs-on: ubuntu-latest
+  self-context:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: '20'
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Lint this repository's actual context
+        run: node context/ctx.mjs lint --strict
+      - name: Detect stale context in full git history
+        run: node context/ctx.mjs stale --strict
+      - name: Verify actual repository wiring
+        run: node context/ctx.mjs doctor
+      - name: Check both version tracks and their documented mapping
+        run: node tests/check-versions.mjs
+      - name: Prove baseline gates reject injected drift
+        run: node tests/check-baseline.mjs
+
+  # A scaffold has intentional placeholders, never structural errors.
+  scaffold-lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
       - name: Scaffold into a scratch project and verify it
         run: |
           set -euo pipefail
@@ -42,8 +89,6 @@ jobs:
           node scripts/ctx.mjs init --root "$work" --ui --full --pointers
           cd "$work"
           node context/ctx.mjs index
-          # A fresh scaffold is expected to WARN about unfilled placeholders;
-          # it must never produce a structural ERROR, and doctor must be green.
           node context/ctx.mjs lint --json > lint.json || true
           node -e "
             const r = JSON.parse(require('fs').readFileSync('lint.json', 'utf8'));
@@ -53,3 +98,20 @@ jobs:
           "
           node context/ctx.mjs doctor
           node context/ctx.mjs status
+
+  release-consistency:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify the actual published tag and both version tracks
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node tests/check-versions.mjs --require-tag --tag="$RELEASE_TAG"

@@ -3,8 +3,9 @@ title: Single-Source Agent Resources and File Ownership
 type: feature
 status: complete
 summary: Canonical agent resources with portable host adapters and explicit non-overlapping markdown ownership
-updated: 2026-10-14
+updated: 2026-10-21
 covers: [scripts/ctx.mjs, tests/run.mjs, assets/**, references/**, SKILL.md]
+verified_at: 69e9f4c26c27
 ---
 
 # Single-Source Agent Resources and File Ownership

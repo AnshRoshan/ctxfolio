@@ -7,7 +7,7 @@ A project-local context wiki lets a fresh coding agent recover decisions, contra
 [![release](https://img.shields.io/github/v/release/AnshRoshan/project-context-system?color=blue)](https://github.com/AnshRoshan/project-context-system/releases)
 [![ci](https://github.com/AnshRoshan/project-context-system/actions/workflows/ci.yml/badge.svg)](https://github.com/AnshRoshan/project-context-system/actions/workflows/ci.yml)
 [![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](scripts/ctx.mjs)
-![node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)
+![node](https://img.shields.io/badge/node-22%20%7C%2024-brightgreen)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![agents](https://img.shields.io/badge/Claude·Code-Codex·Cursor·Copilot·Gemini·Qoder-lightgrey)](references/multi-agent-interop.md)
 
@@ -84,6 +84,14 @@ Read-only commands speak `--json` (`{command, ok}`) for scripts and CI. SessionS
 3. **Keep the state in files** — updated *while* working, enforced by tooling, not goodwill.
 4. **Never let the AI decide something important silently** — conflicts are flagged to the human.
 5. **Read cheap, then deep** — index line → TL;DR → page → source. Stop at the first level that answers.
+
+## Release tracks
+
+The skill/CLI and package/plugin versions have separate identities. Tags follow the skill track; `node tests/check-versions.mjs --require-tag` checks each track, this mapping and the newest reachable release tag.
+
+| Skill / CLI | Package / plugin | Release tag |
+|---|---|---|
+| 2.7.0 | 3.7.0 | v2.7.0 |
 
 ## Docs
 

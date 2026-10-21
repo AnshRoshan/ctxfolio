@@ -5,7 +5,7 @@ status: draft
 summary: Every external service: why it is there, what we call, failure behavior, limits, owner of the credentials
 tags: [external, vendors, services]
 covers: [{{src/lib/integrations/**}}]
-related: [library-docs.md, env-vars.md, decisions.md]
+related: [library-docs.md, decisions.md]
 updated: {{TODAY}}
 confidence: inferred
 ---

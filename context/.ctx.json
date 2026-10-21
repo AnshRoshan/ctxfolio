@@ -42,5 +42,6 @@
     "**/__tests__/**",
     "**/*.config.*"
   ],
-  "resourceMode": "symlink"
+  "resourceMode": "symlink",
+  "schemaVersion": 2
 }

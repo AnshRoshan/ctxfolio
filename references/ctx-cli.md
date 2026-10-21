@@ -1,6 +1,6 @@
 # `ctx` CLI reference
 
-Zero-dependency Node (≥ 18) script. Lives in the skill at `scripts/ctx.mjs`; `setup`/`init` copy it to `context/ctx.mjs` so the wiki is self-contained and portable. **After setup, always run from the project root with relative paths** — `node context/ctx.mjs <command>` (root is auto-detected; `--root <dir>` only for operating on another project). Git is used for staleness/impact; without git those features say so and skip.
+Zero-dependency Node 22/24 script. Lives in the skill at `scripts/ctx.mjs`; `setup`/`init` copy it to `context/ctx.mjs` so the wiki is self-contained and portable. **After setup, always run from the project root with relative paths** — `node context/ctx.mjs <command>` (root is auto-detected; `--root <dir>` only for operating on another project). Git is used for staleness/impact; without git those features say so and skip.
 
 ```
 node context/ctx.mjs <command> [args]

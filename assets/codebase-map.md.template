@@ -5,7 +5,7 @@ status: draft
 summary: Annotated directory tree, entry points and a "where is X?" table — read this instead of exploring the repo
 tags: [map, structure, entry-points]
 covers: [{{src/**}}]
-related: [architecture.md]
+related: [../architecture.md]
 updated: {{TODAY}}
 confidence: inferred
 ---

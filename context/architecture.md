@@ -5,9 +5,9 @@ status: active
 summary: Component roles, compilation flow and system invariants; file policy, runtime declarations and decisions have separate owners
 tags: [architecture,components,boundaries]
 covers: [scripts/**, assets/**, references/**, tests/**, SKILL.md]
-updated: 2026-10-14
+updated: 2026-10-21
 confidence: verified
-verified_at: 1043ccc98e2a
+verified_at: 69e9f4c26c27
 ---
 
 # Architecture
@@ -49,6 +49,9 @@ Runtime requirements and installed versions are declared in package.json/manifes
 - Native adapter bodies never become independent procedure stores. Derived metadata can be regenerated; canonical bodies remain the editable source.
 - Host configuration folders stay independent. Only compatible resource folders share filesystem aliases; incompatible Cursor metadata has one central generated view owner.
 - Native permissions are checked before link replacement; validated snapshots/staged expected contents protect concurrent edits. Installed resource mode is committed last, and rollback never overwrites a newly occupied destination.
+- Wiki writes are atomic (temp + fsync + rename); cooperating writers serialize on an external advisory lock; archive replay is idempotent. Install publishes through staged tree swaps with recoverable backups (not a crash-atomic directory exchange); setup backs up changed CLI bytes before atomic file replacement; `.ctx.json` migrates forward under `schemaVersion` without dropping unknown keys.
+- Roadmap numeric IDs reserve the spec queue. `new feature` and `task add` only claim a reserved ID deliberately, and lint keeps roadmap, spec and tracker states coherent with required Wave 0 sections.
+- Router backticks and `related:` edges must resolve. Shipped routing templates point only at always-created pages; optional contract/UI/ops pages are discovered through the catalog.
 - Code intelligence tools are optional producers of evidence, not required stores or permission boundaries.
 
 ## Evidence

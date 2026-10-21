@@ -3,7 +3,7 @@
 The skill is three things you can install independently:
 
 1. **The skill** — `SKILL.md` + `references/` + `assets/`, so an agent knows the method.
-2. **The CLI** — `scripts/ctx.mjs`, zero dependencies, Node ≥ 18.
+2. **The CLI** — `scripts/ctx.mjs`, zero dependencies, Node 22 or 24.
 3. **The scaffold** — what the CLI writes into *your* project (AGENTS.md, `context/`, hooks).
 
 ## Windows: native symlink prerequisite
@@ -136,7 +136,7 @@ scaffolded; that is deliberate — your project's wiki is yours, not the skill's
 
 ## Requirements
 
-- **Node ≥ 18** for the CLI. The skill itself (the markdown) has no requirements.
+- **Node 22 or 24** for the CLI. The skill itself (the markdown) has no requirements.
 - **git** is optional but recommended: without it `ctx stale` and `ctx impact`
   degrade to no-ops and `doctor` reports it.
 - Works with Claude Code, Codex, Cursor, Copilot, Gemini CLI, Qoder, Zed and anything

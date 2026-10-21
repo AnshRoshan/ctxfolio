@@ -66,6 +66,8 @@ Run the declared syntax checks, self-test suite, context lint and doctor before 
 
 ## Lessons (this file learns — newest on top)
 
+- When a gap list arrives all at once, sequence it smallest-first and keep `main` provably green before starting any new capability; provenance and security work land before passive capture (see D-08).
+- When a number goes into a committed page, name the command or run that produced it — an unattributed count is how stale claims survive a green lint (see D-10).
 - When a fact already has an owner, link to it instead of copying it into another file.
 
 Every human correction becomes a one-line lesson here: "When X, do Y." Add the moment it happens; delete lines that no longer apply; keep the whole section under ~20 lines (older lessons graduate into workflow-rules or a page).
