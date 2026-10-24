@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PAGE, PHASES } from "../data/page";
-import { queryReducedMotion } from "../lib/motion";
+import { useOnScreen, useReducedMotion } from "../lib/motion";
 
 /**
  * The signature moment. The product's own artifact, rendered as a document,
@@ -9,52 +9,34 @@ import { queryReducedMotion } from "../lib/motion";
  */
 export default function CompiledPage() {
   const [step, setStep] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const timer = useRef<number | null>(null);
-
+  const [playing, setPlaying] = useState(true);
+  const reduced = useReducedMotion();
+  const { ref, onScreen } = useOnScreen<HTMLElement>();
   const phase = PHASES[Math.min(step, PHASES.length - 1)];
+  const advance = useCallback(() => setStep(s => s >= PHASES.length - 1 ? 0 : s + 1), []);
 
-  const advance = useCallback(() => {
-    setStep((s) => (s >= PHASES.length - 1 ? 0 : s + 1));
-  }, []);
-
-  /* One orchestrated sequence. Reduced motion holds the final state. */
   useEffect(() => {
-    if (timer.current) window.clearInterval(timer.current);
-    if (queryReducedMotion()) {
-      setStep(PHASES.length - 1);
-      setPlaying(false);
-      return;
-    }
-    setPlaying(true);
-    timer.current = window.setInterval(advance, 2600);
-    return () => {
-      if (timer.current) window.clearInterval(timer.current);
-    };
-  }, [advance]);
+    if (reduced) { setStep(PHASES.length - 1); setPlaying(false); }
+  }, [reduced]);
 
-  const hold = () => {
-    if (timer.current) window.clearInterval(timer.current);
-    setPlaying(false);
-  };
-
-  const resume = () => {
-    if (queryReducedMotion()) return;
-    if (timer.current) window.clearInterval(timer.current);
-    setPlaying(true);
-    timer.current = window.setInterval(advance, 2600);
-  };
+  useEffect(() => {
+    if (reduced || !playing || !onScreen) return;
+    const timer = window.setInterval(advance, 2600);
+    return () => window.clearInterval(timer);
+  }, [advance, playing, onScreen, reduced]);
+  const hold = () => setPlaying(false);
+  const resume = () => { if (!reduced) setPlaying(true); };
 
   const hot = phase.state === "stale";
 
   return (
-    <figure className="console overflow-hidden" aria-label="Synthetic wiki example moving through an illustrative change, not current CLI output">
+    <figure ref={ref} className="console compiled-document overflow-hidden" aria-label="Synthetic wiki example moving through an illustrative change, not current CLI output">
       {/* running head */}
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-con-line px-4 py-2.5">
         <span className="running text-con-fg-2">synthetic wiki demo: {PAGE.path}</span>
         <span
           className="ml-auto rounded-[3px] px-2 py-0.5 font-mono text-[10.5px] font-medium"
-          role="status"
+          role="status" aria-live={playing ? "off" : "polite"}
           style={{
             color: hot ? "var(--c-con)" : "var(--c-con-accent)",
             backgroundColor: hot ? "var(--c-con-accent)" : "transparent",
@@ -139,7 +121,7 @@ export default function CompiledPage() {
       </div>
 
       {/* the machinery */}
-      <div className="border-t border-con-line bg-con-2 px-5 py-3" aria-hidden="true">
+      <div className="phase-output border-t border-con-line bg-con-2 px-5 py-3" aria-hidden="true">
         {phase.command && (
           <p className="font-mono text-[11.5px]">
             <span style={{ color: "var(--c-con-accent)" }}>$ </span>
@@ -154,7 +136,7 @@ export default function CompiledPage() {
       </div>
 
       {/* rail */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-con-line px-4 py-3">
+      <div className="phase-rail flex flex-wrap items-center gap-2 border-t border-con-line px-4 py-3">
         {PHASES.map((p, i) => {
           const on = i === step;
           const past = i < step;
@@ -186,14 +168,16 @@ export default function CompiledPage() {
           <button
             type="button"
             onClick={playing ? hold : resume}
+            disabled={reduced}
+            aria-label={reduced ? "Playback disabled by reduced motion" : playing ? "Pause demo" : "Play demo"}
             className="rounded-[3px] border border-con-line px-2 py-1 font-mono text-[10.5px] text-con-fg-2"
           >
-            {playing ? "hold" : "play"}
+            {reduced ? "Reduced motion" : playing ? "Pause" : "Play"}
           </button>
         </span>
       </div>
 
-      <p className="border-t border-con-line px-5 py-3 text-[12.5px] leading-snug text-con-fg" aria-live="polite">
+      <p className="phase-note border-t border-con-line px-5 py-3 text-[12.5px] leading-snug text-con-fg" aria-live={playing ? "off" : "polite"}>
         {phase.note}
       </p>
 

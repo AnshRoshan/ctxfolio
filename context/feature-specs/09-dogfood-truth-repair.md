@@ -6,8 +6,10 @@ summary: Repair remaining live claims and pointers against current source and pu
 tags: [truth, dogfood, docs]
 covers: [README.md, INSTALL.md, docs/**, web/**, references/ctx-cli.md, tests/check-truth.mjs, package.json, .github/workflows/ci.yml]
 related: [../testing.md, ../overview.md, ../ownership.md, ./08-always-green-baseline.md]
-updated: 2026-10-21
+updated: 2026-10-24
 confidence: unverified
+unverified_snapshot: 3b439390a859851eeea46cf75e4880d07c21b8f572ecd18861e65f1239b8e1d9
+snapshot_state: dirty-tree
 ---
 
 # Dogfood Truth Repair
@@ -19,6 +21,8 @@ confidence: unverified
 - Goal: every current user-facing count, runtime, release, verification statement and example label has a truthful owner or measured source.
 - Boundary: live documentation and website copy. Preserve the incumbent visual design and behavior; distinguish illustrative fixtures from measured product evidence.
 - Depends on: Feature 08 main-green baseline, now verified by main run 39553397681 and tag run 39553402796.
+
+The 2026-10-24 human-approved [website redesign](35-website-redesign.md) separately authorizes a replacement visual world. The historical no-redesign scope below is unchanged; its factual/evidence/illustrative-content requirements remain preserved, as checked by `tests/check-truth.mjs`.
 
 ## What to build
 

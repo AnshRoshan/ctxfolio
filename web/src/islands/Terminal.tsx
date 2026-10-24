@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CLI_COMMANDS, type Line } from "../data/transcripts";
-import { queryReducedMotion } from "../lib/motion";
+import { useReducedMotion } from "../lib/motion";
 
 const TONE: Record<string, string> = {
   dim: "text-con-fg-2",
@@ -12,6 +12,7 @@ const TONE: Record<string, string> = {
 };
 
 export default function Terminal() {
+  const reduced = useReducedMotion();
   const [activeId, setActiveId] = useState(CLI_COMMANDS[0].id);
   const [shown, setShown] = useState(0);
   const timerRef = useRef<number | null>(null);
@@ -24,7 +25,7 @@ export default function Terminal() {
 
   useEffect(() => {
     if (timerRef.current) window.clearInterval(timerRef.current);
-    if (queryReducedMotion()) {
+    if (reduced) {
       setShown(active.lines.length);
       return;
     }
@@ -41,7 +42,7 @@ export default function Terminal() {
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [active]);
+  }, [active, reduced]);
 
   useEffect(() => {
     const el = scrollRef.current;

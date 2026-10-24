@@ -5,10 +5,12 @@ export type Resolved = "light" | "dark";
 
 export const THEME_KEY = "pcs-theme";
 export const THEME_EVENT = "pcs:theme";
+let sessionChoice: ThemeChoice | null = null;
 
 /* -------------------------------------------------------------------- read */
 
 export function getChoice(): ThemeChoice {
+  if (sessionChoice) return sessionChoice;
   try {
     const v = localStorage.getItem(THEME_KEY);
     if (v === "light" || v === "dark" || v === "system") return v;
@@ -34,6 +36,7 @@ export function currentTheme(): Resolved {
 /* ------------------------------------------------------------------- write */
 
 export function applyTheme(choice: ThemeChoice, animate = true): void {
+  sessionChoice = choice;
   const root = document.documentElement;
   const next = resolve(choice);
 
@@ -53,7 +56,7 @@ export function applyTheme(choice: ThemeChoice, animate = true): void {
   }
 
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", next === "dark" ? "#0a1020" : "#f2f5f8");
+  if (meta) meta.setAttribute("content", getComputedStyle(root).getPropertyValue("--c-bg").trim());
 
   window.dispatchEvent(new CustomEvent(THEME_EVENT, { detail: { choice, resolved: next } }));
 }
@@ -138,14 +141,14 @@ export function useTokens(): Tokens {
   const [tokens, setTokens] = useState<Tokens>(() =>
     typeof document === "undefined"
       ? ({
-          con: "#0e1726",
-          con2: "#131d2f",
-          line: "#27344b",
-          fg: "#e9eef6",
-          fg2: "#93a2b8",
-          fg3: "#93a2b8",
-          accent: "#ffb627",
-          accentLine: "#e08700",
+          con: "#1b1c19",
+          con2: "#242520",
+          line: "#44453c",
+          fg: "#f2f0e8",
+          fg2: "#b5b3a8",
+          fg3: "#b5b3a8",
+          accent: "#ff9a7f",
+          accentLine: "#ff9a7f",
         } as Tokens)
       : readTokens(),
   );

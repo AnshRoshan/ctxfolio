@@ -53,7 +53,9 @@ export default function CostChart() {
   const warmPath = useMemo(() => band(COST.warmMin, COST.warmMax), []);
 
   return (
-    <div>
+    <div className="console">
+      <div className="cost-plot">
+        <label htmlFor="cost-session" className="sr-only">Session number. Drag anywhere on the chart or use arrow keys.</label>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="block h-auto w-full"
@@ -93,7 +95,7 @@ export default function CostChart() {
           fill={T.fg2}
           letterSpacing="1.4"
         >
-          SESSION NUMBER
+          DRAG TO CHANGE SESSION
         </text>
 
         <path d={coldPath} fill={T.fg2} fillOpacity={0.14} stroke={T.fg2} strokeOpacity={0.45} strokeWidth={1} />
@@ -107,9 +109,13 @@ export default function CostChart() {
             transition: "transform 160ms cubic-bezier(.2,.8,.2,1)",
           }}
         >
-          <line x1={0} x2={0} y1={PAD.t} y2={PAD.t + PLOT_H} stroke={T.fg} strokeWidth={1} strokeOpacity={0.55} />
-          <circle cx={0} cy={y(cold.max)} r={3.4} fill={T.fg2} />
-          <circle cx={0} cy={y(warm.max)} r={3.4} fill={T.accent} />
+          <line x1={0} x2={0} y1={PAD.t + 24} y2={PAD.t + PLOT_H} stroke={T.fg} strokeWidth={1} strokeOpacity={0.55} />
+          <rect x={-43} y={PAD.t - 7} width={86} height={22} rx={2} fill={T.accent} />
+          <text x={0} y={PAD.t + 8} textAnchor="middle" fontFamily="var(--font-mono)" fontSize="9.5" fontWeight="600" fill={T.con}>
+            SESSION {session}
+          </text>
+          <circle cx={0} cy={y(cold.max)} r={4.5} fill={T.fg2} stroke={T.con} strokeWidth={2} />
+          <circle cx={0} cy={y(warm.max)} r={5.5} fill={T.accent} stroke={T.con} strokeWidth={2} />
         </g>
 
         <text x={W - PAD.r + 10} y={y(cold.max) + 4} fontFamily="var(--font-mono)" fontSize="10.5" fill={T.fg}>
@@ -128,28 +134,20 @@ export default function CostChart() {
           {fmt(warm.max)}
         </text>
       </svg>
+        <input
+          id="cost-session"
+          type="range"
+          min={1}
+          max={COST.sessions}
+          step={1}
+          value={session}
+          onChange={(e) => setSession(Number(e.target.value))}
+          className="cost-session-input"
+        />
+      </div>
 
       <div className="mt-5 border-t border-con-line pt-4">
-        <label htmlFor="cost-session" className="label block text-con-fg-2">
-          session number
-        </label>
-        <div className="mt-2 flex items-center gap-4">
-          <input
-            id="cost-session"
-            type="range"
-            min={1}
-            max={COST.sessions}
-            step={1}
-            value={session}
-            onChange={(e) => setSession(Number(e.target.value))}
-            className="range"
-          />
-          <output className="min-w-[3.5rem] rounded-[3px] border border-con-line px-2 py-1 text-center font-mono text-[13px] font-semibold text-con-fg">
-            {session}
-          </output>
-        </div>
-
-        <dl className="mt-4 grid grid-cols-1 border-t border-con-line sm:grid-cols-3">
+        <dl className="grid grid-cols-1 sm:grid-cols-3">
           <div className="border-b border-con-line px-0 py-3 sm:border-b-0 sm:border-r sm:pr-3">
             <dt className="label text-con-fg-2">re-explores the repo</dt>
             <dd className="mt-1.5 font-mono text-[15px] font-semibold text-con-fg">

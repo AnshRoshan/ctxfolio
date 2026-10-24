@@ -103,7 +103,7 @@ export default function Ledger() {
                     className="rounded-[3px] border px-2.5 py-2 font-mono text-[11.5px] leading-snug transition-colors duration-200"
                     style={{
                       borderColor: dup ? "var(--c-con-accent)" : "var(--c-con-line)",
-                      backgroundColor: dup ? "rgba(255,182,39,0.1)" : "transparent",
+                      backgroundColor: dup ? "color-mix(in srgb, var(--c-con-accent) 10%, transparent)" : "transparent",
                     }}
                   >
                     <span style={{ color: dup ? "var(--c-con-accent)" : "var(--c-con-fg)" }}>

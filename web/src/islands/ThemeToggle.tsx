@@ -1,41 +1,24 @@
-import { useTheme, type ThemeChoice } from "../lib/theme";
+import { SunIcon, MoonIcon, DesktopIcon } from "@radix-ui/react-icons";
+import { useTheme } from "../lib/theme";
 
-const OPTIONS: { id: ThemeChoice; label: string; glyph: string }[] = [
-  { id: "light", label: "Light theme", glyph: "\u25D1" },
-  { id: "system", label: "Match the system theme", glyph: "\u25CE" },
-  { id: "dark", label: "Dark theme", glyph: "\u25D5" },
-];
+const OPTIONS = [
+  { id: "light", label: "Light theme", Icon: SunIcon },
+  { id: "system", label: "Match the system theme", Icon: DesktopIcon },
+  { id: "dark", label: "Dark theme", Icon: MoonIcon },
+] as const;
 
 export default function ThemeToggle() {
   const { choice, resolved, set } = useTheme();
-
   return (
-    <div
-      className="flex items-center rounded-[4px] border border-line p-0.5"
-      role="group"
-      aria-label="Colour theme"
-    >
-      {OPTIONS.map((o) => {
-        const on = choice === o.id;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => set(o.id)}
-            aria-pressed={on}
-            title={o.label}
-            className="grid h-6 w-7 place-items-center rounded-[2px] font-mono text-[12px] leading-none transition-colors duration-150"
-            style={{
-              backgroundColor: on ? "var(--c-fg)" : "transparent",
-              color: on ? "var(--c-bg)" : "var(--c-fg-3)",
-            }}
-          >
-            <span aria-hidden="true">{o.glyph}</span>
-            <span className="sr-only">{o.label}</span>
-          </button>
-        );
-      })}
-      <span className="sr-only" role="status" aria-live="polite">
+    <div className="theme-control" role="group" aria-label="Colour theme">
+      {OPTIONS.map(({ id, label, Icon }) => (
+        <button key={id} type="button" onClick={() => set(id)}
+          aria-pressed={choice === id} aria-label={label} title={label}
+          style={{ backgroundColor: choice === id ? "var(--c-surface-2)" : "transparent", color: choice === id ? "var(--c-accent)" : "var(--c-fg-3)" }}>
+          <Icon aria-hidden="true" />
+        </button>
+      ))}
+      <span className="sr-only" role="status">
         {choice === "system" ? `System theme, currently ${resolved}` : `${choice} theme`}
       </span>
     </div>

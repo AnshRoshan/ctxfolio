@@ -1,22 +1,20 @@
 # Memory
 
-_Last updated: 2026-10-21, all roadmap units locally verified; final batch publication gate_
+_Last updated: 2026-10-24, website redesign handoff_
 
 ## Current state
 
-All 34 numbered features are implemented and locally verified. [Tracker](context/progress-tracker.md) records individual completion/evidence. Prior main commit 369acde is published and green; the remaining integrated batch is not yet remotely published. Local full CLI suite: 192 passed, 0 failed, 0 skipped. Scale/host/MCP/team checks: 18 passed. Syntax, copied-CLI parity, strict lint/stale, coverage, doctor, truth/baseline/version guards passed. Actual cold-start evaluation: 8 correct and 2 partial out of 10, one independent reader/grader pair, with unavailable usage and concurrent-checkout limits. Evidence: [testing](context/testing.md#verification-evidence).
+The user-approved public website redesign is implemented and locally verified. Scope and completion belong to [the website unit](context/feature-specs/35-website-redesign.md) and [tracker](context/progress-tracker.md); actual results and limitations belong to [testing evidence](context/testing.md#verification-evidence). [The website owner](context/codebase/modules/website.md) routes current implementation and design records. No CLI behavior, release version, remote deployment, commit or push was requested or performed.
 
 ## Exact next step
 
-Regenerate the final catalog and explicit facts block after this cursor is written. Commit the integrated batch once on a candidate branch, push `ci/final-roadmap-batch`, collect the actual supported-matrix/scale/routing/self-context CI run, and promote to main only after successful checks. No additional review round or per-feature full-suite cycle: D-15's consolidated review/fix pass is complete. Fix actual CI failures if they appear; do not claim remote success from local results.
+Review the built website in the provided local preview. If approved, publish through the existing Pages workflow only after explicit authorization. Do not repeat visual polish or design-option rounds: independent finish review returned ship. Keep the earlier publication task in the tracker separate; this website request does not authorize registry or release work.
 
 ## Evidence and limits
 
-- [Routing result](context/evals/routing-result.json): hit@8 1.0, precision 0.15; character/4 estimates, not measured model usage.
-- [Cold-reader answers](context/evals/cold-start-reader.json) and [independent grades](context/evals/cold-start-grades.json): 8 correct, 2 partial, no wrong/not-found. No measured token savings, matched baseline or generalized task-success claim.
-- [Derived facts](context/facts.md) is a generated source-backed owner. Refresh only explicitly; local authorship/verifier labels are declarations, not authentication.
-- MCP evidence is bounded local initialized stdio exchange, not every native host live loader. Locks remain advisory; install's two-rename swap is recoverable, not crash-atomic exchange.
+The production build, TypeScript, real browser responsive/interactions/no-JavaScript checks, factual guard, token contract, and full self-test passed. Local stamps remain unverified dirty-checkout snapshots, not clean-commit provenance. The broader Impeccable detector ran regex-degraded; direct contrast/browser checks provide the actual evidence. Existing development-tool advisories were recorded, not silently force-upgraded. Details have one owner in testing evidence.
 
 ## Recovery
 
-Ignored CLI backup files retain prior bytes. The safely removed legacy worktree's reachable history remains in Git. Published main/tag history is never rewritten. Release v2.7.0 remains unchanged; post-release capabilities are recorded under Unreleased until a separately authorized release.
+The pre-existing ignored CLI backup was preserved. Windows folder-permission changes were authorized, verified, and backed up outside this repository. Published Git history remains unchanged. Prior publication and evaluation evidence stays at its existing owners.
+.

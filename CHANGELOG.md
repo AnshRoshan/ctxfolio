@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased: website redesign
+
+- Rebuilt the public website as a modern context workbench with cobalt/neutral themes, self-hosted Geist typography, responsive navigation and varied technical-content layouts.
+- Preserved factual copy, fragment links, installation commands, synthetic demos and no-JavaScript fallbacks. Improved chart contrast, reduced-motion/offscreen playback, keyboard shortcuts, clipboard feedback and theme persistence.
+- Local verification and independent finish-review evidence are recorded in context/testing.md. No CLI behavior or release identity change; no remote deployment is implied.
+
 ## v2.8.0 — Ctxfolio and the completed context roadmap (package/plugin/npm 3.8.0)
 
 - Product and installed skill identity are `ctxfolio`; the repository and homepage move to AnshRoshan/ctxfolio and anshroshan.github.io/ctxfolio/.

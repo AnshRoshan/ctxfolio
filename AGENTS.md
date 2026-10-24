@@ -66,6 +66,8 @@ Run the declared syntax checks, self-test suite, context lint and doctor before 
 
 ## Lessons (this file learns — newest on top)
 
+- When the human asks for faster UI delivery, time-box setup, implement the visible redesign first, and consolidate verification instead of adding approval or exploration loops.
+
 - When the human requests batch delivery, build in dependency order with targeted checks; consolidate full review and verification once (D-15).
 
 - When a gap list arrives all at once, sequence it smallest-first and keep `main` provably green before starting any new capability; provenance and security work land before passive capture (see D-08).

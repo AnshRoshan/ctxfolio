@@ -3,7 +3,7 @@ title: Activity Log
 type: log
 status: active
 summary: Append-only timeline of ingests, builds, decisions, fixes and lint passes
-updated: 2026-10-21
+updated: 2026-10-24
 ---
 
 # Log
@@ -113,3 +113,6 @@ Full147/0/0 and15focused, candidate39559173759/main39559766799 success acrossall
 
 ## [2026-10-21] build | Remaining roadmap batch locally verified end to end
 Full CLI192/0/0,scale18/0,syntax/parity/truth/baseline/version,strictlint48 0/0/staleclean/doctor13/13. Oneconsolidatedreview/fixpassdone; actualcoldstartindependentgrade8correct2partial,unknownusage preserved; remoteCIpublicationpending.
+
+## [2026-10-24] build | Completed website redesign
+Modern context workbench; build/typecheck/browser/self-test passed; independent review ship; evidence context/testing.md

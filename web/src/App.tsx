@@ -7,6 +7,7 @@ import Ledger from "./islands/Ledger";
 import CostChart from "./islands/CostChart";
 import ThemeToggle from "./islands/ThemeToggle";
 import { startLiveFacts, startRevealObserver, startScrollSpy } from "./lib/motion";
+import { startDepthScenes } from "./lib/depth";
 import { watchSystem } from "./lib/theme";
 
 /* --------------------------------------------------------------------------
@@ -21,8 +22,10 @@ export type IslandName = "page" | "hook" | "cli" | "ledger" | "cost" | "copybtn"
 
 function CopyButton({ text }: { text: string }) {
   const [done, setDone] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const copy = useCallback(async () => {
+    setFailed(false);
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -34,12 +37,14 @@ function CopyButton({ text }: { text: string }) {
         ta.style.opacity = "0";
         document.body.appendChild(ta);
         ta.select();
-        document.execCommand("copy");
+        const copied = document.execCommand("copy");
         document.body.removeChild(ta);
+        if (!copied) throw new Error("Clipboard copy failed");
       }
       setDone(true);
     } catch {
       setDone(false);
+      setFailed(true);
     }
   }, [text]);
 
@@ -53,14 +58,14 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      aria-label={done ? "Copied to clipboard" : `Copy command: ${text}`}
+      aria-label={done ? "Copied to clipboard" : failed ? "Copy failed. Try again, or select the command manually." : `Copy command: ${text}`}
       className="rounded-[3px] border px-2 py-1 font-mono text-[10.5px] transition-colors duration-150"
       style={{
         borderColor: done ? "var(--c-con-accent)" : "var(--c-con-line)",
         color: done ? "var(--c-con-accent)" : "var(--c-con-fg-2)",
       }}
     >
-      {done ? "copied" : "copy"}
+      {done ? "copied" : failed ? "retry" : "copy"}
     </button>
   );
 }
@@ -102,6 +107,7 @@ export function mountApp(): void {
   const stopReveal = startRevealObserver();
   const stopSpy = startScrollSpy();
   const stopSystem = watchSystem();
+  const stopDepth = startDepthScenes();
   startLiveFacts();
 
   const hosts = Array.from(document.querySelectorAll<HTMLElement>("[data-island]"));
@@ -125,10 +131,12 @@ export function mountApp(): void {
     }
   }
 
-  window.addEventListener("pagehide", () => {
+  window.addEventListener("pagehide", (event) => {
+    if (event.persisted) return;
     stopReveal();
     stopSpy();
     stopSystem();
+    stopDepth();
     for (const r of roots) {
       try {
         r.unmount();

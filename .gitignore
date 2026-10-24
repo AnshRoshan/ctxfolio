@@ -19,3 +19,5 @@ build/
 web/node_modules/
 web/dist/
 web/.vite/
+web/.browser-test/
+web/.impeccable/review/

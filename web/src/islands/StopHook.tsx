@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { HOOK_STEPS, type Line } from "../data/transcripts";
-import { queryReducedMotion } from "../lib/motion";
+import { useReducedMotion } from "../lib/motion";
 
 type Flat = (Line & { prompt?: string; stepId: number })[];
 
@@ -25,6 +25,8 @@ function flatten(upto: number): Flat {
 }
 
 export default function StopHook() {
+  const reduced = useReducedMotion();
+  const following = useRef(true);
   const [step, setStep] = useState(0);
   const [shown, setShown] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -35,7 +37,7 @@ export default function StopHook() {
 
   useEffect(() => {
     if (timerRef.current) window.clearInterval(timerRef.current);
-    if (queryReducedMotion()) {
+    if (reduced) {
       setShown(target.length);
       return;
     }
@@ -52,12 +54,11 @@ export default function StopHook() {
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [target]);
+  }, [target, reduced]);
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: queryReducedMotion() ? "auto" : "smooth" });
+    if (el && following.current) el.scrollTop = el.scrollHeight;
   }, [shown]);
 
   const current = HOOK_STEPS.find((s) => s.id === step) ?? null;
@@ -67,14 +68,15 @@ export default function StopHook() {
   const blind = current?.blindSpots ?? 0;
 
   const goTo = useCallback((id: number) => {
+    following.current = true;
     setStep(id);
-    if (queryReducedMotion()) setShown(flatten(id).length);
-  }, []);
+    if (reduced) setShown(flatten(id).length);
+  }, [reduced]);
 
   const runAll = useCallback(() => {
     setStep(HOOK_STEPS.length);
-    if (queryReducedMotion()) setShown(all.length);
-  }, [all.length]);
+    if (reduced) setShown(all.length);
+  }, [all.length, reduced]);
 
   const reset = useCallback(() => {
     setStep(0);
@@ -82,6 +84,7 @@ export default function StopHook() {
   }, []);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     const n = Number(e.key);
     if (n >= 1 && n <= HOOK_STEPS.length) {
       e.preventDefault();
@@ -170,6 +173,7 @@ export default function StopHook() {
 
       <div
         ref={scrollRef}
+        onScroll={e => { const el = e.currentTarget; following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32; }}
         className="term-scroll h-[320px] overflow-y-auto px-4 py-4 sm:h-[400px]"
         aria-hidden="true"
       >

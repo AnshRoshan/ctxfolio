@@ -8,7 +8,7 @@
       name="description"
       content="An open source skill that turns any repository into a self-maintaining markdown wiki. Coding agents read the wiki instead of re-exploring the codebase. One command: ctx setup. Zero-dependency CLI. MIT."
     />
-    <meta name="theme-color" content="#f6f5f1" />
+    <meta name="theme-color" content="#f3f1ea" />
     <link rel="canonical" href="https://anshroshan.github.io/ctxfolio/" />
     <meta property="og:title" content="Ctxfolio" />
     <meta
@@ -29,20 +29,16 @@
           r.dataset.theme = t;
           r.style.colorScheme = t;
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute("content", t === "dark" ? "#100f0c" : "#f6f5f1");
+          if (meta) meta.setAttribute("content", t === "dark" ? "#171815" : "#f3f1ea");
         } catch (e) {}
       })();
     </script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='4' fill='%23b93a25'/%3E%3Ctext x='13' y='46' fill='white' font-family='sans-serif' font-weight='bold' font-size='44'%3Ec:%3C/text%3E%3C/svg%3E" />
   </head>
 
   <body>
+    <!-- Editorial publication outside, precise context instruments inside. -->
     <a
       href="#main"
       class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-[3px] focus:bg-fg focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:text-bg"
@@ -53,114 +49,30 @@
       <div id="scroll-meter" class="h-full w-full bg-accent-line"></div>
     </div>
 
-    <!-- ================================================================= masthead
-         The masthead is the document's own title block, not a nav bar. -->
-    <header class="sticky top-0 z-40 border-b border-line bg-bg">
-      <div class="mx-auto flex h-14 max-w-[1560px] items-center gap-4 px-5 lg:px-8">
-        <a href="#top" class="flex shrink-0 items-baseline gap-2.5 no-underline">
-          <span class="font-mono text-[13px] font-medium tracking-tight text-fg">ctx</span>
-          <span class="hidden font-mono text-[12px] text-fg-3 sm:inline">Ctxfolio</span>
-        </a>
-
-        <nav class="ml-auto hidden items-center gap-5 xl:flex" aria-label="Sections">
-          <a data-spy="thesis" class="running text-fg-3 no-underline hover:text-fg" href="#thesis">thesis</a>
-          <a data-spy="cost" class="running text-fg-3 no-underline hover:text-fg" href="#cost">cost</a>
-          <a data-spy="layers" class="running text-fg-3 no-underline hover:text-fg" href="#layers">layers</a>
-          <a data-spy="loop" class="running text-fg-3 no-underline hover:text-fg" href="#loop">loop</a>
-          <a data-spy="enforcement" class="running text-fg-3 no-underline hover:text-fg" href="#enforcement">enforcement</a>
-          <a data-spy="cli" class="running text-fg-3 no-underline hover:text-fg" href="#cli">cli</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="#top" class="wordmark" aria-label="Ctxfolio home"><span class="brand-mark" aria-hidden="true">c<span>:</span></span>ctxfolio</a>
+        <nav class="desktop-nav" aria-label="Sections">
+          <a data-spy="thesis" href="#thesis">thesis</a><a data-spy="cost" href="#cost">cost</a><a data-spy="layers" href="#layers">layers</a><a data-spy="loop" href="#loop">loop</a><a data-spy="enforcement" href="#enforcement">enforcement</a><a data-spy="cli" href="#cli">cli</a>
         </nav>
-
-        <div class="ml-auto flex items-center gap-2.5 xl:ml-6">
-          <a
-            href="https://github.com/AnshRoshan/ctxfolio/releases/latest"
-            id="release-chip"
-            class="hidden rounded-[3px] border border-line px-2 py-1 font-mono text-[11px] text-fg-3 sm:block"
-            >v2.8.0</a
-          >
-          <div data-island="theme"></div>
-          <a
-            href="https://github.com/AnshRoshan/ctxfolio"
-            class="rounded-[3px] bg-fg px-3.5 py-2 font-mono text-[11.5px] font-medium text-bg no-underline transition-opacity duration-150 hover:opacity-85"
-            >GitHub</a
-          >
-        </div>
+        <div class="header-actions"><div data-island="theme"></div><a class="source-link" href="https://github.com/AnshRoshan/ctxfolio">GitHub</a><a class="button button-primary header-cta" href="#install">Install the skill</a></div>
+        <details class="mobile-menu"><summary>Menu</summary><nav aria-label="Sections, compact"><a data-spy="thesis" href="#thesis">thesis</a><a data-spy="cost" href="#cost">cost</a><a data-spy="layers" href="#layers">layers</a><a data-spy="loop" href="#loop">loop</a><a data-spy="enforcement" href="#enforcement">enforcement</a><a data-spy="cli" href="#cli">cli</a><a href="#install">Install the skill</a></nav></details>
       </div>
-      <nav class="border-t border-line xl:hidden" aria-label="Sections, compact">
-        <ul class="mx-auto flex max-w-[1560px] list-none gap-5 overflow-x-auto px-5 py-2 font-mono text-[11px] tracking-wide">
-          <li><a data-spy="thesis" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#thesis">thesis</a></li>
-          <li><a data-spy="cost" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#cost">cost</a></li>
-          <li><a data-spy="layers" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#layers">layers</a></li>
-          <li><a data-spy="loop" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#loop">loop</a></li>
-          <li><a data-spy="enforcement" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#enforcement">enforcement</a></li>
-          <li><a data-spy="cli" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#cli">cli</a></li>
-          <li><a data-spy="install" class="whitespace-nowrap text-fg-3 no-underline hover:text-fg" href="#install">install</a></li>
-        </ul>
-      </nav>
     </header>
 
     <main id="main">
       <!-- ================================================================== hero -->
-      <section id="top" class="border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 pt-14 pb-16 lg:px-8 lg:pt-20 lg:pb-24">
-          <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-14">
-            <div class="lg:col-span-5">
-              <!-- No kicker. The heading carries its own weight. -->
-              <h1 class="text-[clamp(3.2rem,7.6vw,6rem)] text-fg">
-                Context is<br /><em class="text-accent">compiled</em>,<br />
-                <span class="text-fg-3">not retrieved.</span>
-              </h1>
-
-              <p class="mt-9 max-w-[46ch] text-[1.1875rem] leading-[1.55] text-fg-2">
-                Repeated exploration is a workflow cost. This skill asks the agent to
-                write down what it learns, once, at change time, into a markdown wiki. Later
-                sessions can start from those files, then verify against source.
-              </p>
-
-              <p class="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-fg-3">
-                The workflow aims to reduce repeated exploration. Token savings and answer-quality
-                improvements have not been measured in an evaluation.
-              </p>
-
-              <div class="mt-10 flex flex-wrap items-center gap-3">
-                <a
-                  href="#install"
-                  class="rounded-[3px] bg-accent-solid px-5 py-3 font-mono text-[13px] font-medium text-on-accent no-underline transition-opacity duration-150 hover:opacity-90"
-                  >Install the skill</a
-                >
-                <a
-                  href="https://github.com/AnshRoshan/ctxfolio"
-                  class="rounded-[3px] border border-line-strong px-5 py-3 font-mono text-[13px] font-medium text-fg no-underline transition-colors duration-150 hover:border-fg"
-                  >Read the source</a
-                >
-              </div>
-
-              <dl class="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-7 sm:grid-cols-4">
-                <div>
-                  <dt class="running text-fg-3">release</dt>
-                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg"><a href="https://github.com/AnshRoshan/ctxfolio/releases/latest">latest release</a></dd>
-                </div>
-                <div>
-                  <dt class="running text-fg-3">tests</dt>
-                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg"><a href="https://github.com/AnshRoshan/ctxfolio/blob/main/context/testing.md#verification-evidence">run evidence</a></dd>
-                </div>
-                <div>
-                  <dt class="running text-fg-3">CLI dependencies</dt>
-                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">0</dd>
-                </div>
-                <div>
-                  <dt class="running text-fg-3">license</dt>
-                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">MIT</dd>
-                </div>
-              </dl>
-              <p class="mt-4 font-mono text-[11.5px] text-fg-3">
-                Node 22/24, per <a href="https://github.com/AnshRoshan/ctxfolio/blob/main/package.json">runtime declarations</a>. Supported-platform results: <a href="#proof">published baseline</a>.
-              </p>
-            </div>
-
-            <!-- The mechanism, demonstrated in the first viewport. -->
-            <div class="lg:col-span-7">
-              <div data-island="page">
+      <section id="top" class="hero-section">
+        <div class="hero-copy" data-depth="1.2">
+          <p class="hero-kicker">Open source context infrastructure</p>
+          <h1>Context is <span>compiled,</span><br />not retrieved.</h1>
+          <p>Give coding agents a source-backed markdown wiki, so each session starts with context instead of starting over.</p>
+          <div class="hero-actions"><a class="button button-primary" href="#install">Install the skill <span aria-hidden="true">↗</span></a><a class="button button-secondary" href="https://github.com/AnshRoshan/ctxfolio">Read the source</a></div>
+        </div>
+        <div class="workbench" data-depth="3">
+          <div class="workbench-title"><span class="workbench-name">The context workspace</span><span class="demo-label">Interactive, synthetic example</span></div>
+          <div class="workbench-flow" aria-label="Source to reusable context"><span><b>Source code</b><code>src/auth/**</code></span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-current"><b>Compiled wiki</b><code>context/</code></span><span class="flow-arrow" aria-hidden="true">→</span><span><b>Next session</b><code>read · verify · continue</code></span></div>
+          <div data-island="page">
                 <div class="console overflow-hidden">
                   <div class="border-b border-con-line px-5 py-3">
                     <span class="running text-con-fg-2">synthetic wiki demo: context/codebase/modules/auth.md</span>
@@ -199,21 +111,52 @@ updated: 2026-10-02
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
         </div>
+      </section>
+      <section class="project-facts" aria-label="Project facts">
+        <div class="facts-inner"><dl class="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-7 sm:grid-cols-4">
+                <div>
+                  <dt class="running text-fg-3">release</dt>
+                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg"><a href="https://github.com/AnshRoshan/ctxfolio/releases/latest">latest release</a></dd>
+                </div>
+                <div>
+                  <dt class="running text-fg-3">tests</dt>
+                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg"><a href="https://github.com/AnshRoshan/ctxfolio/blob/main/context/testing.md#verification-evidence">run evidence</a></dd>
+                </div>
+                <div>
+                  <dt class="running text-fg-3">CLI dependencies</dt>
+                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">0</dd>
+                </div>
+                <div>
+                  <dt class="running text-fg-3">license</dt>
+                  <dd class="mt-1.5 font-mono text-[15px] font-medium text-fg">MIT</dd>
+                </div>
+              </dl>
+              <p class="mt-4 font-mono text-[11.5px] text-fg-3">
+                Node 22/24, per <a href="https://github.com/AnshRoshan/ctxfolio/blob/main/package.json">runtime declarations</a>. Supported-platform results: <a href="#proof">published baseline</a>.
+              </p><a href="https://github.com/AnshRoshan/ctxfolio/releases/latest" class="release-link">Release <span id="release-chip">v2.8.0</span></a></div>
       </section>
 
       <!-- ================================================================ thesis
            A quiet reading passage. It earns the density that follows. -->
       <section id="thesis" class="scroll-mt-20 border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="mx-auto max-w-[46rem]">
             <h2 class="text-[clamp(2.2rem,4.4vw,3.4rem)] text-fg">
               Retrieval asks the same question twice. Compilation writes the answer down.
             </h2>
 
             <div class="mt-10 space-y-6 text-[1.0625rem] leading-[1.7] text-fg-2">
+<p class="mt-9 max-w-[46ch] text-[1.1875rem] leading-[1.55] text-fg-2">
+                Repeated exploration is a workflow cost. This skill asks the agent to
+                write down what it learns, once, at change time, into a markdown wiki. Later
+                sessions can start from those files, then verify against source.
+              </p>
+
+              <p class="mt-5 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-fg-3">
+                The workflow aims to reduce repeated exploration. Token savings and answer-quality
+                improvements have not been measured in an evaluation.
+              </p>
               <p>
                 Without persistent project notes, a coding agent can re-derive the same facts.
                 It greps. It reads. It reasons from scratch. The work is thrown away when the session
@@ -287,7 +230,7 @@ updated: 2026-10-02
       <!-- ================================================================== cost
            Dense: a chart the reader drives. -->
       <section id="cost" class="scroll-mt-20 border-b border-line bg-surface">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-4">
               <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">
@@ -303,7 +246,7 @@ updated: 2026-10-02
             </div>
 
             <div class="lg:col-span-8">
-              <div data-island="cost" aria-label="Illustrative token-cost model, not measured performance">
+              <div data-island="cost" data-depth="2" aria-label="Illustrative token-cost model, not measured performance">
                 <div class="console overflow-hidden">
                   <table class="w-full border-collapse font-mono text-[12px]">
                     <caption class="sr-only">
@@ -347,7 +290,7 @@ updated: 2026-10-02
       <!-- ================================================================ layers
            The three layers set as one compilation, not three cards. -->
       <section id="layers" class="scroll-mt-20 border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-4">
               <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">Raw, wiki, schema.</h2>
@@ -460,7 +403,7 @@ schema   human and agent co-evolve</pre>
       <!-- ================================================================== loop
            The sequence carries meaning, so it is numbered. -->
       <section id="loop" class="scroll-mt-20 border-b border-line bg-surface">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-4">
               <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">The core loop.</h2>
@@ -554,7 +497,7 @@ schema   human and agent co-evolve</pre>
       <!-- ========================================================== enforcement
            Full-bleed dark. The signature interactive moment. -->
       <section id="enforcement" class="scroll-mt-20 border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-5">
               <h2 class="text-[clamp(2.2rem,4.6vw,3.6rem)] text-fg">
@@ -586,7 +529,7 @@ tests   published evidence linked below</pre>
             </div>
 
             <div class="lg:col-span-7">
-              <div data-island="hook" aria-label="Illustrative legacy v2.4.x Stop hook transcript, not current CLI output">
+              <div data-island="hook" data-depth="2" aria-label="Illustrative legacy v2.4.x Stop hook transcript, not current CLI output">
                 <div class="console p-5">
                   <p class="running mb-4 text-con-fg-2">illustrative legacy v2.4.x transcript, six steps</p>
                   <pre class="overflow-x-auto whitespace-pre-wrap font-mono text-[12px] leading-[1.8] text-con-fg"><code>$ node context/ctx.mjs task start 07
@@ -635,7 +578,7 @@ hook stop: pass. illustrative bookkeeping result, not semantic verification.</co
       <!-- =================================================================== cli
            A reference. Read mode: structure for comprehension. -->
       <section id="cli" class="scroll-mt-20 border-b border-line bg-surface">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-4">
               <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">One file, project-local commands.</h2>
@@ -655,7 +598,7 @@ hook stop: pass. illustrative bookkeeping result, not semantic verification.</co
             </div>
 
             <div class="lg:col-span-8">
-              <div data-island="cli" aria-label="Illustrative legacy v2.4.x CLI examples, not current output or measurements">
+              <div data-island="cli" data-depth="2" aria-label="Illustrative legacy v2.4.x CLI examples, not current output or measurements">
                 <div class="console overflow-hidden">
                   <pre class="overflow-x-auto px-5 py-4 font-mono text-[12px] leading-[1.9] text-con-fg"><code>setup · init · detect · tools        one-command scaffold, profile, delegation targets
 brief · rules · coverage · status    route a task to pages; what applies to THIS file
@@ -677,7 +620,7 @@ doctor · install · hook              structural checks, installer, Claude hook
 
       <!-- ================================================================= files -->
       <section id="files" class="scroll-mt-20 border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-4">
               <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">Detected, not assumed.</h2>
@@ -751,7 +694,7 @@ doctor · install · hook              structural checks, installer, Claude hook
 
       <!-- ================================================================ teams -->
       <section id="teams" class="scroll-mt-20 border-b border-line bg-surface">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-5">
               <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">One unit. One branch. One owner.</h2>
@@ -767,7 +710,7 @@ doctor · install · hook              structural checks, installer, Claude hook
             </div>
 
             <div class="lg:col-span-7">
-              <div data-island="ledger">
+              <div data-island="ledger" data-depth="2">
                 <div class="console p-5">
                   <p class="running mb-4 text-con-fg-2">synthetic legacy v2.4.x ledger</p>
                   <pre class="overflow-x-auto whitespace-pre font-mono text-[12px] leading-[1.9] text-con-fg"><code>## In progress   (max one)
@@ -836,7 +779,7 @@ doctor · install · hook              structural checks, installer, Claude hook
 
       <!-- ================================================================= laws -->
       <section id="laws" class="scroll-mt-20 border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="mx-auto max-w-[68ch]">
             <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">The method in five laws.</h2>
             <p class="mt-7 text-[1.0625rem] leading-[1.65] text-fg-2">
@@ -939,7 +882,7 @@ doctor · install · hook              structural checks, installer, Claude hook
 
       <!-- =============================================================== proof -->
       <section id="proof" class="scroll-mt-20 border-b border-line bg-surface">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-24">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-24">
           <div class="mx-auto max-w-[46rem]">
             <h2 class="text-[clamp(2rem,4vw,3rem)] text-fg">Tested on itself.</h2>
             <p class="mt-7 text-[1.0625rem] leading-[1.65] text-fg-2">
@@ -973,7 +916,7 @@ doctor · install · hook              structural checks, installer, Claude hook
 
       <!-- ============================================================== install -->
       <section id="install" class="scroll-mt-20 border-b border-line">
-        <div class="mx-auto max-w-[1560px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28">
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
             <div class="lg:col-span-5">
               <h2 class="text-[clamp(2.2rem,5vw,4rem)] text-fg">
@@ -994,7 +937,7 @@ doctor · install · hook              structural checks, installer, Claude hook
             </div>
 
             <div class="lg:col-span-7">
-              <ol class="console divide-y divide-con-line">
+              <ol class="console divide-y divide-con-line" data-depth="2">
                 <li class="grid grid-cols-[2rem_1fr_auto] items-start gap-4 p-5">
                   <span class="font-mono text-[13px] text-con-accent" aria-hidden="true">1</span>
                   <div class="min-w-0">
@@ -1035,7 +978,7 @@ node context/ctx.mjs task start &lt;your-unit&gt;</code></pre>
 
     <!-- ============================================================== colophon -->
     <footer class="border-t border-line bg-surface">
-      <div class="mx-auto max-w-[1560px] px-5 py-14 lg:px-8">
+      <div class="mx-auto max-w-[1280px] px-5 py-14 lg:px-8">
         <div class="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-12">
           <div class="col-span-2 lg:col-span-4">
             <p class="font-mono text-[13px] font-medium text-fg">Ctxfolio</p>
@@ -1086,7 +1029,7 @@ node context/ctx.mjs task start &lt;your-unit&gt;</code></pre>
 
         <div class="mt-12 flex flex-col gap-3 border-t border-line pt-6 font-mono text-[11px] text-fg-3 sm:flex-row sm:items-center">
           <p>Built with Vite. Deployed from web/ by the pages workflow.</p>
-          <p class="sm:ml-auto">Set in Instrument Serif, IBM Plex Sans and IBM Plex Mono.</p>
+          <p class="sm:ml-auto">Set in Cormorant Garamond, Geist and Geist Mono. Self-hosted, just like your context.</p>
         </div>
       </div>
     </footer>

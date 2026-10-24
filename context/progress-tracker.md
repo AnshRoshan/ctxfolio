@@ -4,7 +4,7 @@ type: tracker
 status: active
 summary: The task ledger — In progress (max one), Blocked, Up next, Completed with concrete details
 tags: [progress,status,tasks]
-updated: 2026-10-21
+updated: 2026-10-24
 ---
 
 # Progress Tracker
@@ -68,6 +68,7 @@ Roadmap position: [build plan](build-plan.md) Phase 4 Wave 0 and Features 11–2
 - Feature 08: always-green baseline: CI red, self-context gate, release hygiene — 2026-10-21 — Evidence: context/testing.md#verification-evidence; main run 39553397681 and candidate 39552815955 green across Node22/24 on three OSes; actual tag check passed; v2.7.0 published. Wave 0 safety regressions corrected.
 - Feature 09: Dogfood truth repair — 2026-10-21 — Evidence: context/testing.md#verification-evidence; 132/0/0 suite, truth/baseline/version probes, strict lint27 0/0 stale clean doctor13/13; candidate39555626175/main39556052075 green; Pages39556051956 and real deployed desktop/mobile/noJS verified.
 - Feature 10: CLI honesty and housekeeping — 2026-10-21 — Evidence: context/testing.md#verification-evidence; full147/0/0,15focused; candidate39559173759/main39559766799 greenall6; strictlint28 0/0 staleclean doctor13/13 andallguards; safeGitlegacyworktreeremoval retainedhistory.
+- Feature 35: website-redesign Modern visual redesign of the public website — 2026-10-24 — Modern website redesigned; build/typecheck/browser checks and full self-test passed; evidence: context/testing.md#verification-evidence
 ## Session notes
 
 - 2026-10-06: detect() substring bug found by dogfooding — 'gin' matched "context-engineering" → backend false positive; fixed with word-boundary regex over manifest text (dep names keep substring match).

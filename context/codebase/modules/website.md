@@ -5,8 +5,10 @@ status: active
 summary: The public Vite/React site in web/; configured single-file build and Pages deployment, with observed results owned by testing
 tags: [website, docs, deploy]
 covers: ["web/**"]
-confidence: inferred
-updated: 2026-10-21
+confidence: unverified
+updated: 2026-10-24
+unverified_snapshot: e2d778dd481d718c35d99aa6dec3af4ccf6a055941d55abcbeb9853b0442016d
+snapshot_state: dirty-tree
 ---
 
 # Website
@@ -54,6 +56,14 @@ asset is self-contained; inspect actual build output and the deployed subpath.
 | `web/src/data/transcripts.ts` | interactive example CLI transcripts, graph/ledger fixtures and token-cost assumptions |
 | `web/src/islands/` | the five interactive parts plus the theme control |
 | `web/src/App.tsx` | the island registry and the mount function |
+
+## Current visual world
+
+The 2026-10-24 user-approved redesign is a context workbench: neutral/cobalt surfaces, self-hosted Geist/Geist Mono, a centered proposition above the synthetic wiki, native responsive menu, and varied technical-reading layouts. [The design contract](../../../web/design-system/CONTRACT.md) owns palette/radius/motion choices; [the built design record](../../../web/DESIGN.md) owns durable visual guidance. Static factual copy remains in the document.
+
+Normal Latin variable faces in `web/src/fonts.css` use Fontsource's OFL-licensed files; the theme control uses Radix MIT icons. The observed build inlines both font files. No font CDN is required.
+
+The cost island has an explicit console background. Compiled-page playback is paused offscreen and responds to live reduced-motion changes; streaming terminals also react to that preference. Stop shortcuts ignore modified keys and autoscroll follows only a reader at the bottom. Theme metadata reads the current CSS surface and an in-session choice survives blocked storage. BFCache pagehide preserves roots. `web/tests/browser-check.mjs` exercises the real served build through a local Chrome CDP endpoint. Actual results belong to testing evidence.
 
 ## Theming
 

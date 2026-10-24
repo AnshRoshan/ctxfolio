@@ -105,6 +105,12 @@ updated: 2026-10-21
 
 **Deferred from Phase 3, now absorbed:** `ctx query` filing → Feature 20 scope; hook parity → Feature 25; opt-in project skills → Feature 23; evals runner → Feature 18.
 
+## Direct user requests after the audit roadmap
+
+| # | Feature | Authorization and boundary |
+|---|---|---|
+| 35 | [Website redesign](feature-specs/35-website-redesign.md) | Human requested a complete modern visual redesign on 2026-10-24 and approved creative control; website only, preserve facts/demos/static fallbacks, no CLI or remote publication work |
+
 ## Rules
 
 - One system boundary per spec; ledger unit = branch = owner (see references/multi-user.md).
